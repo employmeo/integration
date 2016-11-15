@@ -30,6 +30,8 @@ public class PredictionService {
 	private PredictionRepository predictionRepository;
 	@Autowired
 	private PredictionModelRegistry predictionModelRegistry;
+	@Autowired
+	private GradingService gradingService;
 
 	public void predictRespondant(Respondant respondant) {
 		log.debug("Predictions requested for respondant {}", respondant.getId());
@@ -47,7 +49,7 @@ public class PredictionService {
 				List<PredictionResult> predictions = runPredictionsStageForAllTargets(respondant);
 
 				// Stage 2
-				GradingResult gradingResult = GradingUtil.gradeRespondantByPredictions(respondant, predictions);
+				GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);
 
 				// Assimilate results, Update respondant lifecycle, and persist state
 				respondant.setProfileRecommendation(gradingResult.getRecommendedProfile());

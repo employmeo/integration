@@ -4,11 +4,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.Respondant;
 import com.google.common.collect.Range;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * TODO: Determine Mechanics of grading
@@ -16,8 +19,10 @@ import com.google.common.collect.Range;
  * @author NShah
  *
  */
-public class GradingUtil {
-	private static final Logger log = LoggerFactory.getLogger(GradingUtil.class);
+@Slf4j
+@Service
+@Transactional
+public class GradingService {
 
 	private static final Range<Double> gradeCurveProfileD = Range.closed(0.0D, 40.0D);
 	private static final Range<Double> gradeCurveProfileC = Range.closed(40.001D, 65.00D);
@@ -33,7 +38,7 @@ public class GradingUtil {
 	 * @param predictions
 	 * @return grading result
 	 */
-	public static GradingResult gradeRespondantByPredictions(Respondant respondant, List<PredictionResult> predictions) {
+	public GradingResult gradeRespondantByPredictions(Respondant respondant, List<PredictionResult> predictions) {
 		log.debug("Initiating grading for respondant {}", respondant.getId());
 
 		GradingResult result = new GradingResult();
