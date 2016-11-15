@@ -15,6 +15,7 @@
 	</appender>
 
 	<logger name="com.employmeo" level="DEBUG" />
+	<logger name="com.talytica" level="DEBUG" />
 
 	<root level="INFO">
 		<appender-ref ref="STDOUT" />

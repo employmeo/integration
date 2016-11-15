@@ -4,7 +4,6 @@ import javax.annotation.PostConstruct;
 import javax.ws.rs.ApplicationPath;
 
 import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.glassfish.jersey.server.wadl.internal.WadlResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,19 +22,18 @@ public class IntegrationConfiguration extends ResourceConfig {
 
 	 @Value("${spring.jersey.application-path:/integration}")
 	 private String apiPath;
-	 
+
 	public IntegrationConfiguration() {
         registerEndpoints();
-		register(IntegrationAuthProvider.class);     
-        register(RolesAllowedDynamicFeature.class);
+        //register(RolesAllowedDynamicFeature.class);
 	}
-	
+
 	@PostConstruct
     public void init() {
 		log.info("Initializing swagger");
         configureSwagger();
         log.info("Swagger initialized");
-    }	
+    }
 
 	private void registerEndpoints() {
 
@@ -44,7 +42,7 @@ public class IntegrationConfiguration extends ResourceConfig {
 		register(WadlResource.class);
 	}
 
-	
+
 	private void configureSwagger() {
 	     this.register(ApiListingResource.class);
 	     this.register(SwaggerSerializers.class);
