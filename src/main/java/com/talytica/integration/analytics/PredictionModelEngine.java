@@ -3,6 +3,8 @@ package com.talytica.integration.analytics;
 import java.util.List;
 
 import com.employmeo.data.model.*;
+import com.talytica.integration.objects.CorefactorScore;
+import com.talytica.integration.objects.PredictionResult;
 
 public interface PredictionModelEngine<MC> {
 

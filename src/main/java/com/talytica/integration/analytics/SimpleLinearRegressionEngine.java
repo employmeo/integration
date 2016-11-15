@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
+import com.talytica.integration.objects.CorefactorScore;
+import com.talytica.integration.objects.PredictionResult;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.objects;
 
 import lombok.Data;
 

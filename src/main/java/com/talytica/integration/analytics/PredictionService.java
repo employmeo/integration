@@ -11,8 +11,9 @@ import org.springframework.stereotype.Service;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PredictionRepository;
 import com.employmeo.data.service.CorefactorService;
-import com.employmeo.data.service.RespondantService;
 import com.google.common.collect.Lists;
+import com.talytica.integration.objects.CorefactorScore;
+import com.talytica.integration.objects.PredictionResult;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -25,74 +26,11 @@ public class PredictionService {
 	@Autowired
 	private CorefactorService corefactorService;
 	@Autowired
-	private RespondantService respondantService;
-	@Autowired
 	private PredictionRepository predictionRepository;
 	@Autowired
 	private PredictionModelRegistry predictionModelRegistry;
-	@Autowired
-	private GradingService gradingService;
 
-	public void predictRespondant(Respondant respondant) {
-		log.debug("Predictions requested for respondant {}", respondant.getId());
-
-		if (respondant.getRespondantStatus() <= Respondant.STATUS_SCORED) {
-			//respondant = refresh(respondant);
-			log.debug("Respondant {} has status = {}, no predictions have been run yet.", respondant.getId(), respondant.getRespondantStatus());
-		}
-
-		if (respondant.getRespondantStatus() == Respondant.STATUS_SCORED) {
-			//DBUtil.beginTransaction();
-
-			try {
-				// Stage 1
-				List<PredictionResult> predictions = runPredictionsStageForAllTargets(respondant);
-
-				// Stage 2
-				GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);
-
-				// Assimilate results, Update respondant lifecycle, and persist state
-				respondant.setProfileRecommendation(gradingResult.getRecommendedProfile());
-				respondant.setCompositeScore(gradingResult.getCompositeScore());
-				respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
-
-				Respondant savedRespondant = respondantService.save(respondant);
-
-				//respondant.mergeMe();
-
-				//DBUtil.commit();
-			} catch(Exception e) {
-				log.warn("Failed to run predictions/grading for respondant " + respondant.getId(), e);
-
-				//DBUtil.rollback();
-				log.warn("Rolled back transaction");
-			}
-
-			log.debug("Predictions for respondant {} complete", respondant.getId());
-		}
-
-		return;
-	}
-
-/*
-	private Respondant refresh(Respondant respondant) {
-		// the application tends to get in a state where a rollback leads to entity manager state being inconsistent
-		// given multiple respondants get run for predictions in the same call/thread.
-
-		EntityManager em = DBUtil.getEntityManager();
-		if(em.contains(respondant)) {
-			respondant.refreshMe();
-		} else {
-			respondant = em.createNamedQuery("Respondant.findById",Respondant.class)
-						.setParameter("respondantId", respondant.getId())
-						.getSingleResult();
-		}
-
-		return respondant;
-	}
-*/
-
-	private List<PredictionResult> runPredictionsStageForAllTargets(Respondant respondant) {
+	public List<PredictionResult> runPredictionsStageForAllTargets(@NonNull Respondant respondant) {
 		List<PredictionResult> predictions = Lists.newArrayList();
 		List<CorefactorScore> corefactorScores = getCorefactorScores(respondant);
 
