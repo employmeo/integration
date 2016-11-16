@@ -26,14 +26,14 @@ import org.json.JSONObject;
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/echo")
 @Api( value="/echo", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
-public class Echo {
+public class EchoResource {
 
 	@Context
 	private UriInfo uriInfo;
 	@Context
 	private Response resp;
 
-	private static final Logger log = LoggerFactory.getLogger(Echo.class);
+	private static final Logger log = LoggerFactory.getLogger(EchoResource.class);
 
 	@POST
 	@PermitAll

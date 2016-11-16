@@ -4,6 +4,7 @@ import java.sql.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.security.PermitAll;
 
@@ -27,17 +28,22 @@ import com.employmeo.data.service.RespondantService;
 import com.talytica.integration.util.DefaultPartnerUtil;
 import com.talytica.integration.util.PartnerUtil;
 
+import io.swagger.annotations.Api;
 
-@Path("hirenotice")
+@Component
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+@Path("/hirenotice")
+@Api( value="/hirenotice", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
 @PermitAll
-public class HireNotice {
+public class HireNoticeResource {
 	private final static Response MISSING_REQUIRED_PARAMS = Response.status(Response.Status.BAD_REQUEST)
 			.entity("{ message: 'Missing Required Parameters' }").build();
 	private final static Response UNKNOWN_STATUS = Response.status(Response.Status.BAD_REQUEST)
 			.entity("{ message: 'Unknown Applicant Status' }").build();
 	private final static Response ACCOUNT_MATCH = Response.status(Response.Status.CONFLICT)
 			.entity("{ message: 'Applicant ID not found for Account ID' }").build();
-	private static final Logger log = LoggerFactory.getLogger(HireNotice.class);
+	private static final Logger log = LoggerFactory.getLogger(HireNoticeResource.class);
 	
 	@Context
 	private SecurityContext sc;

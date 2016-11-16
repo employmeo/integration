@@ -4,10 +4,12 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -21,10 +23,16 @@ import com.employmeo.data.model.Respondant;
 import com.employmeo.data.repository.PartnerRepository;
 import com.talytica.common.service.EmailService;
 import com.talytica.integration.util.ICIMSPartnerUtil;
-import com.talytica.integration.util.PartnerUtil;;
+import com.talytica.integration.util.PartnerUtil;
 
-@Path("icimsapplicationcomplete")
-public class ICIMSApplicationComplete {
+import io.swagger.annotations.Api;;
+
+@Component
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+@Path("/icimsapplicationcomplete")
+@Api( value="/icimsapplicationcomplete", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
+public class ICIMSApplicationCompleteResource {
 
 	@Context
 	private SecurityContext sc;
@@ -33,7 +41,7 @@ public class ICIMSApplicationComplete {
 	@Autowired
 	EmailService emailService;
 	
-	private static final Logger log = LoggerFactory.getLogger(ICIMSApplicationComplete.class);
+	private static final Logger log = LoggerFactory.getLogger(ICIMSApplicationCompleteResource.class);
 
 	
 	

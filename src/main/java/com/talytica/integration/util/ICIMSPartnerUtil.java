@@ -54,9 +54,9 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	private static final String ICIMS_API = "https://api.icims.com/customers/";
 	private static final String JOB_EXTRA_FIELDS = "?fields=jobtitle,assessmenttype,jobtype,joblocation,hiringmanager";
 	private static final JSONObject ASSESSMENT_COMPLETE = new JSONObject("{'id':'D37002019001'}");
-	private static final JSONObject ASSESSMENT_INCOMPLETE = new JSONObject("{'id':'D37002019002'}");
-	private static final JSONObject ASSESSMENT_INPROGRESS = new JSONObject("{'id':'D37002019003'}");
-	private static final JSONObject ASSESSMENT_SENT = new JSONObject("{'id':'D37002019004'}");
+	//private static final JSONObject ASSESSMENT_INCOMPLETE = new JSONObject("{'id':'D37002019002'}");
+	//private static final JSONObject ASSESSMENT_INPROGRESS = new JSONObject("{'id':'D37002019003'}");
+	//private static final JSONObject ASSESSMENT_SENT = new JSONObject("{'id':'D37002019004'}");
 	private static final SimpleDateFormat ICIMS_SDF = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
 	private static String PROXY_URL = System.getenv("QUOTAGUARDSTATIC_URL"); 
 
@@ -343,11 +343,11 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		return response;
 	}
 
-	private Response icimsPost(String postTarget, JSONObject json) {
-		Response response = prepTarget(postTarget).request(MediaType.APPLICATION_JSON)
-				.post(Entity.entity(json.toString(), MediaType.APPLICATION_JSON));
-		return response;
-	}
+	//private Response icimsPost(String postTarget, JSONObject json) {
+	//	Response response = prepTarget(postTarget).request(MediaType.APPLICATION_JSON)
+	//			.post(Entity.entity(json.toString(), MediaType.APPLICATION_JSON));
+	//	return response;
+	//}
 
 	private Response icimsPatch(String postTarget, JSONObject json) {	
 		Response response = prepTarget(postTarget).request(MediaType.APPLICATION_JSON)

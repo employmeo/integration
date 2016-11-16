@@ -20,18 +20,25 @@ import com.employmeo.data.repository.PartnerRepository;
 import com.talytica.integration.util.DefaultPartnerUtil;
 import com.talytica.integration.util.PartnerUtil;
 
+import io.swagger.annotations.Api;
+
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-@Path("getpositions")
-public class GetPositions {
+@Component
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+@Path("/getpositions")
+@Api( value="/getpositions", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
+public class GetPositionsResource {
 
 	private final Response MISSING_REQUIRED_PARAMS = Response.status(Response.Status.BAD_REQUEST)
 			.entity("{ message: 'Missing Required Parameters' }").build();
-	private static final Logger log = LoggerFactory.getLogger(GetPositions.class);
+	private static final Logger log = LoggerFactory.getLogger(GetPositionsResource.class);
 	@Context
 	private SecurityContext sc;
 	@Autowired

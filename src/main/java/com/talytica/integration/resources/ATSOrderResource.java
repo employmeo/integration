@@ -9,7 +9,6 @@ import com.employmeo.data.model.Account;
 import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.repository.PartnerRepository;
-import com.talytica.integration.objects.PartnerPrincipal;
 import com.talytica.integration.util.DefaultPartnerUtil;
 import com.talytica.integration.util.PartnerUtil;
 
@@ -20,7 +19,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONObject;
 
@@ -29,20 +27,19 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-
 @Component
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/atsorder")
 @Api( value="/atsorder", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
-public class ATSOrder {
+public class ATSOrderResource {
 
 	@Context
 	private SecurityContext sc;
 	@Autowired
 	PartnerRepository partnerRepository;
 
-	private static final Logger log = LoggerFactory.getLogger(ATSOrder.class);
+	private static final Logger log = LoggerFactory.getLogger(ATSOrderResource.class);
 
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)

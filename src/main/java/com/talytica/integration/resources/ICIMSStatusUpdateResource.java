@@ -4,6 +4,7 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Account;
 import com.employmeo.data.model.Partner;
@@ -13,9 +14,12 @@ import com.talytica.common.service.EmailService;
 import com.talytica.integration.util.ICIMSPartnerUtil;
 import com.talytica.integration.util.PartnerUtil;
 
+import io.swagger.annotations.Api;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -23,8 +27,12 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.json.JSONObject;
 
-@Path("icimsstatusupdate")
-public class ICIMSStatusUpdate {
+@Component
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+@Path("/icimsstatusupdate")
+@Api( value="/icimsstatusupdate", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
+public class ICIMSStatusUpdateResource {
 
 	@Context
 	private SecurityContext sc;
@@ -32,7 +40,7 @@ public class ICIMSStatusUpdate {
 	PartnerRepository partnerRepository;
 	@Autowired
 	EmailService emailService;
-	private static final Logger log = LoggerFactory.getLogger(ICIMSStatusUpdate.class);
+	private static final Logger log = LoggerFactory.getLogger(ICIMSStatusUpdateResource.class);
 
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -43,7 +51,6 @@ public class ICIMSStatusUpdate {
 		PartnerUtil pu = new ICIMSPartnerUtil(partner);	
 		
 		Account account = pu.getAccountFrom(json);
-
 
 		// TODO - Build out Hire Notification Logic (what are the status types, etc...)
 		// String newStatus = json.getString("newStatus");//	New status	(ID)
