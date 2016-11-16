@@ -19,6 +19,10 @@ import com.employmeo.data.model.Location;
 import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Position;
 import com.employmeo.data.repository.PartnerRepository;
+import com.employmeo.data.service.AccountService;
+import com.talytica.integration.objects.ATSAssessment;
+import com.talytica.integration.objects.ATSLocation;
+import com.talytica.integration.objects.ATSPosition;
 import com.talytica.integration.util.DefaultPartnerUtil;
 import com.talytica.integration.util.PartnerUtil;
 
@@ -28,6 +32,8 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -43,30 +49,31 @@ import org.springframework.stereotype.Component;
 
 public class AccountResource {
 
+	private static final Response ACCOUNT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Account Not Found").build();
 	private static final Logger log = LoggerFactory.getLogger(GetAssessmentsResource.class);
 	@Context
 	private SecurityContext sc;
 	@Autowired
 	PartnerRepository partnerRepository;
-		
+	@Autowired
+	AccountService accountService;
+	
+	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Gets list of locations", response = String.class)
+	@ApiOperation(value = "Gets list of locations", response = ATSLocation.class, responseContainer = "List")
 	   @ApiResponses(value = {
 		  @ApiResponse(code = 200, message = "Request Processed"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
 	@Path("/{atsId}/locations")
 	public Response getLocations(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) {
-		log.debug("Get Assessments called with: {}" , atsId);
+		log.debug("Get Locations called with: {}" , atsId);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
-		PartnerUtil pu = new DefaultPartnerUtil(partner);
-		Account account = null;
+		PartnerUtil pu = new DefaultPartnerUtil(partner);	
+		Account account = accountService.getAccountByAtsId(pu.addPrefix(atsId));
 
-		JSONObject json = new JSONObject();
-		json.put("account_ats_id", atsId);
-		account = pu.getAccountFrom(json);
-		if (account == null) return Response.status(Response.Status.NOT_FOUND).build();
+		if (account == null) return ACCOUNT_NOT_FOUND;
 
 		JSONArray response = new JSONArray();
 
@@ -85,40 +92,36 @@ public class AccountResource {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Gets list of positions", response = String.class)
+	@ApiOperation(value = "Gets list of positions", response = ATSPosition.class, responseContainer = "List")
 	   @ApiResponses(value = {
 		  @ApiResponse(code = 200, message = "Request Processed"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
 	@Path("/{atsId}/positions")
 	public Response getPositions(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) {
-		log.debug("Get Assessments called with: {}" , atsId);
+		log.debug("Get Positions called with: {}" , atsId);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
-		PartnerUtil pu = new DefaultPartnerUtil(partner);
-		Account account = null;
+		PartnerUtil pu = new DefaultPartnerUtil(partner);	
+		Account account = accountService.getAccountByAtsId(pu.addPrefix(atsId));
 
-		JSONObject json = new JSONObject();
-		json.put("account_ats_id", atsId);
-		account = pu.getAccountFrom(json);
-		if (account == null) return Response.status(Response.Status.NOT_FOUND).build();
+		if (account == null) return ACCOUNT_NOT_FOUND;
 
-		JSONArray response = new JSONArray();
-
+		List<ATSPosition> response = new ArrayList<ATSPosition>();
 		Set<Position> positions = account.getPositions();
 		for (Position pos : positions) {
-			JSONObject position = new JSONObject();
-			position.put("position_name", pos.getPositionName());
-			position.put("position_description", pos.getDescription());
-			position.put("position_id", pos.getId());
-			response.put(position);
+			ATSPosition position = new ATSPosition();
+			position.positionName = pos.getPositionName();
+			position.description = pos.getDescription();
+			position.id = pos.getId();
+			response.add(position);
 		}
 
-		return Response.status(Response.Status.OK).entity(response.toString()).build();
+		return Response.status(Response.Status.OK).entity(response).build();
 	}	
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Gets list of assessments", response = String.class)
+	@ApiOperation(value = "Gets list of assessments", response = ATSAssessment.class, responseContainer = "List")
 	   @ApiResponses(value = {
 		  @ApiResponse(code = 200, message = "Request Processed"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
@@ -127,13 +130,10 @@ public class AccountResource {
 	public Response getAssessments(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) {
 		log.debug("Get Assessments called with: {}" , atsId);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
-		PartnerUtil pu = new DefaultPartnerUtil(partner);
-		Account account = null;
+		PartnerUtil pu = new DefaultPartnerUtil(partner);	
+		Account account = accountService.getAccountByAtsId(pu.addPrefix(atsId));
 
-		JSONObject json = new JSONObject();
-		json.put("account_ats_id", atsId);
-		account = pu.getAccountFrom(json);
-		if (account == null) return Response.status(Response.Status.NOT_FOUND).build();
+		if (account == null) return ACCOUNT_NOT_FOUND;
 
 		JSONArray response = new JSONArray();
 

@@ -28,6 +28,7 @@ public interface PartnerUtil {
 	}
 	
 	public String getPrefix();
+	public String addPrefix(String id);
 	public String trimPrefix(String id);
 	public Account getAccountFrom(JSONObject jAccount);
 	public Location getLocationFrom(JSONObject jLocation, Account account);

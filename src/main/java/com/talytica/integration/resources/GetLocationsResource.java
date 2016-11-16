@@ -61,7 +61,6 @@ public class GetLocationsResource {
 
 		JSONArray response = new JSONArray();
 
-
 		Set<Location> locations = account.getLocations();
 		for (Location loc : locations) {
 				JSONObject location = new JSONObject();

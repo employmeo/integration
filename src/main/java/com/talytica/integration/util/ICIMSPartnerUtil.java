@@ -95,9 +95,16 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	public ICIMSPartnerUtil(Partner partner) {
 		this.partner = partner;
 	}
-		
+	
+	@Override
 	public String getPrefix() {
 		return partner.getPrefix();
+	}
+	
+	@Override
+	public String addPrefix(String id) {
+		if (partner.getPrefix() == null) return id;
+		return partner.getPrefix() + id;
 	}
 
 	@Override

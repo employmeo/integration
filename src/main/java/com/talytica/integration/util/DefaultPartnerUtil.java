@@ -80,6 +80,12 @@ public class DefaultPartnerUtil implements PartnerUtil {
 	}
 
 	@Override
+	public String addPrefix(String id) {
+		if (partner.getPrefix() == null) return id;
+		return partner.getPrefix() + id;
+	}
+	
+	@Override
 	public String trimPrefix(String id) {
 		if (id == null) return null;
 		return id.substring(id.indexOf(getPrefix())+getPrefix().length());
