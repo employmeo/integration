@@ -12,7 +12,7 @@
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
 	<description>Talytica Integration Application</description>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -27,7 +27,7 @@
 		<dbdeploy.version>3.0M3</dbdeploy.version>
 		<dbdeploy.db-driver>org.postgresql.Driver</dbdeploy.db-driver>
 		<dbdeploy.dbms>pgsql</dbdeploy.dbms>
-		<commons-math-version>3.6.1</commons-math-version>	
+		<commons-math-version>3.6.1</commons-math-version>
 		<persistence-unit.version>0.0.8-SNAPSHOT</persistence-unit.version>
 		<sendgrid.version>3.1.0</sendgrid.version>
 		<swagger.version>1.5.9</swagger.version>
@@ -38,7 +38,7 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
-		</dependency>	
+		</dependency>
 		<dependency>
 			<groupId>com.employmeo</groupId>
 			<artifactId>persistence</artifactId>
@@ -81,7 +81,7 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>		
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
@@ -115,16 +115,16 @@
 			<version>19.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>org.apache.commons</groupId>
-		    <artifactId>commons-math3</artifactId>
-		    <version>${commons-math-version}</version>
-		</dependency>		
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>${commons-math-version}</version>
+		</dependency>
 
 		<!-- sendgrid email service -->
 		<dependency>
-		    <groupId>com.sendgrid</groupId>
-		    <artifactId>sendgrid-java</artifactId>
-		    <version>${sendgrid.version}</version>
+			<groupId>com.sendgrid</groupId>
+			<artifactId>sendgrid-java</artifactId>
+			<version>${sendgrid.version}</version>
 		</dependency>
 
 		<dependency>
@@ -133,34 +133,88 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	<profiles>
+		<profile>
+			<id>local</id>
+			<properties>
+				<lane>local</lane>
+			</properties>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<build>
+				<resources>
+					<resource>
+						<directory>src/main/resources</directory>
+						<filtering>true</filtering>
+					</resource>
+					<resource>
+						<directory>${basedir}/profile/local</directory>
+						<includes>
+							<include>*.properties</include>
+						</includes>
+						<filtering>true</filtering>
+					</resource>
+				</resources>
+				<testResources>
+					<testResource>
+						<directory>src/test/resources</directory>
+						<filtering>true</filtering>
+					</testResource>
+					<testResource>
+						<directory>${basedir}/profile/local</directory>
+						<includes>
+							<include>*.properties</include>
+						</includes>
+						<filtering>true</filtering>
+					</testResource>
+				</testResources>
+			</build>
+		</profile>
+		<profile>
+			<id>dev</id>
+			<properties>
+				<lane>dev</lane>
+			</properties>
+			<build>
+				<resources>
+					<resource>
+						<directory>src/main/resources</directory>
+						<filtering>true</filtering>
+					</resource>
+					<resource>
+						<directory>${basedir}/profile/dev</directory>
+						<includes>
+							<include>*.properties</include>
+						</includes>
+						<filtering>true</filtering>
+					</resource>
+				</resources>
+				<testResources>
+					<testResource>
+						<directory>src/test/resources</directory>
+						<filtering>true</filtering>
+					</testResource>
+					<testResource>
+						<directory>${basedir}/profile/local</directory>
+						<includes>
+							<include>*.properties</include>
+						</includes>
+						<filtering>true</filtering>
+					</testResource>
+				</testResources>
+			</build>
+		</profile>
+	</profiles>
 	<build>
-		<finalName>${project.artifactId}-${project.version}</finalName>
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-				<filtering>true</filtering>
-			</resource>
-			<resource>
-				<directory>${basedir}</directory>
-				<includes>
-					<include>*.properties</include>
-				</includes>
-				<filtering>true</filtering>
-			</resource>
-		</resources>
-		<testResources>
-			<testResource>
-				<directory>src/test/resources</directory>
-				<filtering>true</filtering>
-			</testResource>
-			<testResource>
-				<directory>${basedir}</directory>
-				<includes>
-					<include>*.properties</include>
-				</includes>
-				<filtering>true</filtering>
-			</testResource>
-		</testResources>
+		<finalName>${project.artifactId}-${project.version}-${lane}</finalName>
+		<!-- <resources> <resource> <directory>src/main/resources</directory> <filtering>true</filtering> 
+			</resource> <resource> <directory>${basedir}</directory> <includes> <include>*.properties</include> 
+			</includes> <filtering>true</filtering> </resource> </resources> <testResources> 
+			<testResource> <directory>src/test/resources</directory> <filtering>true</filtering> 
+			</testResource> <testResource> <directory>${basedir}</directory> <includes> 
+			<include>*.properties</include> </includes> <filtering>true</filtering> </testResource> 
+			</testResources> -->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -179,11 +233,11 @@
 						<artifactId>surefire-junit47</artifactId>
 						<version>2.19.1</version>
 					</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-		</dependency>					
+					<dependency>
+						<groupId>junit</groupId>
+						<artifactId>junit</artifactId>
+						<version>4.12</version>
+					</dependency>
 				</dependencies>
 			</plugin>
 			<plugin>
