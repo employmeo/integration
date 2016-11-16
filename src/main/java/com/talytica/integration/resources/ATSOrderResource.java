@@ -39,7 +39,9 @@ public class ATSOrderResource {
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 201, message = "Order Processed"),
 	   })
-	public String doPost(JSONObject json) {
+	public String doPost(String body) {
+		JSONObject json = new JSONObject(body);
+		log.debug("processing with: {} ", json);
 		log.debug("ATS Requesting Assessment with: " + json.toString());
 
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());

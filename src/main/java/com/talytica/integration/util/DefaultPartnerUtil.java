@@ -15,7 +15,6 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
-import com.talytica.integration.objects.PositionProfile;
 import com.talytica.integration.service.AddressService;
 
 import lombok.Getter;
@@ -178,7 +177,7 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		Respondant respondant = null;
 		String applicantAtsId = applicant.optString("applicant_ats_id");
 		if (applicantAtsId != null) {
-			respondant = respondantService.getRespondantByAtsId(applicantAtsId);
+			respondant = respondantService.getRespondantByAtsId(addPrefix(applicantAtsId));
 		} else {
 			// Try to grab account by employmeo respondant_id
 			respondant = respondantService.getRespondantById(applicant.optLong("applicant_id"));
@@ -223,14 +222,17 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		}
 
 		respondant.setAccountId(account.getId());
+		respondant.setAccount(account);
 		respondant.setAccountSurveyId(aSurvey.getId());
 		respondant.setLocationId(location.getId());
 		respondant.setPositionId(position.getId());
 		respondant.setPartner(this.partner);
-
+		respondant.setPartnerId(this.partner.getId());
+		
 		// Create Person & Respondant in database.
 		Person savedPerson = personService.save(person);
 		respondant.setPerson(savedPerson);
+		respondant.setPersonId(savedPerson.getId());
 
 		return respondantService.save(respondant);
 	}
@@ -267,53 +269,54 @@ public class DefaultPartnerUtil implements PartnerUtil {
 
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
-
-		Set<RespondantScore> scores = respondant.getRespondantScores();
-
+		
+		
 		Account account = respondant.getAccount();
 		JSONObject jAccount = new JSONObject();
 		JSONObject applicant = new JSONObject();
-
 		jAccount.put("account_ats_id", trimPrefix(account.getAtsId()));
 		jAccount.put("account_id", account.getId());
 		jAccount.put("account_name", account.getAccountName());
-
 		applicant.put("applicant_ats_id", trimPrefix(respondant.getAtsId()));
 		applicant.put("applicant_id", respondant.getId());
-		applicant.put("applicant_profile", respondant.getProfileRecommendation());
-		applicant.put("applicant_composite_score", respondant.getCompositeScore());
-		applicant.put("applicant_profile_label",
-				PositionProfile.getProfileDefaults(respondant.getProfileRecommendation()).getString("profile_name"));
-		applicant.put("applicant_profile_a", respondant.getProfileA());
-		applicant.put("applicant_profile_b", respondant.getProfileB());
-		applicant.put("applicant_profile_c", respondant.getProfileC());
-		applicant.put("applicant_profile_d", respondant.getProfileD());
-		applicant.put("label_profile_a",
-				PositionProfile.getProfileDefaults(PositionProfile.PROFILE_A).getString("profile_name"));
-		applicant.put("label_profile_b",
-				PositionProfile.getProfileDefaults(PositionProfile.PROFILE_B).getString("profile_name"));
-		applicant.put("label_profile_c",
-				PositionProfile.getProfileDefaults(PositionProfile.PROFILE_C).getString("profile_name"));
-		applicant.put("label_profile_d",
-				PositionProfile.getProfileDefaults(PositionProfile.PROFILE_D).getString("profile_name"));
-
-		JSONArray scoreset = new JSONArray();
-		for (RespondantScore score : scores) {
-			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
-			JSONObject item = new JSONObject();
-			item.put("corefactor_name", cf.getName());
-			item.put("corefactor_score", score.getValue());
-			scoreset.put(item);
+		
+		if (respondant.getRespondantStatus() >= Respondant.STATUS_SCORED) {
+							
+			Set<RespondantScore> scores = respondant.getRespondantScores();		
+			applicant.put("applicant_profile", respondant.getProfileRecommendation());
+			applicant.put("applicant_composite_score", respondant.getCompositeScore());
+			applicant.put("applicant_profile_label",
+					PositionProfile.getProfileDefaults(respondant.getProfileRecommendation()).getString("profile_name"));
+			applicant.put("applicant_profile_a", respondant.getProfileA());
+			applicant.put("applicant_profile_b", respondant.getProfileB());
+			applicant.put("applicant_profile_c", respondant.getProfileC());
+			applicant.put("applicant_profile_d", respondant.getProfileD());
+			applicant.put("label_profile_a",
+					PositionProfile.getProfileDefaults(PositionProfile.PROFILE_A).getString("profile_name"));
+			applicant.put("label_profile_b",
+					PositionProfile.getProfileDefaults(PositionProfile.PROFILE_B).getString("profile_name"));
+			applicant.put("label_profile_c",
+					PositionProfile.getProfileDefaults(PositionProfile.PROFILE_C).getString("profile_name"));
+			applicant.put("label_profile_d",
+					PositionProfile.getProfileDefaults(PositionProfile.PROFILE_D).getString("profile_name"));
+			JSONArray scoreset = new JSONArray();
+			for (RespondantScore score : scores) {
+				Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
+				JSONObject item = new JSONObject();
+				item.put("corefactor_name", cf.getName());
+				item.put("corefactor_score", score.getValue());
+				scoreset.put(item);
+			}
+	
+			applicant.put("scores", scoreset);
+			applicant.put("portal_link", emailService.getPortalLink(respondant));
+			applicant.put("render_link", emailService.getRenderLink(respondant));
 		}
-
-		applicant.put("scores", scoreset);
-		applicant.put("portal_link", emailService.getPortalLink(respondant));
-		applicant.put("render_link", emailService.getRenderLink(respondant));
-
+		
 		JSONObject message = new JSONObject();
 		message.put("account", jAccount);
 		message.put("applicant", applicant);
-
+	
 		return message;
 
 	}

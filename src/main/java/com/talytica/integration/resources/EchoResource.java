@@ -43,7 +43,8 @@ public class EchoResource {
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 201, message = "Echo Processed"),
 	   })	
-	public String doPost(JSONObject json) {
+	public String doPost(String body) {
+		JSONObject json = new JSONObject(body);
 		log.debug("Echo Called with: {}" , json.toString());
 		return json.toString();
 	}

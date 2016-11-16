@@ -71,13 +71,13 @@ public class PredictionService {
 
 		Prediction prediction = new Prediction();
 		prediction.setRespondant(respondant);
+		prediction.setRespondantId(respondant.getId());
 		prediction.setPositionPredictionConfig(predictionConfig);
+		prediction.setPositionPredictionConfigId(predictionConfig.getPositionPredictionConfigId());
 		prediction.setPredictionScore(predictionResult.getScore());
 		prediction.setScorePercentile(predictionResult.getPercentile());
 
 		Prediction savedPrediction = predictionRepository.save(prediction);
-		//DBUtil.getEntityManager().persist(prediction);
-		//prediction.persistMe();
 
 		log.debug("Prediction persisted: {}", savedPrediction);
 	}

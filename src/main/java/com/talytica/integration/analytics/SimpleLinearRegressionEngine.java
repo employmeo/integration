@@ -31,6 +31,10 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine<Linea
 	private LinearRegressionModelConfiguration modelConfig;
 	private NormalDistribution normalDistribution;
 
+	public SimpleLinearRegressionEngine() {
+		log.info("New linear regression prediction model instantiated");
+	}
+	
 	public SimpleLinearRegressionEngine(String modelName) {
 		this.modelName = modelName;
 

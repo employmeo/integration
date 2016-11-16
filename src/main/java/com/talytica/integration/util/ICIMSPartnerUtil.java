@@ -23,7 +23,6 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
-import com.talytica.integration.objects.PositionProfile;
 import com.talytica.integration.service.AddressService;
 
 import lombok.Getter;
@@ -227,16 +226,21 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 		respondant = new Respondant();
 		respondant.setPerson(savedPerson);
+		respondant.setPersonId(savedPerson.getId());
 		respondant.setAtsId(workflowLink);
 		if (json.has("returnUrl")) {
 			respondant.setRedirectUrl(json.getString("returnUrl"));
 		}
 		respondant.setScorePostMethod(workflowLink);
 		respondant.setAccount(account);
+		respondant.setAccountId(account.getId());
 		respondant.setPosition(position);
+		respondant.setPositionId(position.getId());
 		respondant.setPartner(this.partner);
+		respondant.setPartnerId(this.partner.getId());
 		respondant.setLocationId(location.getId());
 		respondant.setAccountSurvey(aSurvey);
+		respondant.setAccountSurveyId(aSurvey.getId());
 		// TODO - add logic to grab hiring manager info to set up email notify, based on client config
 		//respondant.setRespondantEmailRecipient(delivery.optString("scores_email_address"));
 

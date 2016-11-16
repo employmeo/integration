@@ -47,7 +47,8 @@ public class HireNoticeResource {
 
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response doPost(JSONObject json) {
+	public Response doPost( String body) {
+		JSONObject json = new JSONObject(body);
 		log.debug("processing with:" + json.toString());
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);

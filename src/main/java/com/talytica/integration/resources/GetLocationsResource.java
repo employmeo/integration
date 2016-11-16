@@ -40,8 +40,9 @@ public class GetLocationsResource {
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String doPost(JSONObject json) {
-		log.debug("processing with: " + json.toString());
+	public String doPost(String body) {
+		JSONObject json = new JSONObject(body);
+		log.debug("processing with: {} ", json);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = null;

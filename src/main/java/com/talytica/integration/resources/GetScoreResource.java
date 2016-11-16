@@ -38,17 +38,19 @@ public class GetScoreResource {
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String doPost(JSONObject json) {
+	public String doPost( String body) {
+		JSONObject json = new JSONObject(body);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = null;
 		Respondant respondant = null;
 
-		log.debug("processing with: " + json.toString());
+		log.debug("processing with: {}", json);
 		try { // the required parameters
 			account = pu.getAccountFrom(json.getJSONObject("account"));
 			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"));
 			if ((account == null) || (respondant == null)) {
+				log.debug("account: {} applicant {}", account, respondant);
 				throw new Exception ("Not Found: " + json);
 			}
 

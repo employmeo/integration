@@ -42,7 +42,8 @@ public class ICIMSApplicationCompleteResource {
 
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response doPost(JSONObject json) {
+	public Response doPost( String body) {
+		JSONObject json = new JSONObject(body);
 		log.debug("ICIMS Application Complete with: " +json);
 
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());

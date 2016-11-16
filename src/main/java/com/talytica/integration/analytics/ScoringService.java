@@ -10,9 +10,11 @@ import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.*;
+import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,36 +29,41 @@ public class ScoringService {
 	private QuestionService questionService;
 	@Autowired
 	private CorefactorService corefactorService;
+	@Autowired
+	private RespondantScoreRepository respondantScoreRepository;
 
 
+	@Value("${com.talytica.apis.mercer.url}")
+	private String MERCER_SERVICE;
 	private static String MERCER_PREFIX = "Mercer";
-	private static String MERCER_SERVICE = System.getenv("MERCER_SERVICE");
 	private static String MERCER_USER = "employmeo";
 	private static String MERCER_PASS = "employmeo";
 	private static int MERCER_COREFACTOR = 34;
 
-
-	public void scoreAssessment(Respondant respondant) {
+	public Respondant scoreAssessment(Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant);
-		Set<Response> responses = respondant.getResponses();
+		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
+
 		if ((responses == null) || (responses.size() == 0))
-		 {
-			return; // return nothing
+		{
+			log.debug("No responses found for respondant {}", respondant);
+			return respondant; // return nothing
 		}
 
 		mercerScore(respondant); // for questions with corefactor 34
 		defaultScore(respondant);
 
 		if (respondant.getRespondantScores().size() > 0) {
+			respondantScoreRepository.save(respondant.getRespondantScores());
+			log.debug("Saved Scores for respondant {}", respondant.getRespondantScores());
 			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-			respondantService.save(respondant);
+			return respondantService.save(respondant);
 		}
-		return;
+		return respondant;
 	}
 
 	private void defaultScore(Respondant respondant) {
 		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
-		//List<Response> responses = respondant.getResponses();
 		int[] count = new int[50];
 		int[] score = new int[50];
 
@@ -77,16 +84,13 @@ public class ScoringService {
 				rs.setValue((double) score[i] / (double) count[i]);
 				rs.setRespondant(respondant);
 				respondant.getRespondantScores().add(rs);
-
-				respondantService.save(respondant);
 			}
 		}
 	}
 
 
 	private void mercerScore(Respondant respondant) {
-		log.debug("Requesting Mercer Score for respondant_id: " + respondant.getId());
-		Set<Response> responses = respondant.getResponses();
+		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
 		Client client = ClientBuilder.newClient();
 		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(MERCER_USER, MERCER_PASS);
 		client.register(feature);
@@ -94,7 +98,6 @@ public class ScoringService {
 		JSONArray answers = new JSONArray();
 		responses.forEach(response -> {
 			Question question = questionService.getQuestionById(response.getQuestionId());
-			//Question question = Question.getQuestionById(responses.get(i).getResponseQuestionId());
 			if (question.getCorefactorId() == MERCER_COREFACTOR) {
 				String testname = question.getForeignSource();
 				if (testname.equalsIgnoreCase("behavior_b")) {
@@ -129,6 +132,7 @@ public class ScoringService {
 			JSONArray result;
 			javax.ws.rs.core.Response resp = null;
 			String output = null;
+			log.debug("Requesting Mercer Score for respondant {} ", respondant);
 			try {
 				WebTarget target = client.target(MERCER_SERVICE);
 				resp = target.request(MediaType.APPLICATION_JSON)
@@ -136,12 +140,10 @@ public class ScoringService {
 				output = resp.readEntity(String.class);
 				result = new JSONArray(output);
 			} catch (Exception e) {
-				log.warn("Failed to get results from mercer: " + e.getMessage());
-				log.debug("Failed to get results from mercer: " + message.toString());
 				if (resp != null) {
-					log.debug("Response status: " + resp.getStatus() + " " + resp.getStatusInfo().getReasonPhrase());
-					log.debug("Failed to get results from mercer: " + output);
+					log.debug("Mercer Failure {} {}: " + resp.getStatus(), resp.getStatusInfo().getReasonPhrase());
 				}
+				log.error("Mercer Failure Exception {} {}", e.getMessage(),message.toString());
 				return;
 			}
 
@@ -159,8 +161,6 @@ public class ScoringService {
 						rs.setValue((double) score);
 						rs.setRespondant(respondant);
 						respondant.getRespondantScores().add(rs);
-
-						respondantService.save(respondant);
 				} catch (Exception e) {
 						log.warn("Failed to record score: " + data + " for repondant " + respondant, e);
 				}

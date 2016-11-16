@@ -44,7 +44,8 @@ public class GetAssessmentsResource {
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 200, message = "Request Processed"),
 	   })
-	public String getWithJsonObject(@ApiParam (value = "JSON Object with Account") JSONObject json) {
+	public String getWithJsonObject(@ApiParam (value = "JSON Object with Account") String body) {
+		JSONObject json = new JSONObject(body);
 		log.debug("Get Assessments called with: {}" , json.toString());
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
