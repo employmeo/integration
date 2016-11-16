@@ -1,6 +1,5 @@
 package com.talytica.integration.util;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import org.slf4j.Logger;

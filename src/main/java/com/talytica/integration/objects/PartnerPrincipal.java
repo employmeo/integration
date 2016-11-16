@@ -40,7 +40,7 @@ public class PartnerPrincipal implements  UserDetails {
 	@Override
 	public String getUsername() {
 		// TODO Auto-generated method stub
-		return partner.getPartnerName();
+		return partner.getLogin();
 	}
 
 	@Override

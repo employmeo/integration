@@ -8,10 +8,10 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.employmeo</groupId>
+	<groupId>com.talytica</groupId>
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
-	<description>Employmeo Integration Application</description>
+	<description>Talytica Integration Application</description>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
@@ -29,6 +29,7 @@
 		<dbdeploy.dbms>pgsql</dbdeploy.dbms>
 		<commons-math-version>3.6.1</commons-math-version>	
 		<persistence-unit.version>0.0.8-SNAPSHOT</persistence-unit.version>
+		<sendgrid.version>3.1.0</sendgrid.version>
 		<swagger.version>1.5.9</swagger.version>
 	</properties>
 
@@ -118,6 +119,14 @@
 		    <artifactId>commons-math3</artifactId>
 		    <version>${commons-math-version}</version>
 		</dependency>		
+
+		<!-- sendgrid email service -->
+		<dependency>
+		    <groupId>com.sendgrid</groupId>
+		    <artifactId>sendgrid-java</artifactId>
+		    <version>${sendgrid.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

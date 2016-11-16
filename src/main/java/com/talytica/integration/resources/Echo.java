@@ -2,6 +2,7 @@ package com.talytica.integration.resources;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -20,6 +21,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONObject;
 
+@Component
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/echo")
@@ -42,7 +44,7 @@ public class Echo {
 	     @ApiResponse(code = 201, message = "Echo Processed"),
 	   })	
 	public String doPost(JSONObject json) {
-		log.debug("Echo Called with: \n" + json.toString());
+		log.debug("Echo Called with: {}" , json.toString());
 		return json.toString();
 	}
 

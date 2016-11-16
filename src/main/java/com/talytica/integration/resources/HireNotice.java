@@ -50,7 +50,7 @@ public class HireNotice {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response doPost(JSONObject json) {
 		log.debug("processing with:" + json.toString());
-		Partner partner = partnerRepository.findByPartnerName(sc.getUserPrincipal().getName());
+		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = new DefaultPartnerUtil(partner);
 		
 		Account account = null;

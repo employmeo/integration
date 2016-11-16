@@ -42,7 +42,7 @@ public class ICIMSApplicationComplete {
 	public Response doPost(JSONObject json) {
 		log.debug("ICIMS Application Complete with: " +json);
 		
-		Partner partner = partnerRepository.findByPartnerName(sc.getUserPrincipal().getName());
+		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = new ICIMSPartnerUtil(partner);	
 		
 		Account account = pu.getAccountFrom(json);

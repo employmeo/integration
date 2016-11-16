@@ -42,7 +42,7 @@ public class GetScore {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	public String doPost(JSONObject json) {
-		Partner partner = partnerRepository.findByPartnerName(sc.getUserPrincipal().getName());
+		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = new DefaultPartnerUtil(partner);
 		Account account = null;
 		Respondant respondant = null;

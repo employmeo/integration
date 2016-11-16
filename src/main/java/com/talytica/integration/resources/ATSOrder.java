@@ -54,7 +54,7 @@ public class ATSOrder {
 	public String doPost(JSONObject json) {
 		log.debug("ATS Requesting Assessment with: " + json.toString());
 
-		Partner partner = partnerRepository.findByPartnerName(sc.getUserPrincipal().getName());
+		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = new DefaultPartnerUtil(partner);
 		
 		Account account = pu.getAccountFrom(json.getJSONObject("account"));

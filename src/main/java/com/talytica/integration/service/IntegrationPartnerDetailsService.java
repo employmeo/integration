@@ -20,14 +20,14 @@ public class IntegrationPartnerDetailsService implements UserDetailsService {
 	private PartnerRepository partnerRepository;
 
     @Override
-	public UserDetails loadUserByUsername(String name) throws UsernameNotFoundException {
-    	log.debug("User Lookup Attempt for: {}", name);
-		Partner partner = partnerRepository.findByPartnerName(name);
+	public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
+    	log.debug("User Lookup Attempt for: {}", login);
+		Partner partner = partnerRepository.findByLogin(login);
 		if (partner != null) {
 	    	log.debug("Found User: {}", partner);
 			return new PartnerPrincipal(partner);
 		} else {
-		    throw new UsernameNotFoundException(name);
+		    throw new UsernameNotFoundException(login);
 		}
 	}
     

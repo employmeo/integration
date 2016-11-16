@@ -288,7 +288,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	
 	public Person getPerson(JSONObject applicant, Account account) {
 
-		Person person = personService.findByAtsId(applicant.getString("link"));
+		Person person = personService.getPersonByAtsId(applicant.getString("link"));
 		if (person != null)	return person;
 
 		// If no result, or other error...
