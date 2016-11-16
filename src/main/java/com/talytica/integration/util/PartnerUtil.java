@@ -1,32 +1,12 @@
 package com.talytica.integration.util;
 
-import java.util.HashMap;
-
-import com.employmeo.data.model.Account;
-import com.employmeo.data.model.AccountSurvey;
-import com.employmeo.data.model.Location;
-import com.employmeo.data.model.Partner;
-import com.employmeo.data.model.Position;
-import com.employmeo.data.model.Respondant;
-
 import org.json.JSONObject;
+
+import com.employmeo.data.model.*;
 
 
 public interface PartnerUtil {
-	public static HashMap<Partner,PartnerUtil> utils = new HashMap<Partner,PartnerUtil>();
-	
-	public static PartnerUtil getUtilFor(Partner lookupPartner) {
-		// TODO make this a little more dynamic for multiple partners, move to Partner object?
-		if (!utils.containsKey(lookupPartner)) {
-			if ("ICIMS".equalsIgnoreCase(lookupPartner.getPartnerName())) {
-				utils.put(lookupPartner, new ICIMSPartnerUtil(lookupPartner));
-			} else {
-				utils.put(lookupPartner, new DefaultPartnerUtil(lookupPartner));
-			}
-		}
-		return utils.get(lookupPartner);
-	}
-	
+
 	public String getPrefix();
 	public String addPrefix(String id);
 	public String trimPrefix(String id);

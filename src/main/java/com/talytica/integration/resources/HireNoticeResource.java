@@ -1,32 +1,23 @@
 package com.talytica.integration.resources;
 
 import java.sql.Date;
+
+import javax.annotation.security.PermitAll;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response;
+
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.security.PermitAll;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
-
-import org.json.JSONObject;
-
-import com.employmeo.data.model.Account;
-import com.employmeo.data.model.Partner;
-import com.employmeo.data.model.Respondant;
+import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
 import com.employmeo.data.service.RespondantService;
-import com.talytica.integration.util.DefaultPartnerUtil;
 import com.talytica.integration.util.PartnerUtil;
+import com.talytica.integration.util.PartnerUtilityRegistry;
 
 import io.swagger.annotations.Api;
 
@@ -44,21 +35,23 @@ public class HireNoticeResource {
 	private final static Response ACCOUNT_MATCH = Response.status(Response.Status.CONFLICT)
 			.entity("{ message: 'Applicant ID not found for Account ID' }").build();
 	private static final Logger log = LoggerFactory.getLogger(HireNoticeResource.class);
-	
+
 	@Context
 	private SecurityContext sc;
 	@Autowired
 	PartnerRepository partnerRepository;
 	@Autowired
 	RespondantService respondantService;
-	
+	@Autowired
+	private PartnerUtilityRegistry partnerUtilityRegistry;
+
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response doPost(JSONObject json) {
 		log.debug("processing with:" + json.toString());
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
-		PartnerUtil pu = new DefaultPartnerUtil(partner);
-		
+		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
+
 		Account account = null;
 		Respondant respondant = null;
 		String status = null;

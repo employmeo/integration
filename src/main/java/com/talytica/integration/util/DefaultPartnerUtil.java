@@ -2,95 +2,88 @@ package com.talytica.integration.util;
 
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import com.employmeo.data.model.Account;
-import com.employmeo.data.model.AccountSurvey;
-import com.employmeo.data.model.Corefactor;
-import com.employmeo.data.model.Location;
-import com.employmeo.data.model.Partner;
-import com.employmeo.data.model.Person;
-import com.employmeo.data.model.Position;
-import com.employmeo.data.model.Respondant;
-import com.employmeo.data.model.RespondantScore;
-import com.employmeo.data.repository.CorefactorRepository;
-import com.employmeo.data.repository.LocationRepository;
-import com.employmeo.data.repository.PositionRepository;
-import com.employmeo.data.service.AccountService;
-import com.employmeo.data.service.AccountSurveyService;
-import com.employmeo.data.service.PartnerService;
-import com.employmeo.data.service.PersonService;
-import com.employmeo.data.service.RespondantService;
-import com.talytica.common.service.EmailService;
-import com.talytica.integration.objects.PositionProfile;
-import com.talytica.integration.service.AddressService;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
+import com.employmeo.data.model.*;
+import com.employmeo.data.repository.*;
+import com.employmeo.data.service.*;
+import com.talytica.common.service.EmailService;
+import com.talytica.integration.objects.PositionProfile;
+import com.talytica.integration.service.AddressService;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Component
+@Scope("prototype")
 public class DefaultPartnerUtil implements PartnerUtil {
-	private static final Logger log = LoggerFactory.getLogger(DefaultPartnerUtil.class);
+
+	@Setter @Getter
 	private Partner partner = null;
-	
+
 	@Autowired
 	EmailService emailService;
-	
+
 	@Autowired
 	AddressService addressService;
-	
+
 	@Autowired
 	PartnerService partnerService;
-	
+
 	@Autowired
 	AccountService accountService;
-	
+
 	@Autowired
 	AccountSurveyService accountSurveyService;
-	
+
 	@Autowired
 	RespondantService respondantService;
-	
+
 	@Autowired
 	PersonService personService;
-	
+
 	@Autowired
 	LocationRepository locationRepository;
-	
+
 	@Autowired
 	PositionRepository positionRepository;
-	
+
 	@Autowired
 	CorefactorRepository corefactorRepository;
 
-	public DefaultPartnerUtil(Partner partner) {
-		this.partner = partner;
+	public DefaultPartnerUtil() {
 	}
-	@Override	
+
+	@Override
 	public String getPrefix() {
 		return partner.getPrefix();
 	}
 
 	@Override
 	public String addPrefix(String id) {
-		if (partner.getPrefix() == null) return id;
+		if (partner.getPrefix() == null) {
+			return id;
+		}
 		return partner.getPrefix() + id;
 	}
-	
+
 	@Override
 	public String trimPrefix(String id) {
-		if (id == null) return null;
+		if (id == null) {
+			return null;
+		}
 		return id.substring(id.indexOf(getPrefix())+getPrefix().length());
 	}
-	
+
 	@Override
 	public Account getAccountFrom(JSONObject jAccount) {
 		Account account = null;
@@ -108,47 +101,63 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		Location location = null;
 
 		if (jLocation != null) {
-			if (jLocation.has("location_id")) return locationRepository.findOne(jLocation.getLong("location_id"));
-			
+			if (jLocation.has("location_id")) {
+				return locationRepository.findOne(jLocation.getLong("location_id"));
+			}
+
 			if ((jLocation != null) && (jLocation.has("location_ats_id"))) {
 				location = locationRepository.findByAccountIdAndAtsId(account.getId(), partner.getPrefix() + jLocation.getString("location_ats_id"));
-				if (location != null) return location;
-	
-				// otherwise create a new location from address	
+				if (location != null) {
+					return location;
+				}
+
+				// otherwise create a new location from address
 				location = new Location();
 				JSONObject address = jLocation.getJSONObject("address");
 				addressService.validate(address);
 				location.setAtsId(partner.getPrefix() + jLocation.getString("location_ats_id"));
-				if (jLocation.has("location_name"))
+				if (jLocation.has("location_name")) {
 					location.setLocationName(jLocation.getString("location_name"));
-				if (address.has("street"))
+				}
+				if (address.has("street")) {
 					location.setStreet1(address.getString("street"));
-				if (address.has("formatted_address"))
+				}
+				if (address.has("formatted_address")) {
 					location.setStreet2(address.getString("formatted_address"));
-				if (address.has("city"))
+				}
+				if (address.has("city")) {
 					location.setCity(address.getString("city"));
-				if (address.has("state"))
+				}
+				if (address.has("state")) {
 					location.setState(address.getString("state"));
-				if (address.has("zip"))
+				}
+				if (address.has("zip")) {
 					location.setZip(address.getString("zip"));
-				if (address.has("lat"))
+				}
+				if (address.has("lat")) {
 					location.setLatitude(address.getDouble("lat"));
-				if (address.has("lng"))
+				}
+				if (address.has("lng")) {
 					location.setLongitude(address.getDouble("lng"));
+				}
 				location.setAccount(account);
-				
+
 				return locationRepository.save(location);
 			}
 		}
 		return locationRepository.findOne(account.getDefaultLocationId());
 	}
-	
+
 	@Override
 	public Position getPositionFrom(JSONObject position, Account account) {
 
 		Position pos = null;
-		if ((position != null) && (position.has("position_id"))) positionRepository.findOne(position.getLong("position_id"));
-		if (pos == null) pos = positionRepository.findOne(account.getDefaultPositionId());
+		if ((position != null) && (position.has("position_id"))) {
+			positionRepository.findOne(position.getLong("position_id"));
+		}
+		if (pos == null) {
+			pos = positionRepository.findOne(account.getDefaultPositionId());
+		}
 		return pos;
 	}
 
@@ -157,11 +166,13 @@ public class DefaultPartnerUtil implements PartnerUtil {
 
 		AccountSurvey aSurvey = null;
 		Long asId = assessment.optLong("assessment_asid");
-		if (asId != null) aSurvey = accountSurveyService.getAccountSurveyById(asId);
-		
+		if (asId != null) {
+			aSurvey = accountSurveyService.getAccountSurveyById(asId);
+		}
+
 		return aSurvey;
 	}
-	
+
 	@Override
 	public Respondant getRespondantFrom(JSONObject applicant) {
 		Respondant respondant = null;
@@ -174,13 +185,13 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		}
 		return respondant;
 	}
-	
+
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
 		Person person = new Person();
 		Respondant respondant = new Respondant();
 		respondant.setAccountId(account.getId());
-		
+
 
 		JSONObject applicant = json.getJSONObject("applicant");
 		String appAtsId = applicant.getString("applicant_ats_id");
@@ -201,12 +212,15 @@ public class DefaultPartnerUtil implements PartnerUtil {
 
 		JSONObject delivery = json.optJSONObject("delivery");
 		// get the redirect method, score posting and email handling for results
-		if (delivery.has("scores_email_address"))
+		if (delivery.has("scores_email_address")) {
 			respondant.setEmailRecipient(delivery.optString("scores_email_address"));
-		if (delivery.has("scores_redirect_url"))
+		}
+		if (delivery.has("scores_redirect_url")) {
 			respondant.setRedirectUrl(delivery.optString("scores_redirect_url"));
-		if (delivery.has("scores_post_url"))
+		}
+		if (delivery.has("scores_post_url")) {
 			respondant.setScorePostMethod(delivery.optString("scores_post_url"));
+		}
 
 		respondant.setAccountId(account.getId());
 		respondant.setAccountSurveyId(aSurvey.getId());
@@ -217,17 +231,18 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		// Create Person & Respondant in database.
 		Person savedPerson = personService.save(person);
 		respondant.setPerson(savedPerson);
-				
+
 		return respondantService.save(respondant);
 	}
-	
+
 	@Override
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant) {
 
 		JSONObject delivery = json.optJSONObject("delivery");
-		if (delivery.has("email_applicant") && delivery.getBoolean("email_applicant"))
+		if (delivery.has("email_applicant") && delivery.getBoolean("email_applicant")) {
 			emailService.sendEmailInvitation(respondant);
-		
+		}
+
 		// Assemble the response object to notify that action is complete
 		JSONObject jAccount = json.getJSONObject("account");
 		jAccount.put("account_ats_id", this.trimPrefix(respondant.getAccount().getAtsId()));
@@ -249,11 +264,11 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		// get the redirect method, score posting and email handling for results
 		return output;
 	}
-	
+
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
 
-		Set<RespondantScore> scores = respondant.getRespondantScores();	
+		Set<RespondantScore> scores = respondant.getRespondantScores();
 
 		Account account = respondant.getAccount();
 		JSONObject jAccount = new JSONObject();
@@ -302,12 +317,14 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		return message;
 
 	}
-	
+
 	@Override
 	public void postScoresToPartner(Respondant respondant, JSONObject message) {
 
 		String postmethod = respondant.getScorePostMethod();
-		if (postmethod == null || postmethod.isEmpty()) return;
+		if (postmethod == null || postmethod.isEmpty()) {
+			return;
+		}
 
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target(postmethod);
@@ -320,5 +337,5 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		}
 
 	}
-	
+
 }
