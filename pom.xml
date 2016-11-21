@@ -12,7 +12,7 @@
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
 	<description>Talytica Integration Application</description>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -53,9 +53,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jersey</artifactId>
 		</dependency>
-		<!-- curl -i 2-user username:password -X GET http://localhost:8080/customer/1 -->
-		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-security</artifactId> 
-			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-tomcat</artifactId>
@@ -152,6 +149,7 @@
 						<directory>${basedir}/profile/local</directory>
 						<includes>
 							<include>*.properties</include>
+							<include>logback.xml</include>
 						</includes>
 						<filtering>true</filtering>
 					</resource>
@@ -165,6 +163,7 @@
 						<directory>${basedir}/profile/local</directory>
 						<includes>
 							<include>*.properties</include>
+							<include>logback.xml</include>
 						</includes>
 						<filtering>true</filtering>
 					</testResource>
@@ -186,6 +185,7 @@
 						<directory>${basedir}/profile/dev</directory>
 						<includes>
 							<include>*.properties</include>
+							<include>logback.xml</include>
 						</includes>
 						<filtering>true</filtering>
 					</resource>
@@ -199,6 +199,7 @@
 						<directory>${basedir}/profile/local</directory>
 						<includes>
 							<include>*.properties</include>
+							<include>logback.xml</include>
 						</includes>
 						<filtering>true</filtering>
 					</testResource>
@@ -208,13 +209,6 @@
 	</profiles>
 	<build>
 		<finalName>${project.artifactId}-${project.version}-${lane}</finalName>
-		<!-- <resources> <resource> <directory>src/main/resources</directory> <filtering>true</filtering> 
-			</resource> <resource> <directory>${basedir}</directory> <includes> <include>*.properties</include> 
-			</includes> <filtering>true</filtering> </resource> </resources> <testResources> 
-			<testResource> <directory>src/test/resources</directory> <filtering>true</filtering> 
-			</testResource> <testResource> <directory>${basedir}</directory> <includes> 
-			<include>*.properties</include> </includes> <filtering>true</filtering> </testResource> 
-			</testResources> -->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
