@@ -15,7 +15,7 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
-import com.talytica.integration.service.AddressService;
+import com.talytica.common.service.AddressService;
 
 import lombok.Getter;
 import lombok.Setter;
