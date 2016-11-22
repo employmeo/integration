@@ -137,6 +137,8 @@ public class ScoringService {
 			Person reference = personRepository.save(person);
 
 			Grader grader = new Grader();
+			grader.setType(Grader.TYPE_PERSON);
+			grader.setStatus(Grader.STATUS_NEW);
 			grader.setPerson(reference);
 			grader.setRespondantId(respondant.getId());
 			grader.setPersonId(reference.getId());
@@ -160,6 +162,8 @@ public class ScoringService {
 		for (Response response : responses) {
 			for (User user : users) {
 				Grader grader = new Grader();
+				grader.setType(Grader.TYPE_USER);
+				grader.setStatus(Grader.STATUS_NEW);
 				grader.setUser(user);
 				grader.setRespondantId(respondant.getId());
 				grader.setUserId(user.getId());
