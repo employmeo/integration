@@ -29,6 +29,7 @@ public class IntegrationConfiguration extends ResourceConfig {
 	public IntegrationConfiguration() {
         registerEndpoints();
         //register(RolesAllowedDynamicFeature.class);
+		log.info("=============== Integration Application Config Instantiated ===============");
 	}
 
 	@PostConstruct
@@ -60,13 +61,13 @@ public class IntegrationConfiguration extends ResourceConfig {
 	        reflections.getTypesAnnotatedWith(Provider.class)
 	                .parallelStream()
 	                .forEach((clazz) -> {
-	                    log.debug("New provider registered: " + clazz.getName());
+	                    log.info("New provider registered: " + clazz.getName());
 	                    register(clazz);
 	                });
 	        reflections.getTypesAnnotatedWith(Path.class)
 	                .parallelStream()
 	                .forEach((clazz) -> {
-	                    log.debug("New resource registered: " + clazz.getName());
+	                    log.info("New resource registered: " + clazz.getName());
 	                    register(clazz);
 	                });
 	    }
