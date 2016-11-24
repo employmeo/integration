@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @Transactional
-public class AssessmentSubmissionPipeline {
+public class AssessmentPipeline {
 
 	@Autowired
 	private RespondantService respondantService;
@@ -50,7 +50,7 @@ public class AssessmentSubmissionPipeline {
 		if (respondant.getRespondantStatus() == Respondant.STATUS_SCORED) {
 
 			log.debug("Respondant {} has status = {} - not predicted yet.", respondant.getId(), respondant.getRespondantStatus());
-			
+
 			try {
 				// Stage 1
 				List<PredictionResult> predictions = predictionService.runPredictionsStageForAllTargets(respondant);
@@ -63,19 +63,19 @@ public class AssessmentSubmissionPipeline {
 				respondant.setCompositeScore(gradingResult.getCompositeScore());
 				respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
 				Respondant savedRespondant = respondantService.save(respondant);
-				
+
 				// Notifications Logic.
-				Partner partner = savedRespondant.getPartner();				
+				Partner partner = savedRespondant.getPartner();
 				if (partner != null) {
 					PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 					JSONObject message = pu.getScoresMessage(savedRespondant);
 					pu.postScoresToPartner(savedRespondant, message);
-				} 
+				}
 
 				if ((respondant.getEmailRecipient() != null) && (!respondant.getEmailRecipient().isEmpty())) {
 					emailService.sendResults(respondant);
 				}
-					
+
 
 			} catch(Exception e) {
 				log.warn("Transaction Rollback for assessment analysis. Failed to run predictions/grading for respondant " + respondant.getId(), e);
@@ -86,6 +86,14 @@ public class AssessmentSubmissionPipeline {
 		}
 
 		return;
+	}
+
+	public void assessGraderFulfillmentAndScore(@NonNull Respondant respondant) {
+		if (Respondant.STATUS_UNGRADED == respondant.getRespondantStatus()) {
+			scoringService.scoreGraders(respondant);
+		} else {
+			log.warn("Respondant {} not eligible for grader assessment with status = {}", respondant.getId(), respondant.getRespondantStatus());
+		}
 	}
 
 }
