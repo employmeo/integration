@@ -96,7 +96,7 @@ public class ScoringService {
 			log.debug("Saved Scores for respondant {}", respondant.getRespondantScores());
 		}
 		if (gradesNeeded || referencesNeeded) {
-			respondant.setRespondantStatus(11);// GRADES INCOMPLETE?
+			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);// GRADES INCOMPLETE?
 		} else {
 			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
 		}
