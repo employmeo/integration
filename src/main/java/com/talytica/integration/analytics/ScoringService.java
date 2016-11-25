@@ -258,12 +258,38 @@ public class ScoringService {
 
 	public Respondant scoreGraders(@NonNull Respondant respondant) {
 		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
+		List<Grade> grades = new ArrayList<Grade>();
 
-		graders.forEach(grader -> log.debug("Respondant {} has grader {}", respondant.getId(), grader));
+		for (Grader grader : graders) {
+		    graderService.getGradesByGraderId(grader.getId());
+		    log.debug("Respondant {} has grader {}", respondant.getId(), grader);
+		}
 
 		// run scoring
+		int[] count = new int[50];
+		int[] score = new int[50];
 
-		// then update respondant status to Scored
+		grades.forEach(grade -> {
+			Question question = questionService.getQuestionById(grade.getQuestionId());
+			Integer cfId = question.getCorefactorId();
+			count[cfId]++;
+			score[cfId] += grade.getGradeValue();
+		});
+
+		for (int i = 0; i < 50; i++) {
+			if (count[i] > 0) {
+				RespondantScore rs = new RespondantScore();
+				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
+				rs.setQuestionCount(count[i]);
+				rs.setValue((double) score[i] / (double) count[i]);
+				rs.setRespondant(respondant);
+				respondantService.save(rs);
+				respondant.getRespondantScores().add(rs);
+			}
+		}
+
+		// then update respondant status to Scored		
+		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
 		return respondantService.save(respondant);
 	}
 }
