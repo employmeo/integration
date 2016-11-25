@@ -16,6 +16,7 @@ import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -34,16 +35,21 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public class ICIMSPartnerUtil implements PartnerUtil {
 
-	private static final String ICIMS_USER = "employmeoapiuser";
-	private static final String ICIMS_PASS = "YN9rEQnU";
-	private static final String ICIMS_API = "https://api.icims.com/customers/";
+	@Value("employmeoapiuser")
+	private String ICIMS_USER;
+	@Value("YN9rEQnU")
+	private String ICIMS_PASS;
+	@Value("https://api.icims.com/customers/")
+	private String ICIMS_API;
+	@Value ("${com.talytica.urls.proxy}")
+	private String PROXY_URL;
+	
 	private static final String JOB_EXTRA_FIELDS = "?fields=jobtitle,assessmenttype,jobtype,joblocation,hiringmanager";
 	private static final JSONObject ASSESSMENT_COMPLETE = new JSONObject("{'id':'D37002019001'}");
 	//private static final JSONObject ASSESSMENT_INCOMPLETE = new JSONObject("{'id':'D37002019002'}");
 	//private static final JSONObject ASSESSMENT_INPROGRESS = new JSONObject("{'id':'D37002019003'}");
 	//private static final JSONObject ASSESSMENT_SENT = new JSONObject("{'id':'D37002019004'}");
 	private static final SimpleDateFormat ICIMS_SDF = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
-	private static String PROXY_URL = System.getenv("QUOTAGUARDSTATIC_URL");
 
 	@Setter @Getter
 	private Partner partner = null;
@@ -144,27 +150,35 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	@Override
 	public AccountSurvey getSurveyFrom(JSONObject job, Account account) {
 
-		JSONArray assessmenttypes = job.getJSONArray("assessmenttype");
-		if (assessmenttypes.length() > 1) {
-			log.warn("More than 1 Assessment in: " + assessmenttypes);
+		AccountSurvey aSurvey = null;
+		if (job.has("assessmenttype")) {
+			JSONArray assessmenttypes = job.getJSONArray("assessmenttype");
+			if (assessmenttypes.length() > 1) {
+				log.warn("More than 1 Assessment in: " + assessmenttypes);
+			}
+	
+			String assessmentName = assessmenttypes.getJSONObject(0).getString("value");
+			job.put("assessment", assessmenttypes.getJSONObject(0));
+			Set<AccountSurvey> assessments = account.getAccountSurveys();
+			for (AccountSurvey as : assessments) {
+				if (assessmentName.equals(as.getDisplayName())) {
+					aSurvey = as;
+				}
+			}
+			if (aSurvey == null) {
+				StringBuffer sb = new StringBuffer();
+				for (AccountSurvey as : assessments) {
+					sb.append(as.getDisplayName() + " ");
+				}
+				log.warn("Could Not Match: {} to any of {}", assessmentName, assessments);
+			}
+		} else {
+			log.warn("Did not receive assessment type in job: {}", job);
 		}
 
-		String assessmentName = assessmenttypes.getJSONObject(0).getString("value");
-		job.put("assessment", assessmenttypes.getJSONObject(0));
-		AccountSurvey aSurvey = null;
-		Set<AccountSurvey> assessments = account.getAccountSurveys();
-		for (AccountSurvey as : assessments) {
-			if (assessmentName.equals(as.getDisplayName())) {
-				aSurvey = as;
-			}
-		}
 		if (aSurvey == null) {
-			StringBuffer sb = new StringBuffer();
-			for (AccountSurvey as : assessments) {
-				sb.append(as.getDisplayName() + " ");
-			}
-			log.warn("Could Not Match: " + assessmentName + " to any of" + sb.toString());
 			aSurvey = accountSurveyService.getAccountSurveyById(account.getDefaultAsId());
+			log.warn("Using Account Default Assessment {}", aSurvey.getDisplayName());
 		}
 
 		return aSurvey;
@@ -342,7 +356,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 			cc.property(ClientProperties.PROXY_USERNAME, pUser);
 			cc.property(ClientProperties.PROXY_PASSWORD, pPass);
 		} catch (Exception e) {
-			log.warn("Failed to set proxy uname pass: " + PROXY_URL);
+			log.error("Exception: {}. Failed to set proxy uname pass: {}",e.getMessage(), PROXY_URL);
 		}
 		cc.property(ClientProperties.REQUEST_ENTITY_PROCESSING, "BUFFERED");
 		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
