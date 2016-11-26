@@ -261,7 +261,7 @@ public class ScoringService {
 		List<Grade> grades = new ArrayList<Grade>();
 
 		for (Grader grader : graders) {
-		    graderService.getGradesByGraderId(grader.getId());
+		    grades.addAll(graderService.getGradesByGraderId(grader.getId()));
 		    log.debug("Respondant {} has grader {}", respondant.getId(), grader);
 		}
 
