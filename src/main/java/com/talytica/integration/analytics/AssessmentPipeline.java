@@ -50,38 +50,32 @@ public class AssessmentPipeline {
 		if (respondant.getRespondantStatus() == Respondant.STATUS_SCORED) {
 
 			log.debug("Respondant {} has status = {} - not predicted yet.", respondant.getId(), respondant.getRespondantStatus());
-
-			try {
-				// Stage 1
-				List<PredictionResult> predictions = predictionService.runPredictionsStageForAllTargets(respondant);
-
-				// Stage 2
-				GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);
-
-				// Assimilate results, Update respondant lifecycle, and persist state
-				respondant.setProfileRecommendation(gradingResult.getRecommendedProfile());
-				respondant.setCompositeScore(gradingResult.getCompositeScore());
+			if (respondant.getPosition().getPositionPredictionConfigurations().size() >= 0) {
+				try {
+					// Stage 1
+					List<PredictionResult> predictions = predictionService.runPredictionsStageForAllTargets(respondant);
+	
+					// Stage 2
+					GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);
+	
+					// Assimilate results, Update respondant lifecycle, and persist state
+					respondant.setProfileRecommendation(gradingResult.getRecommendedProfile());
+					respondant.setCompositeScore(gradingResult.getCompositeScore());
+					respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
+					Respondant savedRespondant = respondantService.save(respondant);
+					sendNotifications(savedRespondant);
+	
+				} catch(Exception e) {
+					log.warn("Transaction Rollback for assessment analysis. Failed to run predictions/grading for respondant " + respondant.getId(), e);
+					throw e;
+				}
+			} else {
+				// No predictions configured for this respondant... skip change status and break
+				log.debug("Skipping prediction portion for respondant {}", respondant.getId());
 				respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
 				Respondant savedRespondant = respondantService.save(respondant);
-
-				// Notifications Logic.
-				Partner partner = savedRespondant.getPartner();
-				if (partner != null) {
-					PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
-					JSONObject message = pu.getScoresMessage(savedRespondant);
-					pu.postScoresToPartner(savedRespondant, message);
-				}
-
-				if ((respondant.getEmailRecipient() != null) && (!respondant.getEmailRecipient().isEmpty())) {
-					emailService.sendResults(respondant);
-				}
-
-
-			} catch(Exception e) {
-				log.warn("Transaction Rollback for assessment analysis. Failed to run predictions/grading for respondant " + respondant.getId(), e);
-				throw e;
+				sendNotifications(savedRespondant);
 			}
-
 			log.debug("Assessment analysis for respondant {} complete", respondant.getId());
 		}
 
@@ -93,6 +87,20 @@ public class AssessmentPipeline {
 			scoringService.scoreGraders(respondant);
 		} else {
 			log.warn("Respondant {} not eligible for grader assessment with status = {}", respondant.getId(), respondant.getRespondantStatus());
+		}
+	}
+	
+	public void sendNotifications(Respondant respondant) {
+		// Notifications Logic.
+		Partner partner = respondant.getPartner();
+		if (partner != null) {
+			PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
+			JSONObject message = pu.getScoresMessage(respondant);
+			pu.postScoresToPartner(respondant, message);
+		}
+
+		if ((respondant.getEmailRecipient() != null) && (!respondant.getEmailRecipient().isEmpty())) {
+			emailService.sendResults(respondant);
 		}
 	}
 
