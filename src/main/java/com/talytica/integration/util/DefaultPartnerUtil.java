@@ -15,6 +15,7 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
+import com.talytica.common.service.ExternalLinksService;
 import com.talytica.common.service.AddressService;
 
 import lombok.Getter;
@@ -30,8 +31,11 @@ public class DefaultPartnerUtil implements PartnerUtil {
 	private Partner partner = null;
 
 	@Autowired
+	ExternalLinksService externalLinksService;
+	
+	@Autowired
 	EmailService emailService;
-
+	
 	@Autowired
 	AddressService addressService;
 
@@ -256,7 +260,7 @@ public class DefaultPartnerUtil implements PartnerUtil {
 		jApplicant.put("applicant_id", respondant.getId());
 
 		delivery = new JSONObject();
-		delivery.put("assessment_url", emailService.getAssessmentLink(respondant));
+		delivery.put("assessment_url", externalLinksService.getAssessmentLink(respondant));
 
 		JSONObject output = new JSONObject();
 		output.put("account", jAccount);
@@ -309,8 +313,8 @@ public class DefaultPartnerUtil implements PartnerUtil {
 			}
 	
 			applicant.put("scores", scoreset);
-			applicant.put("portal_link", emailService.getPortalLink(respondant));
-			applicant.put("render_link", emailService.getRenderLink(respondant));
+			applicant.put("portal_link", externalLinksService.getPortalLink(respondant));
+			applicant.put("render_link", externalLinksService.getRenderLink(respondant));
 		}
 		
 		JSONObject message = new JSONObject();

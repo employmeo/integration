@@ -1,8 +1,6 @@
 package com.talytica.integration.analytics;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import javax.transaction.Transactional;
 import javax.ws.rs.client.*;
@@ -20,6 +18,7 @@ import com.employmeo.data.repository.PersonRepository;
 import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -41,7 +40,7 @@ public class ScoringService {
 	private PersonRepository personRepository;
 	@Autowired
 	private RespondantScoreRepository respondantScoreRepository;
-	
+
 	@Value("${com.talytica.apis.mercer.url}")
 	private String MERCER_SERVICE;
 	private static String MERCER_PREFIX = "Mercer";
@@ -51,14 +50,14 @@ public class ScoringService {
 	private static final int AUDIO_COREFACTOR = 42;
 	private static final int REFERENCE_COREFACTOR = 43; /// doesn't exist yet!!
 
-	public Respondant scoreAssessment(Respondant respondant) {
+	public Respondant scoreAssessment(@NonNull Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant);
 		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
-		
-		List<Response> mercer = new ArrayList<Response>();
-		List<Response> audio = new ArrayList<Response>();
-		List<Response> reference = new ArrayList<Response>();
-		List<Response> others = new ArrayList<Response>();
+
+		List<Response> mercer = new ArrayList<>();
+		List<Response> audio = new ArrayList<>();
+		List<Response> reference = new ArrayList<>();
+		List<Response> others = new ArrayList<>();
 
 		if ((responses == null) || (responses.size() == 0))
 		{
@@ -87,10 +86,10 @@ public class ScoringService {
 
 		mercerScore(respondant, mercer); // for questions with corefactor 34
 		defaultScore(respondant, others);
-		
+
 		boolean gradesNeeded = audioGraderLaunch(respondant, audio); // not ready yet
 		boolean referencesNeeded = referenceLaunch(respondant, reference);
-		
+
 		if (respondant.getRespondantScores().size() > 0) {
 			respondantScoreRepository.save(respondant.getRespondantScores());
 			log.debug("Saved Scores for respondant {}", respondant.getRespondantScores());
@@ -124,12 +123,12 @@ public class ScoringService {
 				respondant.getRespondantScores().add(rs);
 			}
 		}
-		
+
 	}
 
 	private boolean referenceLaunch(Respondant respondant, List<Response> responses) {
 		boolean referenceSent = false;
-		
+
 		for (Response response : responses) {
 			String email = response.getResponseText();
 			Person person = new Person();
@@ -146,19 +145,19 @@ public class ScoringService {
 			grader.setResponseId(response.getId());
 			grader.setQuestionId(response.getQuestionId());
 			graderService.save(grader);
-				
+
 			//emailService.sendReferenceCheck();
 			referenceSent = true;
-		}	
+		}
 		return referenceSent;
 	}
-	
+
 	private boolean audioGraderLaunch(Respondant respondant, List<Response> responses) {
 		boolean graderSaved = false;
-		Set<User> users = userService.getUsersForAccount(respondant.getAccountId());// creating a grader for every user?		
+		Set<User> users = userService.getUsersForAccount(respondant.getAccountId());// creating a grader for every user?
 
 		log.debug("Found {} Users to grade Respondant {}",users.size(),respondant.getId());
-		
+
 		for (Response response : responses) {
 			for (User user : users) {
 				Grader grader = new Grader();
@@ -173,10 +172,10 @@ public class ScoringService {
 				graderService.save(grader);
 				graderSaved = true;
 			}
-		}	
+		}
 		return graderSaved;
 	}
-	
+
 	private void mercerScore(Respondant respondant, List<Response> responses) {
 
 		Client client = ClientBuilder.newClient();
@@ -257,4 +256,40 @@ public class ScoringService {
 		return;
 	}
 
+	public Respondant scoreGraders(@NonNull Respondant respondant) {
+		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
+		List<Grade> grades = new ArrayList<Grade>();
+
+		for (Grader grader : graders) {
+		    grades.addAll(graderService.getGradesByGraderId(grader.getId()));
+		    log.debug("Respondant {} has grader {}", respondant.getId(), grader);
+		}
+
+		// run scoring
+		int[] count = new int[50];
+		int[] score = new int[50];
+
+		grades.forEach(grade -> {
+			Question question = questionService.getQuestionById(grade.getQuestionId());
+			Integer cfId = question.getCorefactorId();
+			count[cfId]++;
+			score[cfId] += grade.getGradeValue();
+		});
+
+		for (int i = 0; i < 50; i++) {
+			if (count[i] > 0) {
+				RespondantScore rs = new RespondantScore();
+				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
+				rs.setQuestionCount(count[i]);
+				rs.setValue((double) score[i] / (double) count[i]);
+				rs.setRespondant(respondant);
+				respondantService.save(rs);
+				respondant.getRespondantScores().add(rs);
+			}
+		}
+
+		// then update respondant status to Scored		
+		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		return respondantService.save(respondant);
+	}
 }

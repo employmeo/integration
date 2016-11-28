@@ -17,7 +17,7 @@ public class AssessmentAnalysisScheduledTrigger {
 	@Autowired
 	private RespondantService respondantService;
 	@Autowired
-	private AssessmentSubmissionPipeline assessmentSubmissionPipeline;
+	private AssessmentPipeline assessmentPipeline;
 
 	@Scheduled(initialDelayString="${scheduled.assessment.trigger.init.seconds:60}000",
 				fixedDelayString = "${scheduled.assessment.trigger.delay.seconds:60}000")
@@ -31,7 +31,7 @@ public class AssessmentAnalysisScheduledTrigger {
         } else {
         	eligibleRespondants.forEach(respondant -> {
         		try {
-        			assessmentSubmissionPipeline.initiateAssessmentAnalysis(respondant);
+        			assessmentPipeline.initiateAssessmentAnalysis(respondant);
         		} catch(Exception e) {
         			log.warn("Failed to process submission for respondant {}", respondant.getId(), e);
         		}
@@ -39,4 +39,27 @@ public class AssessmentAnalysisScheduledTrigger {
         }
 
     }
+
+	@Scheduled(initialDelayString="${scheduled.grader.trigger.init.seconds:90}000",
+			fixedDelayString = "${scheduled.grader.trigger.delay.seconds:900}000")
+	private void triggerGraderFulfilledScoring() {
+    log.debug("Scheduled trigger: Assessing eligible respondants whose graders are fulfilled for scoring");
+
+    List<Respondant> eligibleRespondants = respondantService.getGraderBasedScoringPendingRespondants();
+
+    if(eligibleRespondants.isEmpty()) {
+    	log.debug("No eligible respondants to promote from grader fulfilled to scoring");
+    } else {
+    	eligibleRespondants.forEach(respondant -> {
+    		try {
+    			log.debug("Assessing grader fulfillment for respondant: {}", respondant);
+
+    			assessmentPipeline.assessGraderFulfillmentAndScore(respondant);
+    		} catch(Exception e) {
+    			log.warn("Failed to process respondant while promoting from ungraded to scored: {}", respondant.getId(), e);
+    		}
+    	});
+    }
+
+}
 }

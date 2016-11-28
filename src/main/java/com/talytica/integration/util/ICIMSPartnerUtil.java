@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
-import com.talytica.common.service.EmailService;
+import com.talytica.common.service.ExternalLinksService;
 import com.talytica.common.service.AddressService;
 
 import lombok.Getter;
@@ -54,8 +54,6 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	@Setter @Getter
 	private Partner partner = null;
 
-	@Autowired
-	EmailService emailService;
 
 	@Autowired
 	AddressService addressService;
@@ -83,6 +81,9 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Autowired
 	CorefactorRepository corefactorRepository;
+	
+	@Autowired
+	ExternalLinksService externalLinksService;
 
 	public ICIMSPartnerUtil() {
 	}
@@ -141,10 +142,17 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public Position getPositionFrom(JSONObject job, Account account) {
-		// TODO - Get job title / type data, and figure out how to map it to Positions
 		log.debug("Using Account default position and Ignoring job object: " + job);
-
-		return positionRepository.findOne(account.getDefaultPositionId());
+		Set<Position> positions = account.getPositions();
+		Position jobPosition = positionRepository.findOne(account.getDefaultPositionId());
+		
+		if (job.has("jobtitle")) {
+			String title = job.getString("jobtitle");
+			for (Position position : positions) {
+				if (title.equals(position.getPositionName())) jobPosition = position;
+			}
+		}
+		return jobPosition;
 	}
 
 	@Override
@@ -294,7 +302,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 				respondant.getProfileRecommendation()).getString("profile_name"));
 		results.put("assessmentnotes", notes.toString());
 		results.put("assessmentstatus", ASSESSMENT_COMPLETE);
-		results.put("assessmenturl", emailService.getPortalLink(respondant));
+		results.put("assessmenturl", externalLinksService.getPortalLink(respondant));
 
 		JSONArray resultset = new JSONArray();
 		resultset.put(results);
