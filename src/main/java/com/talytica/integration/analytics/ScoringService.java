@@ -103,8 +103,8 @@ public class ScoringService {
 	}
 
 	private void defaultScore(Respondant respondant, List<Response> responses) {
-		int[] count = new int[50];
-		int[] score = new int[50];
+		int[] count = new int[99];
+		int[] score = new int[99];
 
 		responses.forEach(response -> {
 			Question question = questionService.getQuestionById(response.getQuestionId());
@@ -266,8 +266,8 @@ public class ScoringService {
 		}
 
 		// run scoring
-		int[] count = new int[50];
-		int[] score = new int[50];
+		int[] count = new int[99];
+		int[] score = new int[99];
 
 		grades.forEach(grade -> {
 			Question question = questionService.getQuestionById(grade.getQuestionId());
