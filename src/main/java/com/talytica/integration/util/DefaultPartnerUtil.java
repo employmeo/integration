@@ -156,7 +156,7 @@ public class DefaultPartnerUtil implements PartnerUtil {
 
 		Position pos = null;
 		if ((position != null) && (position.has("position_id"))) {
-			positionRepository.findOne(position.getLong("position_id"));
+			pos = positionRepository.findOne(position.getLong("position_id"));
 		}
 		if (pos == null) {
 			pos = positionRepository.findOne(account.getDefaultPositionId());
