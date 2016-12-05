@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
 import com.talytica.common.service.EmailService;
+import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.util.PartnerUtil;
 import com.talytica.integration.util.PartnerUtilityRegistry;
 
@@ -32,7 +33,7 @@ public class ICIMSApplicationCompleteResource {
 	@Autowired
 	PartnerRepository partnerRepository;
 	@Autowired
-	EmailService emailService;
+	ExternalLinksService externalLinksService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
@@ -54,9 +55,9 @@ public class ICIMSApplicationCompleteResource {
 
 		URI link = null;
 		try {
-			link = new URI(emailService.getAssessmentLink(applicant));
+			link = new URI(externalLinksService.getAssessmentLink(applicant));
 		} catch (Exception e) {
-			log.warn("Failed to URI-ify link: " + emailService.getAssessmentLink(applicant));
+			log.warn("Failed to URI-ify link: " + externalLinksService.getAssessmentLink(applicant));
 		}
 
 		return Response.seeOther(link).build();

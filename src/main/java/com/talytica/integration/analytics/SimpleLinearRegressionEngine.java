@@ -122,7 +122,7 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine<Linea
 			log.debug("Corefactor {} component score = {}", corefactorScore.get(), componentScore);
 		} else {
 			if(config.getRequired()) {
-				throw new IllegalStateException("Corefactor scores for corefactorId " + config.getCorefactorId() + " are required for this model, but not available.");
+				throw new IllegalStateException("Corefactor scores for corefactorId " + config.getCorefactorId() + " required for this model, but not present");
 			} else {
 				log.debug("Corefactor score not available, but optional and hence bypassed. CorefactorId = " + config.getCorefactorId());
 			}
@@ -131,7 +131,7 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine<Linea
 		return componentScore;
 	}
 
-	private Optional<CorefactorScore> findCorefactorScore(Integer corefactorId, List<CorefactorScore> corefactorScores) {
+	private Optional<CorefactorScore> findCorefactorScore(Long corefactorId, List<CorefactorScore> corefactorScores) {
 		return corefactorScores.stream().filter(cfs -> corefactorId.equals(cfs.getCorefactor().getId())).findFirst();
 	}
 

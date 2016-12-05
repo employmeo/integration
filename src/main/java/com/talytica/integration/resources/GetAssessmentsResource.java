@@ -61,6 +61,7 @@ public class GetAssessmentsResource {
 
 		Set<AccountSurvey> surveys = account.getAccountSurveys();
 		for (AccountSurvey as : surveys) {
+			as.setAccount(account);
 			JSONObject survey = new JSONObject();
 			survey.put("assessment_name", as.getDisplayName());
 			survey.put("assessment_asid", as.getId());

@@ -130,6 +130,7 @@ public class AccountResource {
 		Set<AccountSurvey> surveys = account.getAccountSurveys();
 		for (AccountSurvey as : surveys) {
 			JSONObject survey = new JSONObject();
+			as.setAccount(account);
 			survey.put("assessment_name", as.getDisplayName());
 			survey.put("assessment_asid", as.getId());
 			response.put(survey);

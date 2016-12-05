@@ -3,6 +3,7 @@ package com.talytica.integration.analytics;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Set;
 
 import javax.transaction.Transactional;
 
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.PositionProfile;
 import com.employmeo.data.model.Respondant;
+import com.employmeo.data.model.RespondantScore;
 import com.google.common.collect.Range;
 import com.talytica.integration.objects.*;
 
@@ -41,17 +43,27 @@ public class GradingService {
 	 * @return grading result
 	 */
 	public GradingResult gradeRespondantByPredictions(Respondant respondant, List<PredictionResult> predictions) {
-		log.debug("Initiating grading for respondant {}", respondant.getId());
+		log.debug("Initiating grading for respondant {} with {} predictions", respondant.getId(), predictions.size());
 
 		GradingResult result = new GradingResult();
-
-		// compute grade composite score as average of the percentiles * 100
-		Double averagePercentile = predictions.stream()
-				.mapToDouble(p -> (null != p.getPercentile()) ? p.getPercentile() * 100 : 0.0D)
-				.average()
-				.orElse(0.0D);
-		Double compositeScore = new BigDecimal(averagePercentile).setScale(2, RoundingMode.HALF_UP).doubleValue();
-
+		Double compositeScore = null;
+		
+		if (predictions.size() == 0) {
+			Set<RespondantScore> scores = respondant.getRespondantScores();
+			Double averageScore = scores.stream()
+					.mapToDouble(score -> (null != score.getValue()) ? score.getValue() * 9 : 0.0D)
+					.average()
+					.orElse(0.0D);
+			compositeScore = new BigDecimal(averageScore).setScale(2, RoundingMode.HALF_UP).doubleValue();
+		} else {
+			// compute grade composite score as average of the percentiles * 100
+			Double averagePercentile = predictions.stream()
+					.mapToDouble(p -> (null != p.getPercentile()) ? p.getPercentile() * 100 : 0.0D)
+					.average()
+					.orElse(0.0D);
+			compositeScore = new BigDecimal(averagePercentile).setScale(2, RoundingMode.HALF_UP).doubleValue();
+		}
+		
 		if(gradeCurveProfileD.contains(compositeScore)) {
 			result.setRecommendedProfile(PositionProfile.PROFILE_D);
 		} else if (gradeCurveProfileC.contains(compositeScore)) {
