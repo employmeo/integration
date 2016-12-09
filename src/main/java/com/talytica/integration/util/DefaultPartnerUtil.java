@@ -89,10 +89,11 @@ public class DefaultPartnerUtil implements PartnerUtil {
 
 	@Override
 	public Account getAccountFrom(JSONObject jAccount) {
+		log.debug("get account called with {} by {}", jAccount, partner);
 		Account account = null;
 		String accountAtsId = jAccount.optString("account_ats_id");
 		if (accountAtsId != null) {
-			account = accountService.getAccountByAtsId(partner.getPrefix() + accountAtsId);
+			account = accountService.getAccountByAtsId(addPrefix(accountAtsId));
 		} else {
 			account = accountService.getAccountById(jAccount.optLong("account_id"));
 		}
