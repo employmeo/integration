@@ -113,6 +113,8 @@ public class JazzPartnerUtil extends DefaultPartnerUtil {
 			respondant.setPositionId(position.getId());
 			respondant.setLocationId(location.getId());
 			respondant.setAccountSurveyId(survey.getId());
+			respondant.setPartner(getPartner());
+			respondant.setPartnerId(getPartner().getId());
 			try {
 			String applyDate = json.getString("apply_date");
 			respondant.setCreatedDate(JAZZ_SDF.parse(applyDate));
