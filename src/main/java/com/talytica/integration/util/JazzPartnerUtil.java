@@ -144,6 +144,9 @@ public class JazzPartnerUtil extends DefaultPartnerUtil {
 			case "evaluation":
 			case "rating":
 			case "categories":
+			case "comments":
+			case "comment_count":
+			case "feedback":
 				break; // Do nothing... these are arrays of data that don't come from candidate.
 			case "eeo_disability":
 			case "eeo_gender":
