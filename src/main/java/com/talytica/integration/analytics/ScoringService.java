@@ -54,6 +54,7 @@ public class ScoringService {
 	private static final int MERCER_COREFACTOR = 34;
 	private static final int AUDIO_COREFACTOR = 42;
 	private static final int REFERENCE_COREFACTOR = 43;
+	private static final int COREFACTOR_ARRAY_SIZE = 99;
 
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant);
@@ -108,8 +109,8 @@ public class ScoringService {
 	}
 
 	private void defaultScore(Respondant respondant, List<Response> responses) {
-		int[] count = new int[99];
-		int[] score = new int[99];
+		int[] count = new int[COREFACTOR_ARRAY_SIZE];
+		int[] score = new int[COREFACTOR_ARRAY_SIZE];
 
 		responses.forEach(response -> {
 			Question question = questionService.getQuestionById(response.getQuestionId());
@@ -118,7 +119,7 @@ public class ScoringService {
 			score[cfId] += response.getResponseValue();
 		});
 
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < COREFACTOR_ARRAY_SIZE; i++) {
 			if (count[i] > 0) {
 				RespondantScore rs = new RespondantScore();
 				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
@@ -190,6 +191,7 @@ public class ScoringService {
 				graderSaved = true;
 				if (config.getSummarize()) break;
 			}
+			log.debug("Grader {} created with {} responses to grade, notify = {}", savedGrader, responses.size(),config.getNotify());
 			if ((savedGrader != null) && (config.getNotify())) emailService.sendGraderRequest(savedGrader);
 		}
 		return graderSaved;
@@ -285,8 +287,8 @@ public class ScoringService {
 		}
 
 		// run scoring
-		int[] count = new int[99];
-		int[] score = new int[99];
+		int[] count = new int[COREFACTOR_ARRAY_SIZE];
+		int[] score = new int[COREFACTOR_ARRAY_SIZE];
 
 		grades.forEach(grade -> {
 			Question question = questionService.getQuestionById(grade.getQuestionId());
@@ -295,7 +297,7 @@ public class ScoringService {
 			score[cfId] += grade.getGradeValue();
 		});
 
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < COREFACTOR_ARRAY_SIZE; i++) {
 			if (count[i] > 0) {
 				RespondantScore rs = new RespondantScore();
 				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
