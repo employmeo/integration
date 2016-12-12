@@ -17,6 +17,7 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PersonRepository;
 import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
+import com.talytica.common.service.EmailService;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,10 @@ public class ScoringService {
 	private GraderService graderService;
 	@Autowired
 	private UserService userService;
+	@Autowired
+	private AccountSurveyService accountSurveyService;
+	@Autowired
+	private EmailService emailService;
 
 	@Autowired
 	private PersonRepository personRepository;
@@ -48,7 +53,8 @@ public class ScoringService {
 	private static String MERCER_PASS = "employmeo";
 	private static final int MERCER_COREFACTOR = 34;
 	private static final int AUDIO_COREFACTOR = 42;
-	private static final int REFERENCE_COREFACTOR = 43; /// doesn't exist yet!!
+	private static final int REFERENCE_COREFACTOR = 43;
+	private static final int COREFACTOR_ARRAY_SIZE = 99;
 
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant);
@@ -103,8 +109,8 @@ public class ScoringService {
 	}
 
 	private void defaultScore(Respondant respondant, List<Response> responses) {
-		int[] count = new int[99];
-		int[] score = new int[99];
+		int[] count = new int[COREFACTOR_ARRAY_SIZE];
+		int[] score = new int[COREFACTOR_ARRAY_SIZE];
 
 		responses.forEach(response -> {
 			Question question = questionService.getQuestionById(response.getQuestionId());
@@ -113,7 +119,7 @@ public class ScoringService {
 			score[cfId] += response.getResponseValue();
 		});
 
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < COREFACTOR_ARRAY_SIZE; i++) {
 			if (count[i] > 0) {
 				RespondantScore rs = new RespondantScore();
 				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
@@ -154,24 +160,39 @@ public class ScoringService {
 
 	private boolean audioGraderLaunch(Respondant respondant, List<Response> responses) {
 		boolean graderSaved = false;
-		Set<User> users = userService.getUsersForAccount(respondant.getAccountId());// creating a grader for every user?
+		Set<GraderConfig> configs = accountSurveyService.getGraderConfigsForSurvey(respondant.getAccountSurveyId());
 
-		log.debug("Found {} Users to grade Respondant {}",users.size(),respondant.getId());
-
-		for (Response response : responses) {
-			for (User user : users) {
+		if (configs.isEmpty()) {
+			Set<User> users = userService.getUsersForAccount(respondant.getAccountId());// creating a grader for every user?
+			users.forEach(user -> {
+				GraderConfig config = new GraderConfig();
+				config.setUser(user);
+				config.setUserId(user.getId());
+				configs.add(config);
+				});
+			log.info("No Configs Found. Addeded {} users to grade Respondant {}",configs.size(),respondant.getId());
+		} 
+		
+		for (GraderConfig config : configs) {
+			Grader savedGrader = null;
+			for (Response response : responses) {	
 				Grader grader = new Grader();
-				grader.setType(Grader.TYPE_USER);
 				grader.setStatus(Grader.STATUS_NEW);
-				grader.setUser(user);
+				grader.setUser(config.getUser());
+				grader.setUserId(config.getUserId());
+				grader.setRespondant(respondant);
 				grader.setRespondantId(respondant.getId());
-				grader.setUserId(user.getId());
 				grader.setResponse(response);
 				grader.setResponseId(response.getId());
-				grader.setQuestionId(response.getQuestionId());
-				graderService.save(grader);
+				grader.setQuestionId(response.getQuestionId());			
+				grader.setType(Grader.TYPE_USER);;
+				if (config.getSummarize()) grader.setType(Grader.TYPE_SUMMARY_USER);;
+				savedGrader = graderService.save(grader);
 				graderSaved = true;
+				if (config.getSummarize()) break;
 			}
+			log.debug("Grader {} created with {} responses to grade, notify = {}", savedGrader, responses.size(),config.getNotify());
+			if ((savedGrader != null) && (config.getNotify())) emailService.sendGraderRequest(savedGrader);
 		}
 		return graderSaved;
 	}
@@ -266,8 +287,8 @@ public class ScoringService {
 		}
 
 		// run scoring
-		int[] count = new int[99];
-		int[] score = new int[99];
+		int[] count = new int[COREFACTOR_ARRAY_SIZE];
+		int[] score = new int[COREFACTOR_ARRAY_SIZE];
 
 		grades.forEach(grade -> {
 			Question question = questionService.getQuestionById(grade.getQuestionId());
@@ -276,7 +297,7 @@ public class ScoringService {
 			score[cfId] += grade.getGradeValue();
 		});
 
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < COREFACTOR_ARRAY_SIZE; i++) {
 			if (count[i] > 0) {
 				RespondantScore rs = new RespondantScore();
 				rs.setId(new RespondantScorePK((long) i, respondant.getId()));

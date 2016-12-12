@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Scope("prototype")
-public class JazzPartnerUtil extends DefaultPartnerUtil {
+public class JazzPartnerUtil extends BasePartnerUtil {
 	
 	@Autowired
 	RespondantNVPRepository respondantNVPRepository;
