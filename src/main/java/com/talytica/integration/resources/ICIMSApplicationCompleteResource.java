@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
-import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.util.PartnerUtil;
 import com.talytica.integration.util.PartnerUtilityRegistry;

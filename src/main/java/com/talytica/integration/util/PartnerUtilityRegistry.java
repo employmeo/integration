@@ -24,6 +24,11 @@ public class PartnerUtilityRegistry {
 			icimsUtil.setPartner(lookupPartner);
 			util = icimsUtil;
 			log.debug("Returning ICIMSPartnerUtil for partner {}", lookupPartner.getPartnerName());
+		} else if ("JAZZ".equalsIgnoreCase(lookupPartner.getPartnerName())) { 
+			JazzPartnerUtil jazzUtil = applicationContext.getBean(JazzPartnerUtil.class);
+			jazzUtil.setPartner(lookupPartner);
+			util = jazzUtil;
+			log.debug("Returning JazzPartnerUtil for partner {}", lookupPartner.getPartnerName());
 		} else {
 			DefaultPartnerUtil defaultUtil = applicationContext.getBean(DefaultPartnerUtil.class);
 			defaultUtil.setPartner(lookupPartner);
