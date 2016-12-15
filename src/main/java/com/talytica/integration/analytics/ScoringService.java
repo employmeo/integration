@@ -3,21 +3,15 @@ package com.talytica.integration.analytics;
 import java.util.*;
 
 import javax.transaction.Transactional;
-import javax.ws.rs.client.*;
-import javax.ws.rs.core.MediaType;
 
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.PersonRepository;
 import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
-import com.talytica.common.service.EmailService;
+import com.talytica.integration.scoring.ScoringModelEngine;
+import com.talytica.integration.scoring.ScoringModelRegistry;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -31,40 +25,17 @@ public class ScoringService {
 	@Autowired
 	private QuestionService questionService;
 	@Autowired
-	private CorefactorService corefactorService;
-	@Autowired
 	private GraderService graderService;
 	@Autowired
-	private UserService userService;
-	@Autowired
-	private AccountSurveyService accountSurveyService;
-	@Autowired
-	private EmailService emailService;
-
-	@Autowired
-	private PersonRepository personRepository;
+	private ScoringModelRegistry scoringModelRegistry;
 	@Autowired
 	private RespondantScoreRepository respondantScoreRepository;
-
-	@Value("${com.talytica.apis.mercer.url}")
-	private String MERCER_SERVICE;
-	private static String MERCER_PREFIX = "Mercer";
-	private static String MERCER_USER = "employmeo";
-	private static String MERCER_PASS = "employmeo";
-	private static final int MERCER_COREFACTOR = 34;
-	private static final int AUDIO_COREFACTOR = 42;
-	private static final int REFERENCE_COREFACTOR = 43;
-	private static final int COREFACTOR_ARRAY_SIZE = 99;
 
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant);
 		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
-
-		List<Response> mercer = new ArrayList<>();
-		List<Response> audio = new ArrayList<>();
-		List<Response> reference = new ArrayList<>();
-		List<Response> others = new ArrayList<>();
-
+		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
+		
 		if ((responses == null) || (responses.size() == 0))
 		{
 			log.debug("No responses found for respondant {}", respondant);
@@ -72,211 +43,50 @@ public class ScoringService {
 		}
 
 		for (Response response : responses) {
+			List<Response> responseSet;
 			Question question = questionService.getQuestionById(response.getQuestionId());
-			Integer cfId = question.getCorefactorId();
-			switch (cfId.intValue()) {
-				case MERCER_COREFACTOR:
-					mercer.add(response);
-					break;
-				case AUDIO_COREFACTOR:
-					audio.add(response);
-					break;
-				case REFERENCE_COREFACTOR:
-					reference.add(response);
-					break;
-				default:
-					others.add(response);
-					break;
+			String scoringModel = question.getScoringModel();
+			if (responseTable.containsKey(scoringModel)) {
+				responseSet = responseTable.get(scoringModel);
+			} else {
+				responseSet = new ArrayList<Response>();
+				responseTable.put(scoringModel, responseSet);
 			}
+			responseSet.add(response);
+		}
+		
+		boolean complete = true;
+		for (Map.Entry<String, List<Response>> pair : responseTable.entrySet()) {
+			Optional<ScoringModelEngine> result = scoringModelRegistry.getScoringModelEngineByName(pair.getKey());
+			if (!result.isPresent()) {
+				log.error("Didn't find {} scoring model for responses", pair.getKey());
+				complete = false;
+				continue;
+			}
+			ScoringModelEngine scoringModelEngine = result.get();
+			
+			List<RespondantScore> scores = scoringModelEngine.scoreResponses(respondant, pair.getValue());
+			if (scores == null) {
+				complete = false;
+				continue;
+			}
+			respondant.getRespondantScores().addAll(scores);
 		}
 
-		mercerScore(respondant, mercer); // for questions with corefactor 34
-		defaultScore(respondant, others);
-
-		boolean gradesNeeded = audioGraderLaunch(respondant, audio); // not ready yet
-		boolean referencesNeeded = referenceLaunch(respondant, reference);
 
 		if (respondant.getRespondantScores().size() > 0) {
 			respondantScoreRepository.save(respondant.getRespondantScores());
 			log.debug("Saved Scores for respondant {}", respondant.getRespondantScores());
 		}
-		if (gradesNeeded || referencesNeeded) {
-			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);// GRADES INCOMPLETE?
-		} else {
+		if (complete) {
 			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		} else {
+			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);// GRADES INCOMPLETE?
 		}
 		return respondantService.save(respondant);
 	}
 
-	private void defaultScore(Respondant respondant, List<Response> responses) {
-		int[] count = new int[COREFACTOR_ARRAY_SIZE];
-		int[] score = new int[COREFACTOR_ARRAY_SIZE];
-
-		responses.forEach(response -> {
-			Question question = questionService.getQuestionById(response.getQuestionId());
-			Integer cfId = question.getCorefactorId();
-			count[cfId]++;
-			score[cfId] += response.getResponseValue();
-		});
-
-		for (int i = 0; i < COREFACTOR_ARRAY_SIZE; i++) {
-			if (count[i] > 0) {
-				RespondantScore rs = new RespondantScore();
-				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
-				rs.setQuestionCount(count[i]);
-				rs.setValue((double) score[i] / (double) count[i]);
-				rs.setRespondant(respondant);
-				respondant.getRespondantScores().add(rs);
-			}
-		}
-
-	}
-
-	private boolean referenceLaunch(Respondant respondant, List<Response> responses) {
-		boolean referenceSent = false;
-
-		for (Response response : responses) {
-			String email = response.getResponseText();
-			Person person = new Person();
-			person.setEmail(email);
-			Person reference = personRepository.save(person);
-
-			Grader grader = new Grader();
-			grader.setType(Grader.TYPE_PERSON);
-			grader.setStatus(Grader.STATUS_NEW);
-			grader.setPerson(reference);
-			grader.setRespondantId(respondant.getId());
-			grader.setPersonId(reference.getId());
-			grader.setResponse(response);
-			grader.setResponseId(response.getId());
-			grader.setQuestionId(response.getQuestionId());
-			graderService.save(grader);
-
-			//emailService.sendReferenceCheck();
-			referenceSent = true;
-		}
-		return referenceSent;
-	}
-
-	private boolean audioGraderLaunch(Respondant respondant, List<Response> responses) {
-		boolean graderSaved = false;
-		Set<GraderConfig> configs = accountSurveyService.getGraderConfigsForSurvey(respondant.getAccountSurveyId());
-
-		if (configs.isEmpty()) {
-			Set<User> users = userService.getUsersForAccount(respondant.getAccountId());// creating a grader for every user?
-			users.forEach(user -> {
-				GraderConfig config = new GraderConfig();
-				config.setUser(user);
-				config.setUserId(user.getId());
-				configs.add(config);
-				});
-			log.info("No Configs Found. Addeded {} users to grade Respondant {}",configs.size(),respondant.getId());
-		} 
-		
-		for (GraderConfig config : configs) {
-			Grader savedGrader = null;
-			for (Response response : responses) {	
-				Grader grader = new Grader();
-				grader.setStatus(Grader.STATUS_NEW);
-				grader.setUser(config.getUser());
-				grader.setUserId(config.getUserId());
-				grader.setRespondant(respondant);
-				grader.setRespondantId(respondant.getId());
-				grader.setResponse(response);
-				grader.setResponseId(response.getId());
-				grader.setQuestionId(response.getQuestionId());			
-				grader.setType(Grader.TYPE_USER);;
-				if (config.getSummarize()) grader.setType(Grader.TYPE_SUMMARY_USER);;
-				savedGrader = graderService.save(grader);
-				graderSaved = true;
-				if (config.getSummarize()) break;
-			}
-			log.debug("Grader {} created with {} responses to grade, notify = {}", savedGrader, responses.size(),config.getNotify());
-			if ((savedGrader != null) && (config.getNotify())) emailService.sendGraderRequest(savedGrader);
-		}
-		return graderSaved;
-	}
-
-	private void mercerScore(Respondant respondant, List<Response> responses) {
-
-		Client client = ClientBuilder.newClient();
-		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(MERCER_USER, MERCER_PASS);
-		client.register(feature);
-
-		JSONArray answers = new JSONArray();
-		responses.forEach(response -> {
-			Question question = questionService.getQuestionById(response.getQuestionId());
-			String testname = question.getForeignSource();
-			if (testname.equalsIgnoreCase("behavior_b")) {
-				String[] priorities = Integer.toString(response.getResponseValue()).split("(?!^)");
-				for (int j=0;j<priorities.length;j++) {
-					int value = Integer.valueOf(priorities[j]);
-					String quesId = question.getForeignId() + "_" + j;
-					JSONObject jResp = new JSONObject();
-					jResp.put("response_value", value);
-					jResp.put("question_id", quesId);
-					jResp.put("test_name", testname);
-					answers.put(jResp);
-				}
-			} else {
-					JSONObject jResp = new JSONObject();
-					jResp.put("response_value", response.getResponseValue());
-					jResp.put("question_id", question.getForeignId());
-					jResp.put("test_name", testname);
-					answers.put(jResp);
-			}
-		});
-
-		if (answers.length() > 0) {
-			JSONObject applicant = new JSONObject();
-			JSONObject message = new JSONObject();
-			applicant.put("applicant_id", respondant.getId());
-			applicant.put("applicant_account_name", respondant.getAccount().getAccountName());
-			message.put("applicant", applicant);
-			message.put("responses", answers);
-
-			JSONArray result;
-			javax.ws.rs.core.Response resp = null;
-			String output = null;
-			log.debug("Requesting Mercer Score for respondant {} ", respondant);
-			try {
-				WebTarget target = client.target(MERCER_SERVICE);
-				resp = target.request(MediaType.APPLICATION_JSON)
-							.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
-				output = resp.readEntity(String.class);
-				result = new JSONArray(output);
-			} catch (Exception e) {
-				if (resp != null) {
-					log.debug("Mercer Failure {} {}: " + resp.getStatus(), resp.getStatusInfo().getReasonPhrase());
-				}
-				log.error("Mercer Failure Exception {} {}", e.getMessage(),message.toString());
-				return;
-			}
-
-			for (int i = 0; i < result.length(); i++) {
-				JSONObject data = result.getJSONObject(i);
-				int score = data.getInt("score");
-				RespondantScore rs = null;
-				Corefactor cf = null;
-				try {
-					String foreignId = MERCER_PREFIX + data.getString("id");
-					log.debug("Finding corefactor by foreign id '{}'", foreignId);
-					cf =  corefactorService.getByForeignId(foreignId);
-					rs = new RespondantScore();
-					rs.setId(new RespondantScorePK(cf.getId(), respondant.getId()));
-					rs.setQuestionCount(responses.size());
-					rs.setValue((double) score);
-					rs.setRespondant(respondant);
-					respondant.getRespondantScores().add(rs);
-				} catch (Exception e) {
-					log.error("Failed to record score {}, {} for respondant {}", rs, cf, respondant);
-				}
-			}
-		}
-
-		return;
-	}
-
+	
 	public Respondant scoreGraders(@NonNull Respondant respondant) {
 		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
 		List<Grade> grades = new ArrayList<Grade>();
@@ -285,32 +95,40 @@ public class ScoringService {
 		    grades.addAll(graderService.getGradesByGraderId(grader.getId()));
 		    log.debug("Respondant {} has grader {}", respondant.getId(), grader);
 		}
-
-		// run scoring
-		int[] count = new int[COREFACTOR_ARRAY_SIZE];
-		int[] score = new int[COREFACTOR_ARRAY_SIZE];
-
+		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
+		
 		grades.forEach(grade -> {
 			Question question = questionService.getQuestionById(grade.getQuestionId());
-			Integer cfId = question.getCorefactorId();
-			count[cfId]++;
-			score[cfId] += grade.getGradeValue();
-		});
-
-		for (int i = 0; i < COREFACTOR_ARRAY_SIZE; i++) {
-			if (count[i] > 0) {
-				RespondantScore rs = new RespondantScore();
-				rs.setId(new RespondantScorePK((long) i, respondant.getId()));
-				rs.setQuestionCount(count[i]);
-				rs.setValue((double) score[i] / (double) count[i]);
-				rs.setRespondant(respondant);
-				respondantService.save(rs);
-				respondant.getRespondantScores().add(rs);
+			Response response = new Response();
+			response.setRespondant(respondant);
+			response.setRespondantId(respondant.getId());
+			response.setQuestionId(grade.getQuestionId());
+			response.setResponseValue(grade.getGradeValue());
+			List<Response> responseSet;
+			String scoringModel = question.getScoringModel();
+			if (responseTable.containsKey(scoringModel)) {
+				responseSet = responseTable.get(scoringModel);
+			} else {
+				responseSet = new ArrayList<Response>();
+				responseTable.put(scoringModel, responseSet);
 			}
+			responseSet.add(response);
+		});
+		
+		for (Map.Entry<String, List<Response>> pair : responseTable.entrySet()) {
+			Optional<ScoringModelEngine> result = scoringModelRegistry.getScoringModelEngineByName(pair.getKey());
+			if (!result.isPresent()) {
+				log.error("Didn't find {} scoring model for responses", pair.getKey()); continue;
+			}
+			ScoringModelEngine scoringModelEngine = result.get();
+			List<RespondantScore> scores = scoringModelEngine.scoreResponses(respondant, pair.getValue());
+			if (scores == null)	continue;
+			respondant.getRespondantScores().addAll(scores);
 		}
 
 		// then update respondant status to Scored		
 		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		respondantScoreRepository.save(respondant.getRespondantScores());
 		return respondantService.save(respondant);
 	}
 }
