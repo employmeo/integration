@@ -30,32 +30,34 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 	
 	public double MAXVAL;
 	public double MINVAL;
+	public boolean FLIP = false;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
 		List<RespondantScore> scores = new ArrayList<RespondantScore>(); 
-		HashMap<Corefactor, List<Response>> responseTable = new HashMap<Corefactor, List<Response>>();
+		HashMap<Corefactor, List<Double>> responseTable = new HashMap<Corefactor, List<Double>>();
 
 		responses.forEach(response -> {
 			Question question = questionService.getQuestionById(response.getQuestionId());
 			Corefactor corefactor = corefactorService.findCorefactorById(question.getCorefactorId());
-			List<Response> responseSet;
+			List<Double> responseSet;
 			if (responseTable.containsKey(corefactor)) {
 				responseSet = responseTable.get(corefactor);
 			} else {
-				responseSet = new ArrayList<Response>();
+				responseSet = new ArrayList<Double>();
 				responseTable.put(corefactor, responseSet);
 			}
-			responseSet.add(response);
+			double value = (double)response.getResponseValue();
+			if ((FLIP) && (question.getDirection()<1)) value = MAXVAL - value + MINVAL;
+			responseSet.add(value);
 		});
-
-		
-		for (Map.Entry<Corefactor, List<Response>> pair : responseTable.entrySet()) {
+	
+		for (Map.Entry<Corefactor, List<Double>> pair : responseTable.entrySet()) {
 			Corefactor corefactor = pair.getKey();
-			List<Response> responseSet = pair.getValue();
+			List<Double> responseSet = pair.getValue();
 			double total = 0;
-			for (Response response : responseSet) {
-				total += response.getResponseValue();
+			for (Double response : responseSet) {
+				total += response;
 			}
 			double percentage = (double) (total - ((double) responseSet.size() * MINVAL )) / ((double) responseSet.size() * (MAXVAL-MINVAL));
 			RespondantScore rs = new RespondantScore();
@@ -86,6 +88,7 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 		case "knockout":
 			MINVAL = 0;
 			MAXVAL = 60;
+			FLIP = true;
 			break;
 		case "average":
 		default:
