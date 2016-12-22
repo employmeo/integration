@@ -44,7 +44,7 @@ public class AssessmentPipeline {
 		if (respondant.getRespondantStatus() < Respondant.STATUS_SCORED) {
 			log.debug("Respondant {} has status = {} - not scored yet.", respondant.getId(), respondant.getRespondantStatus());
 			scoringService.scoreAssessment(respondant);
-			log.debug("Respondant scores {} saved for respondant {}", respondant.getRespondantScores(), respondant);
+			log.debug("{} Respondant scores saved for respondant {}", respondant.getRespondantScores().size(), respondant);
 		}
 
 		if (respondant.getRespondantStatus() == Respondant.STATUS_SCORED) {
