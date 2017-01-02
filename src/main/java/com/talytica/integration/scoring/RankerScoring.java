@@ -52,7 +52,7 @@ public class RankerScoring implements ScoringModelEngine {
 						ranks = new ArrayList<Double>();
 						rankings.put(corefactor, ranks);
 					}
-					ranks.add(new Double((double) i / (double) (priorities.length-1)));
+					ranks.add(new Double(1.0d - ((double) i / (double) (priorities.length-1)))); // inverted percentile ranking.
 				}
 			}
 		});
@@ -79,7 +79,7 @@ public class RankerScoring implements ScoringModelEngine {
 
 	@Override
 	public String getModelName() {
-		return ScoringModelType.AVERAGE.getValue();
+		return ScoringModelType.RANKER.getValue();
 	}
 
 	@Override
