@@ -21,16 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class SimpleAverageScoring implements ScoringModelEngine {
+public class KnockoutScoring implements ScoringModelEngine {
 	
 	@Autowired
 	private QuestionService questionService;
 	@Autowired
 	private CorefactorService corefactorService;
 	
-	public double MAXVAL;
-	public double MINVAL;
-	public boolean FLIP = false;
+	public double THRESHOLD = 30;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
@@ -47,8 +45,9 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 				responseSet = new ArrayList<Double>();
 				responseTable.put(corefactor, responseSet);
 			}
-			double value = (double)response.getResponseValue();
-			if ((FLIP) && (question.getDirection()<1)) value = MAXVAL - value + MINVAL;
+			double value = 0d;
+			if ((question.getDirection()<0) && (response.getResponseValue() < THRESHOLD)) value = 1d;
+			if ((question.getDirection()>=0) && (response.getResponseValue() > THRESHOLD)) value = 1d;
 			responseSet.add(value);
 		});
 	
@@ -56,10 +55,8 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 			Corefactor corefactor = pair.getKey();
 			List<Double> responseSet = pair.getValue();
 			double total = 0;
-			for (Double response : responseSet) {
-				total += response;
-			}
-			double percentage = (double) (total - ((double) responseSet.size() * MINVAL )) / ((double) responseSet.size() * (MAXVAL-MINVAL));
+			for (Double response : responseSet) total += response;
+			double percentage = total / (double) responseSet.size();
 			RespondantScore rs = new RespondantScore();
 			rs.setId(new RespondantScorePK(corefactor.getId(), respondant.getId()));
 			rs.setQuestionCount(responseSet.size());
@@ -74,27 +71,12 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 
 	@Override
 	public String getModelName() {
-		return ScoringModelType.AVERAGE.getValue();
+		return ScoringModelType.KNOCKOUT.getValue();
 	}
 
 	@Override
 	public void initialize(String modelName) {
-		switch (modelName) {
-		case "likertfive":
-			MAXVAL = 10;
-			MINVAL = 0;
-			break;
-		case "slidersixty":
-			MINVAL = 0;
-			MAXVAL = 60;
-			FLIP = true;
-			break;
-		case "average":
-		default:
-			MAXVAL = 11;
-			MINVAL = 1;
-			break;
-		}
+		
 	}
 
 }

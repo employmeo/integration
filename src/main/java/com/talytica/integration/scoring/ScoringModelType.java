@@ -11,6 +11,7 @@ public enum ScoringModelType {
 	SLIDERSIXTY("slidersixty"),
 	KNOCKOUT("knockout"),
 	AVERAGE("average"),
+	RIGHTWRONGBLANK("rightwrongblank"),
 	NONE("none");
 	
 	@Getter
@@ -22,7 +23,7 @@ public enum ScoringModelType {
 
 	public static ScoringModelType getByValue(@NonNull String value) {
         for (ScoringModelType modelType : ScoringModelType.values()) {
-            if (value.equals(modelType.getValue())) {
+            if (value.equalsIgnoreCase(modelType.getValue())) {
                 return modelType;
             }
         }
