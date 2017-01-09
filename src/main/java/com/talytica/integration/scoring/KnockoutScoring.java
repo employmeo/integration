@@ -28,7 +28,7 @@ public class KnockoutScoring implements ScoringModelEngine {
 	@Autowired
 	private CorefactorService corefactorService;
 	
-	public double THRESHOLD = 30;
+	public double THRESHOLD = 50;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {

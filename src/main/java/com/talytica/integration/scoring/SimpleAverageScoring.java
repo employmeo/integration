@@ -89,6 +89,11 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 			MAXVAL = 60;
 			FLIP = true;
 			break;
+		case "sliderhundred":
+			MINVAL = 0;
+			MAXVAL = 100;
+			FLIP = true;
+			break;
 		case "average":
 		default:
 			MAXVAL = 11;

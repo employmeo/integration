@@ -9,6 +9,7 @@ public enum ScoringModelType {
 	RANKER("ranker"),
 	LIKERTFIVE("likertfive"),
 	SLIDERSIXTY("slidersixty"),
+	SLIDERHUNDRED("sliderhundred"),
 	KNOCKOUT("knockout"),
 	AVERAGE("average"),
 	RIGHTWRONGBLANK("rightwrongblank"),
