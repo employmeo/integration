@@ -28,7 +28,8 @@ public class KnockoutScoring implements ScoringModelEngine {
 	@Autowired
 	private CorefactorService corefactorService;
 	
-	public double THRESHOLD = 85;
+	public double THRESHOLD;
+	private String modelName;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
@@ -75,12 +76,21 @@ public class KnockoutScoring implements ScoringModelEngine {
 
 	@Override
 	public String getModelName() {
-		return ScoringModelType.KNOCKOUT.getValue();
+		return this.modelName;
 	}
 
 	@Override
 	public void initialize(String modelName) {
-		
+		this.modelName = modelName;
+		switch (modelName) {
+		case "deception":
+			THRESHOLD = 15;
+			break;
+		case "knockout":
+		default:
+			THRESHOLD = 85;
+			break;
+		}
 	}
 
 }
