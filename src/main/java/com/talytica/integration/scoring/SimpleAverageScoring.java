@@ -31,6 +31,7 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 	public double MAXVAL;
 	public double MINVAL;
 	public boolean FLIP = false;
+	private String modelName = ScoringModelType.AVERAGE.getValue();
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
@@ -74,11 +75,12 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 
 	@Override
 	public String getModelName() {
-		return ScoringModelType.AVERAGE.getValue();
+		return this.modelName;
 	}
 
 	@Override
 	public void initialize(String modelName) {
+		this.modelName = modelName;
 		switch (modelName) {
 		case "likertfive":
 			MAXVAL = 10;

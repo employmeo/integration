@@ -28,7 +28,7 @@ public class KnockoutScoring implements ScoringModelEngine {
 	@Autowired
 	private CorefactorService corefactorService;
 	
-	public double THRESHOLD = 50;
+	public double THRESHOLD = 85;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
@@ -45,9 +45,13 @@ public class KnockoutScoring implements ScoringModelEngine {
 				responseSet = new ArrayList<Double>();
 				responseTable.put(corefactor, responseSet);
 			}
-			double value = 0d;
-			if ((question.getDirection()<0) && (response.getResponseValue() < THRESHOLD)) value = 1d;
-			if ((question.getDirection()>=0) && (response.getResponseValue() > THRESHOLD)) value = 1d;
+			double value = 0d; // value 0 means not paying attention or exaggerating answer.
+			
+			// if direction is negative, that means we want them to give a low score. 
+			if ((question.getDirection()<0) && ((100 - response.getResponseValue()) >= THRESHOLD)) value = 1d;			
+			// if direction is positive, that means we want them to answer with a high score.
+			if ((question.getDirection()>=0) && (response.getResponseValue() >= THRESHOLD)) value = 1d;
+
 			responseSet.add(value);
 		});
 	
