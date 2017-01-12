@@ -122,108 +122,113 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				log.error("Could not parse date {}", json.opt("apply_date"));
 			}
 			savedRespondant = respondantService.save(respondant);
-		}
 				
-		Iterator<String> keys = candidate.keys();
-		List<RespondantNVP> nvps = new ArrayList<RespondantNVP>();
-
-		while (keys.hasNext()) {
-			String key = keys.next();
-			switch (key) {
-			case "id":
-			case "first_name":
-			case "last_name":
-			case "location":
-			case "email":
-			case "address":
-			case "apply_date":
-			case "phone":
-				break; // Do Nothing... already saved on person/respondant
-			case "messages":
-			case "activities":
-			case "evaluation":
-			case "rating":
-			case "categories":
-			case "comments":
-			case "comment_count":
-			case "feedback":
-				break; // Do nothing... these are arrays of data that don't come from candidate.
-			case "eeo_disability":
-			case "eeo_gender":
-			case "eeo_race":
-			case "eeoc_disability":
-			case "eeoc_disability_date":
-			case "eeoc_disability_signature":
-			case "eeoc_veteran":
-			case "has_cdl":
-			case "has_driver_license":
-			case "has_felony":
-			case "felony_explanation":
-			case "languages":
-			case "over_18":
-				break; // Do nothing... these are empty fields, and not allowed for hiring decisions
-			case "desired_start_date":
-			case "can_work_evenings":
-			case "can_work_overtime":
-			case "can_work_weekends":
-			case "citizenship_status":
-			case "college_gpa":
-			case "education_level":
-			case "twitter_username":
-			case "website":
-			case "willing_to_relocate":
-				break; // Do nothing... these are empty fields,
-			case "questionnaire":
-				JSONArray array = candidate.getJSONArray(key);
-				for (int j=0;j<array.length();j++) {
-					RespondantNVP nvp = new RespondantNVP();
-					nvp.setName(array.getJSONObject(j).getString("question"));
-					nvp.setValue(array.getJSONObject(j).getString("answer"));
-					nvp.setRespondantId(savedRespondant.getId());
-					nvps.add(nvp);
-				}
-				break;
-			case "jobs": // could be one or multiple jobs.
-				Object object = candidate.get(key);
-				JSONObject job = null;
-				if (JSONObject.class == object.getClass()) {
-					job = candidate.getJSONObject(key);
-				} else if (JSONArray.class == object.getClass()) {
-					JSONArray jobs = (JSONArray) object;
-					for (int j=0;j<jobs.length();j++) {
-						if (jobId == jobs.getJSONObject(j).getString("job_id")) job = jobs.getJSONObject(j);
+			Iterator<String> keys = candidate.keys();
+			List<RespondantNVP> nvps = new ArrayList<RespondantNVP>();
+	
+			while (keys.hasNext()) {
+				String key = keys.next();
+				switch (key) {
+				case "id":
+				case "first_name":
+				case "last_name":
+				case "location":
+				case "email":
+				case "address":
+				case "apply_date":
+				case "phone":
+					break; // Do Nothing... already saved on person/respondant
+				case "messages":
+				case "activities":
+				case "evaluation":
+				case "rating":
+				case "categories":
+				case "comments":
+				case "comment_count":
+				case "feedback":
+					break; // Do nothing... these are arrays of data that don't come from candidate.
+				case "eeo_disability":
+				case "eeo_gender":
+				case "eeo_race":
+				case "eeoc_disability":
+				case "eeoc_disability_date":
+				case "eeoc_disability_signature":
+				case "eeoc_veteran":
+				case "has_cdl":
+				case "has_driver_license":
+				case "has_felony":
+				case "felony_explanation":
+				case "languages":
+				case "over_18":
+					break; // Do nothing... these are empty fields, and not allowed for hiring decisions
+				case "desired_start_date":
+				case "can_work_evenings":
+				case "can_work_overtime":
+				case "can_work_weekends":
+				case "citizenship_status":
+				case "college_gpa":
+				case "education_level":
+				case "twitter_username":
+				case "website":
+				case "willing_to_relocate":
+					break; // Do nothing... these are empty fields,
+				case "questionnaire":
+					JSONArray array = candidate.getJSONArray(key);
+					for (int j=0;j<array.length();j++) {
+						RespondantNVP nvp = new RespondantNVP();
+						nvp.setName(array.getJSONObject(j).getString("question"));
+						nvp.setValue(array.getJSONObject(j).getString("answer"));
+						nvp.setRespondantId(savedRespondant.getId());
+						nvps.add(nvp);
 					}
-				}			
-				if (job != null) {
+					break;
+				case "jobs": // could be one or multiple jobs.
+					Object object = candidate.get(key);
+					JSONObject job = null;
+					if (JSONObject.class == object.getClass()) {
+						job = candidate.getJSONObject(key);
+					} else if (JSONArray.class == object.getClass()) {
+						JSONArray jobs = (JSONArray) object;
+						for (int j=0;j<jobs.length();j++) {
+							if (jobId == jobs.getJSONObject(j).getString("job_id")) job = jobs.getJSONObject(j);
+						}
+					}			
+					if (job != null) {
+						RespondantNVP nvp = new RespondantNVP();
+						nvp.setValue(job.getString("applicant_progress"));
+						nvp.setRespondantId(savedRespondant.getId());
+						nvp.setName("applicant_progress");
+						nvps.add(nvp);
+					}
+					break;
+				case "desired_salary":
+				default:
 					RespondantNVP nvp = new RespondantNVP();
-					nvp.setValue(job.getString("applicant_progress"));
 					nvp.setRespondantId(savedRespondant.getId());
-					nvp.setName("applicant_progress");
+					nvp.setName(key);
+					String value;
+					if (String.class == candidate.get(key).getClass()) {
+						value = candidate.getString(key);
+					} else {
+						value = candidate.get(key).toString();
+					}
+					nvp.setValue(value.substring(0, Math.min(value.length(), 4096)));
 					nvps.add(nvp);
 				}
-				break;
-			case "desired_salary":
-			default:
-				RespondantNVP nvp = new RespondantNVP();
-				nvp.setRespondantId(savedRespondant.getId());
-				nvp.setName(key);
-				String value;
-				if (String.class == candidate.get(key).getClass()) {
-					value = candidate.getString(key);
-				} else {
-					value = candidate.get(key).toString();
-				}
-				nvp.setValue(value.substring(0, Math.min(value.length(), 4096)));
-				nvps.add(nvp);
+			}	
+			
+			respondantNVPRepository.save(nvps);
+			
+			if (json.has("email")) {
+				emailService.sendEmailInvitation(savedRespondant);
 			}
-		}	
-		
-		respondantNVPRepository.save(nvps);
+		}
 		return savedRespondant;
 	}
 	
 	@Override
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant) {
+				
 		JSONObject jApplicant = new JSONObject();
 		jApplicant.put("applicant_ats_id", this.trimPrefix(respondant.getAtsId()));
 		jApplicant.put("applicant_id", respondant.getId());
@@ -231,8 +236,6 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		jApplicant.put("last_name", respondant.getPerson().getLastName());
 		return jApplicant;
 	}
-
-	
 	
 	
 	// Special calls to Jazz HR to get data for applicant
