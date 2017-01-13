@@ -41,15 +41,30 @@ public class AssessmentPipeline {
 	public void initiateAssessmentAnalysis(@NonNull Respondant respondant) {
 		log.debug("Assessment analysis requested for respondant {}", respondant.getId());
 
-		if (respondant.getRespondantStatus() < Respondant.STATUS_SCORED) {
+		if (respondant.getRespondantStatus() < Respondant.STATUS_SCORED) {			
 			log.debug("Respondant {} has status = {} - not scored yet.", respondant.getId(), respondant.getRespondantStatus());
-			scoringService.scoreAssessment(respondant);
-			log.debug("{} Respondant scores saved for respondant {}", respondant.getRespondantScores().size(), respondant);
+
+			if (respondant.getType() == Respondant.TYPE_SAMPLE) {
+				log.debug("Respondant Id#{} is a sample - will not score", respondant.getId());
+				respondant.setRespondantStatus(Respondant.STATUS_PREDICTED); //skip the rest of the pipeline
+				respondantService.save(respondant);
+			} else {
+				scoringService.scoreAssessment(respondant);
+				log.debug("{} Respondant scores saved for respondant {}", respondant.getRespondantScores().size(), respondant);				
+			}
 		}
 
 		if (respondant.getRespondantStatus() == Respondant.STATUS_SCORED) {
 
 			log.debug("Respondant {} has status = {} - not predicted yet.", respondant.getId(), respondant.getRespondantStatus());
+			
+			if (respondant.getType() == Respondant.TYPE_BENCHMARK) {
+				log.debug("Respondant Id#{} is a benchmark - will not predict", respondant.getId());
+				respondant.setRespondantStatus(Respondant.STATUS_HIRED); 
+				respondantService.save(respondant);
+				return; //skip the rest of the pipeline
+			}
+			
 			if (respondant.getPosition().getPositionPredictionConfigurations().size() >= 0) {
 				try {
 					// Stage 1

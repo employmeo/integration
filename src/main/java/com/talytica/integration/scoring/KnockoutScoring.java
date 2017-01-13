@@ -21,17 +21,15 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class SimpleAverageScoring implements ScoringModelEngine {
+public class KnockoutScoring implements ScoringModelEngine {
 	
 	@Autowired
 	private QuestionService questionService;
 	@Autowired
 	private CorefactorService corefactorService;
 	
-	public double MAXVAL;
-	public double MINVAL;
-	public boolean FLIP = false;
-	private String modelName = ScoringModelType.AVERAGE.getValue();
+	public double THRESHOLD;
+	private String modelName;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
@@ -48,8 +46,13 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 				responseSet = new ArrayList<Double>();
 				responseTable.put(corefactor, responseSet);
 			}
-			double value = (double)response.getResponseValue();
-			if ((FLIP) && (question.getDirection()<1)) value = MAXVAL - value + MINVAL;
+			double value = 0d; // value 0 means not paying attention or exaggerating answer.
+			
+			// if direction is negative, that means we want them to give a low score. 
+			if ((question.getDirection()<0) && ((100 - response.getResponseValue()) >= THRESHOLD)) value = 1d;			
+			// if direction is positive, that means we want them to answer with a high score.
+			if ((question.getDirection()>=0) && (response.getResponseValue() >= THRESHOLD)) value = 1d;
+
 			responseSet.add(value);
 		});
 	
@@ -57,10 +60,8 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 			Corefactor corefactor = pair.getKey();
 			List<Double> responseSet = pair.getValue();
 			double total = 0;
-			for (Double response : responseSet) {
-				total += response;
-			}
-			double percentage = (double) (total - ((double) responseSet.size() * MINVAL )) / ((double) responseSet.size() * (MAXVAL-MINVAL));
+			for (Double response : responseSet) total += response;
+			double percentage = total / (double) responseSet.size();
 			RespondantScore rs = new RespondantScore();
 			rs.setId(new RespondantScorePK(corefactor.getId(), respondant.getId()));
 			rs.setQuestionCount(responseSet.size());
@@ -82,24 +83,12 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 	public void initialize(String modelName) {
 		this.modelName = modelName;
 		switch (modelName) {
-		case "likertfive":
-			MAXVAL = 10;
-			MINVAL = 0;
+		case "deception":
+			THRESHOLD = 15;
 			break;
-		case "slidersixty":
-			MINVAL = 0;
-			MAXVAL = 60;
-			FLIP = true;
-			break;
-		case "sliderhundred":
-			MINVAL = 0;
-			MAXVAL = 100;
-			FLIP = true;
-			break;
-		case "average":
+		case "knockout":
 		default:
-			MAXVAL = 11;
-			MINVAL = 1;
+			THRESHOLD = 85;
 			break;
 		}
 	}
