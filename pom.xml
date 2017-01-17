@@ -26,9 +26,15 @@
 		<persistence-unit.version>0.0.19-SNAPSHOT</persistence-unit.version>
 		<sendgrid.version>3.1.0</sendgrid.version>
 		<swagger.version>1.5.9</swagger.version>
+		<metrics.version>3.1.3</metrics.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>com.ryantenney.metrics</groupId>
+			<artifactId>metrics-spring</artifactId>
+			<version>${metrics.version}</version>
+		</dependency>	
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
