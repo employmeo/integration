@@ -1,30 +1,23 @@
 package com.talytica.integration.util;
 
-import java.util.Set;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
-import javax.ws.rs.client.*;
-import javax.ws.rs.core.MediaType;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
-import com.employmeo.data.model.*;
-import com.employmeo.data.repository.*;
-import com.employmeo.data.service.*;
-import com.talytica.common.service.EmailService;
-import com.talytica.common.service.ExternalLinksService;
-import com.talytica.common.service.AddressService;
+import com.employmeo.data.model.PartnerApplicant;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 @Scope("prototype")
-public class DefaultPartnerUtil extends BasePartnerUtil {
+public class DefaultPartnerUtil extends BasePartnerUtil {@Override
+	public List<PartnerApplicant> fetchPartnerApplicants(String[] statuses, Optional<Range<Date>> period) {
+		throw new UnsupportedOperationException("Need a specific ATS partner to fetch partner applicants.");
+	}
 
 }

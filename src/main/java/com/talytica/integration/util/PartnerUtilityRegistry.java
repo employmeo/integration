@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Partner;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -15,7 +16,7 @@ public class PartnerUtilityRegistry {
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	public PartnerUtil getUtilFor(Partner lookupPartner) {
+	public PartnerUtil getUtilFor(@NonNull Partner lookupPartner) {
 		log.debug("Request for partner utility for {}", lookupPartner.getPartnerName());
 		PartnerUtil util = null;
 
@@ -38,4 +39,5 @@ public class PartnerUtilityRegistry {
 
 		return util;
 	}
+	
 }
