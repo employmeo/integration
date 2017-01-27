@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Scope("prototype")
-public class BasePartnerUtil implements PartnerUtil {
+public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Setter @Getter
 	private Partner partner = null;

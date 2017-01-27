@@ -21,7 +21,7 @@ public class AssessmentAnalysisScheduledTrigger {
 
 	@Scheduled(initialDelayString="${scheduled.assessment.trigger.init.seconds:60}000",
 				fixedDelayString = "${scheduled.assessment.trigger.delay.seconds:60}000")
-    private void triggerEligibleRespondantSubmissionAnalysis() {
+    public void triggerEligibleRespondantSubmissionAnalysis() {
         log.debug("Scheduled trigger: Assessing eligible respondant submissions");
 
         List<Respondant> eligibleRespondants = respondantService.getAnalysisPendingRespondants();
@@ -42,7 +42,7 @@ public class AssessmentAnalysisScheduledTrigger {
 
 	@Scheduled(initialDelayString="${scheduled.grader.trigger.init.seconds:90}000",
 			fixedDelayString = "${scheduled.grader.trigger.delay.seconds:900}000")
-	private void triggerGraderFulfilledScoring() {
+	public void triggerGraderFulfilledScoring() {
     log.debug("Scheduled trigger: Assessing eligible respondants whose graders are fulfilled for scoring");
 
     List<Respondant> eligibleRespondants = respondantService.getGraderBasedScoringPendingRespondants();

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Partner;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -15,27 +16,28 @@ public class PartnerUtilityRegistry {
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	public PartnerUtil getUtilFor(Partner lookupPartner) {
-		log.debug("Request for partner utility for {}", lookupPartner.getPartnerName());
+	public PartnerUtil getUtilFor(@NonNull Partner lookupPartner) {
+		log.trace("Request for partner utility for {}", lookupPartner.getPartnerName());
 		PartnerUtil util = null;
 
 		if ("ICIMS".equalsIgnoreCase(lookupPartner.getPartnerName())) {
 			ICIMSPartnerUtil icimsUtil = applicationContext.getBean(ICIMSPartnerUtil.class);
 			icimsUtil.setPartner(lookupPartner);
 			util = icimsUtil;
-			log.debug("Returning ICIMSPartnerUtil for partner {}", lookupPartner.getPartnerName());
+			log.trace("Returning ICIMSPartnerUtil for partner {}", lookupPartner.getPartnerName());
 		} else if ("JAZZ".equalsIgnoreCase(lookupPartner.getPartnerName())) { 
 			JazzPartnerUtil jazzUtil = applicationContext.getBean(JazzPartnerUtil.class);
 			jazzUtil.setPartner(lookupPartner);
 			util = jazzUtil;
-			log.debug("Returning JazzPartnerUtil for partner {}", lookupPartner.getPartnerName());
+			log.trace("Returning JazzPartnerUtil for partner {}", lookupPartner.getPartnerName());
 		} else {
 			DefaultPartnerUtil defaultUtil = applicationContext.getBean(DefaultPartnerUtil.class);
 			defaultUtil.setPartner(lookupPartner);
 			util = defaultUtil;
-			log.debug("Returning DefaultPartnerUtil for partner {}", lookupPartner.getPartnerName());
+			log.trace("Returning DefaultPartnerUtil for partner {}", lookupPartner.getPartnerName());
 		}
 
 		return util;
 	}
+	
 }
