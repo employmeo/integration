@@ -2,6 +2,8 @@ package com.talytica.common.metrics;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
@@ -12,9 +14,11 @@ import com.codahale.metrics.Reservoir;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Component
 public class MetricSender {
     private final MetricRegistry registry;
 
+    @Autowired
     public MetricSender(MetricRegistry registry) {
         this.registry = registry;
 

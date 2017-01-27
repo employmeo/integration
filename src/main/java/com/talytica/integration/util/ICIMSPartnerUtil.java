@@ -3,6 +3,8 @@ package com.talytica.integration.util;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.ws.rs.client.*;
@@ -18,6 +20,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
