@@ -3,6 +3,7 @@ package com.talytica.integration.util;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Account;
@@ -42,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.talytica.integration.objects.ATSAssessmentOrder;
+import com.talytica.integration.objects.JazzApplicantPollConfiguration;
 import com.talytica.integration.objects.JazzJobApplicant;
 
 import lombok.Getter;
@@ -68,7 +71,6 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	private Partner partner;
 
 	private static final String PARTNER_NAME = "Jazz";
-	private static final String[] workFlowStatusIds = {"2827415","2886659","2827450","2878899","2878947"};
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -312,13 +314,13 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		return serviceResponse;
 	}
 
-	public void orderNewCandidateAssessments(String accountApiKey) {
+	public void orderNewCandidateAssessments(JazzApplicantPollConfiguration configuration) {
 		List<ATSAssessmentOrder> orders = Lists.newArrayList();
 		
-		Set<JazzJobApplicant> applicants = fetchApplicants(accountApiKey);
+		Set<JazzJobApplicant> applicants = fetchApplicants(configuration);
 		
 		for(JazzJobApplicant applicant: applicants) {
-			ATSAssessmentOrder order = new ATSAssessmentOrder(applicant, accountApiKey);
+			ATSAssessmentOrder order = new ATSAssessmentOrder(applicant, configuration.getApiKey());
 			order.setEmail(Boolean.TRUE);
 			orders.add(order);
 		}
@@ -367,21 +369,21 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	}
 
-	private Set<JazzJobApplicant> fetchApplicants(String accountApiKey) {
+	private Set<JazzJobApplicant> fetchApplicants(JazzApplicantPollConfiguration configuration) {
 		Set<JazzJobApplicant> applicants = Sets.newHashSet();
-		for (String status : workFlowStatusIds) {
+		for (String status : configuration.getWorkFlowIds()) {
 			log.debug("Fetching applicants for statusId: {}", status);
 			
-			List<JazzJobApplicant> jobApplicantsByStatus = fetchJobApplicantsByStatus(status, accountApiKey);
+			List<JazzJobApplicant> jobApplicantsByStatus = fetchJobApplicantsByStatus(status, configuration.getApiKey(), configuration.getLookbackBeginDate(), configuration.getLookbackEndDate());
 			applicants.addAll(jobApplicantsByStatus);
 			log.info("Fetched a batch of {} applicants, with total applicants now at {}", jobApplicantsByStatus.size(), applicants.size());
 		}
 		return applicants;
 	}
 
-	public List<JazzJobApplicant> fetchJobApplicantsByStatus(String status, String accountApiKey) {
+	public List<JazzJobApplicant> fetchJobApplicantsByStatus(String status, String accountApiKey, String beginDate, String endDate) {
 		List<JazzJobApplicant> applicants = Lists.newArrayList();
-		String applicantsServiceEndpoint = "applicants/status/" + status;
+		String applicantsServiceEndpoint = "applicants/from_apply_date/" + beginDate + "/to_apply_date/" + endDate + "/status/" + status;
 
 		try {
 			String applicantsServiceResponse = jazzGet(applicantsServiceEndpoint, accountApiKey, null);
@@ -403,9 +405,19 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper = mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-		List<JazzJobApplicant> partnerApplicants = mapper.readValue(applicantsServiceResponse,
-				new TypeReference<List<JazzJobApplicant>>() {
-				});
+		List<JazzJobApplicant> partnerApplicants = Lists.newArrayList();
+		
+		try {
+			partnerApplicants = mapper.readValue(
+					applicantsServiceResponse,
+					new TypeReference<List<JazzJobApplicant>>() {
+					});
+		} catch(Exception e) {
+			log.warn("Failed to deserialize fetchApplicants api response to a collection, will try as single object next.", e);
+			
+			JazzJobApplicant singleApplicant = mapper.readValue(applicantsServiceResponse, JazzJobApplicant.class);
+			partnerApplicants.add(singleApplicant);
+		}
 
 		log.trace("Parsed Jazz applicants: {}", partnerApplicants);
 		return partnerApplicants;
