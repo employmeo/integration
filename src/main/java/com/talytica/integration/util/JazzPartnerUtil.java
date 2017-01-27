@@ -321,7 +321,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		
 		for(JazzJobApplicant applicant: applicants) {
 			ATSAssessmentOrder order = new ATSAssessmentOrder(applicant, configuration.getApiKey());
-			order.setEmail(Boolean.TRUE);
+			order.setEmail(configuration.getSendEmail());
 			orders.add(order);
 		}
 				

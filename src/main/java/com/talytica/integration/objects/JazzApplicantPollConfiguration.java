@@ -10,4 +10,5 @@ public class JazzApplicantPollConfiguration {
 	private List<String> workFlowIds;
 	private String lookbackBeginDate;
 	private String lookbackEndDate;	
+	private Boolean sendEmail;	
 }
