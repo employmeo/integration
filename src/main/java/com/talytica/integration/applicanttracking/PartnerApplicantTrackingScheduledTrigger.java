@@ -45,7 +45,7 @@ public class PartnerApplicantTrackingScheduledTrigger {
 		config.setApiKey("qNBh5onDQGu00yeHA4dHW8Fxb4r9m9G9");
 		config.setWorkFlowIds(Arrays.asList("2827415","2886659","2827450","2878899","2878947"));
 		
-		Range<Date> lookbackPeriod = getRangeInDaysFromToday(60);
+		Range<Date> lookbackPeriod = getRangeInDaysFromToday(180);
 		final SimpleDateFormat JazzDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		
 		config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
