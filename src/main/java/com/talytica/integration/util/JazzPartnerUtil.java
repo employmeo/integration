@@ -69,10 +69,6 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	private static final String PARTNER_NAME = "Jazz";
 	private static final String[] workFlowStatusIds = {"2827415","2886659","2827450","2878899","2878947"};
-<<<<<<< .merge_file_a02848
-	// private static final String[] workFlowStatusIds = { "2827415" };
-=======
->>>>>>> .merge_file_a16904
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
