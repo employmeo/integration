@@ -157,7 +157,9 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setPerson(savedPerson);
 			respondant.setPersonId(savedPerson.getId());
 			respondant.setPositionId(position.getId());
+			respondant.setPosition(position);
 			respondant.setLocationId(location.getId());
+			respondant.setLocation(location);
 			respondant.setAccountSurveyId(survey.getId());
 			respondant.setAccountSurvey(survey);
 			respondant.setPartner(getPartner());
