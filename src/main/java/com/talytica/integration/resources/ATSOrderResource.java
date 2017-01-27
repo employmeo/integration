@@ -41,7 +41,6 @@ public class ATSOrderResource {
 	   })
 	public String doPost(String body) {
 		JSONObject json = new JSONObject(body);
-		log.debug("processing with: {} ", json);
 		log.debug("ATS Requesting Assessment with: " + json.toString());
 
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
