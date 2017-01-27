@@ -25,6 +25,6 @@ public interface PartnerUtil {
 	public JSONObject getScoresMessage(Respondant respondant);
 	public void postScoresToPartner(Respondant respondant, JSONObject message);
 	
-	public List<PartnerApplicant> fetchPartnerApplicants(String[] statuses, Optional<Range<Date>> period);
+	//public List<PartnerApplicant> fetchPartnerApplicants(String[] statuses, Optional<Range<Date>> period);
 
 }

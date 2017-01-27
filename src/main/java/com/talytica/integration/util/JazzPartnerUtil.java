@@ -3,32 +3,31 @@ package com.talytica.integration.util;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Account;
 import com.employmeo.data.model.AccountSurvey;
 import com.employmeo.data.model.Location;
 import com.employmeo.data.model.Partner;
-import com.employmeo.data.model.PartnerApplicant;
 import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
 import com.employmeo.data.model.Respondant;
@@ -41,8 +40,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.talytica.integration.objects.ATSAssessmentOrder;
 import com.talytica.integration.objects.JazzJobApplicant;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -52,28 +54,34 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	@Autowired
 	RespondantNVPRepository respondantNVPRepository;
-	
+
 	@Autowired
 	PartnerService partnerService;
 
+	@Autowired
+	IntegrationClientFactory integrationClientFactory;
+
 	@Value("https://api.resumatorapi.com/v1/")
 	private String JAZZ_SERVICE;
-	
+
+	@Getter
+	private Partner partner;
+
 	private static final String PARTNER_NAME = "Jazz";
+	// private static final String[] workFlowStatusIds = {"2827415","2886659","2827450","2878899","2878947"};
+	private static final String[] workFlowStatusIds = { "2827415" };
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
 	public JazzPartnerUtil() {
 	}
-	
-	public Partner getPartner() {
+
+	@PostConstruct
+	public void initializePartner() {
 		Set<Partner> allPartners = partnerService.getAllPartners();
-		Partner jazzPartner = allPartners.stream()
-								.filter(partner -> PARTNER_NAME.equalsIgnoreCase(partner.getPartnerName()))
-								.findFirst()
-								.get();
-		
-		return jazzPartner;
+		partner = allPartners.stream().filter(partner -> PARTNER_NAME.equalsIgnoreCase(partner.getPartnerName()))
+				.findFirst().get();
+		log.debug("JazzPartner initialized: {}", partner);
 	}
 
 	@Override
@@ -282,7 +290,6 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	private String jazzGet(String getTarget, Account account) {
 		String apiKey = trimPrefix(account.getAtsId());
-
 		return jazzGet(getTarget, apiKey, null);
 	}
 
@@ -299,58 +306,95 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		String serviceResponse = null;
 		try {
 			serviceResponse = target.request(MediaType.APPLICATION_JSON).get(String.class);
-			log.info("Service {} yielded response : {}", getTarget, serviceResponse);
+			log.trace("Service {} yielded response : {}", getTarget, serviceResponse);
 		} catch (Exception e) {
 			log.warn("Failed to grab service {}. Exception: {}", getTarget, e);
 		}
 		return serviceResponse;
 	}
 
-	@Override
-	public List<PartnerApplicant> fetchPartnerApplicants(String[] statuses, Optional<Range<Date>> period) {
-		String applicantsServiceEndpoint = "applicants2jobs/workflow_step_id/2827415";
-		String apiKey = "qNBh5onDQGu00yeHA4dHW8Fxb4r9m9G9";
-		List<PartnerApplicant> applicants = Lists.newArrayList();
+	public void orderNewCandidateAssessments(String accountApiKey) {
+		List<ATSAssessmentOrder> orders = Lists.newArrayList();
+		
+		Set<JazzJobApplicant> applicants = fetchApplicants(accountApiKey);
+		
+		for(JazzJobApplicant applicant: applicants) {
+			ATSAssessmentOrder order = new ATSAssessmentOrder(applicant, accountApiKey);
+			order.setEmail(Boolean.TRUE);
+			orders.add(order);
+		}
+				
+		log.debug("Prepared {} ATS order requests", orders.size());
+		orderAssessments(orders);
+	}
+
+	private void orderAssessments(List<ATSAssessmentOrder> orders) {
+		log.debug("Ordering assessments...");
+
+		Client client = integrationClientFactory.newInstance(getPartner().getLogin(), getPartner().getPassword());
+		String serverHost = integrationClientFactory.getServer();
+		String orderAssessmentsUriPath = "/integration/atsorder";
+		String targetPath = serverHost + orderAssessmentsUriPath;
+
+		int counter = 0;
+		for (ATSAssessmentOrder order : orders) {
+			String applicantName = "'" + order.getFirst_name() + " " + order.getLast_name() + "'";
+			log.info("Placing order #{} for {}", ++counter, applicantName);
+
+			WebTarget target = client.target(targetPath);
+			try {
+				Response response = target
+									.request(new String[] { "application/json" })
+									.post(Entity.entity(order, "application/json"));
+				Boolean success = (null == response || response.getStatus() >= 300) ? false : true;
+				String serviceResponse = response.readEntity(String.class); 
+				if (success) {
+					log.debug("Posted ATS order to integration server for applicant {}", applicantName);
+				} else {
+					log.warn("Failed to post ATS order successfully for {}. Server response: {}", applicantName, serviceResponse);
+				}
+			} catch(Exception e) {
+				log.warn("Failed to post ATS order to integration server: {}", order, e );
+			}
+		}
+		log.info("All {} ATS order requests complete.", orders.size());
 
 		try {
-			String applicantsServiceResponse = jazzGet(applicantsServiceEndpoint, apiKey, null);
-			
-			if (null != applicantsServiceResponse) {
-				List<JazzJobApplicant> jazzApplicants = parseApplicants(applicantsServiceResponse);
-				log.debug("Parsed jazzed applicants: {}", jazzApplicants);
+			client.close();
+			log.debug("Integration client closed successfully");
+		} catch (Exception e) {
+			log.warn("Failed to close integrationClient cleanly. Watch for leaks", e);
+		}
 
-				applicants = transformApplicants(jazzApplicants);
-				log.debug("Transformed partner applicants: {}", applicants);
+	}
+
+	private Set<JazzJobApplicant> fetchApplicants(String accountApiKey) {
+		Set<JazzJobApplicant> applicants = Sets.newHashSet();
+		for (String status : workFlowStatusIds) {
+			log.debug("Fetching applicants for statusId: {}", status);
+			
+			List<JazzJobApplicant> jobApplicantsByStatus = fetchJobApplicantsByStatus(status, accountApiKey);
+			applicants.addAll(jobApplicantsByStatus);
+			log.info("Fetched a batch of {} applicants, with total applicants now at {}", jobApplicantsByStatus.size(), applicants.size());
+		}
+		return applicants;
+	}
+
+	public List<JazzJobApplicant> fetchJobApplicantsByStatus(String status, String accountApiKey) {
+		List<JazzJobApplicant> applicants = Lists.newArrayList();
+		String applicantsServiceEndpoint = "applicants/status/" + status;
+
+		try {
+			String applicantsServiceResponse = jazzGet(applicantsServiceEndpoint, accountApiKey, null);
+
+			if (null != applicantsServiceResponse) {
+				applicants = parseApplicants(applicantsServiceResponse);
+				log.debug("Retrieved jazzed applicants: {}", applicants.size());
 			}
 
 		} catch (Exception e) {
 			log.warn("Failed to retrieve/process applicants from Jazzed API service", e);
 		}
-
-		return applicants;
-	}
-
-	/**
-	 * transform from ats specific representation (Jazzed data type) to Talytica
-	 * canonical representation of a partner applicant.
-	 * 
-	 * @param jazzApplicants
-	 * @return List<PartnerApplicant> canonical representations
-	 */
-	private List<PartnerApplicant> transformApplicants(List<JazzJobApplicant> jazzApplicants) {
-		List<PartnerApplicant> applicants = Lists.newArrayList();
-		applicants = jazzApplicants.stream().map(jazzApplicant -> {
-			PartnerApplicant applicant = new PartnerApplicant();
-
-			applicant.setApplicantId(jazzApplicant.getApplicant_id());
-			applicant.setPartnerPositionId(jazzApplicant.getJob_id());
-			applicant.setApplicationId(jazzApplicant.getId());
-			applicant.setApplicationStatus(jazzApplicant.getWorkflow_step_id());
-			applicant.setApplicationDate(jazzApplicant.getDate());
-			applicant.setPartner(getPartner());
-
-			return applicant;
-		}).collect(Collectors.toList());
 
 		return applicants;
 	}
@@ -364,7 +408,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				new TypeReference<List<JazzJobApplicant>>() {
 				});
 
-		log.debug("Parsed partnerApplicants: {}", partnerApplicants);
+		log.trace("Parsed Jazz applicants: {}", partnerApplicants);
 		return partnerApplicants;
 	}
 }

@@ -396,7 +396,4 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		return response;
 	}
 
-	public List<PartnerApplicant> fetchPartnerApplicants(String[] statuses, Optional<Range<Date>> period) {
-		throw new UnsupportedOperationException("Fetching partner applicants as yet unsupported for ICIMS");
-	}	
 }

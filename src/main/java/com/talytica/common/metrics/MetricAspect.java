@@ -11,7 +11,7 @@ import org.springframework.util.StopWatch;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Aspect
+//@Aspect
 @Component
 public class MetricAspect {
 

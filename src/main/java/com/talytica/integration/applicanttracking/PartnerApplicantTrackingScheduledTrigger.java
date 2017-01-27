@@ -1,13 +1,9 @@
 package com.talytica.integration.applicanttracking;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.employmeo.data.model.PartnerApplicant;
-import com.employmeo.data.service.PartnerService;
 import com.talytica.integration.util.JazzPartnerUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -19,19 +15,23 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	@Autowired
 	private JazzPartnerUtil jazzPartnerUtil;
 	
-	@Autowired
-	private PartnerService partnerService;
 
-	@Scheduled(initialDelayString="${scheduled.applicanttracking.jazz.trigger.init.seconds:05}000",
-			fixedDelayString = "${scheduled.applicanttracking.jazz.trigger.delay.seconds:120}000")
+	/**
+	 * Runs at server startup and then every 6 hours thereafter.
+	 * Should put in a determinate schedule subsequently.
+	 * 
+	 * Presently, caters to only one account (specific to SalesRoad's integration of Jazz ATS)
+	 */
+	@Scheduled(initialDelayString="${scheduled.applicanttracking.jazz.trigger.init.seconds:10}000",
+			fixedDelayString = "${scheduled.applicanttracking.jazz.trigger.delay.seconds:21600}000")
 	public void trackJazzedApplicants() {
 	    log.debug("Scheduled trigger (Jazz): Tracking partner applicants");
 	    
-	    List<PartnerApplicant> applicants = jazzPartnerUtil.fetchPartnerApplicants(null, null);	
+	    // Supported account for now is SalesRoad, with apiKey as below 
+	    final String SALESROAD_JAZZ_ACCOUNT_PRODUCTION_API_KEY = "qNBh5onDQGu00yeHA4dHW8Fxb4r9m9G9";
+	    jazzPartnerUtil.orderNewCandidateAssessments(SALESROAD_JAZZ_ACCOUNT_PRODUCTION_API_KEY);	
 	    
-	    partnerService.saveNewApplicants(applicants);
-	    
-	    log.debug("Jazzed partner applicants fetch complete.");
+	    log.debug("Jazzed applicants assessment ordering complete.");
 	}
 
 }

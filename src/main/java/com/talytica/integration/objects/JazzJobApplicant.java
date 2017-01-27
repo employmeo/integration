@@ -7,10 +7,12 @@ import lombok.Data;
 @Data
 public class JazzJobApplicant {
 
-	private String id;
-	private String applicant_id;
+	private String id; // applicantId
+	private String first_name;
+	private String last_name;
 	private String job_id;
-	private String workflow_step_id;
-	private Date date; // formatted as "2016-09-19", which jackson can map directly
+	private String job_title;
+	private String prospect_phone;
+	private Date apply_date; // formatted as "2016-09-19", which jackson can map directly
 	
 }
