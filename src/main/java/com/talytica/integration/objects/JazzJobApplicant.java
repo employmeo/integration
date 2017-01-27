@@ -13,6 +13,6 @@ public class JazzJobApplicant {
 	private String job_id;
 	private String job_title;
 	private String prospect_phone;
-	private Date apply_date; // formatted as "2016-09-19", which jackson can map directly
+	private String apply_date; // formatted as "2016-09-19", which jackson can map directly // changed back - SK 
 	
 }
