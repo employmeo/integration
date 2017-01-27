@@ -71,7 +71,6 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	private Partner partner;
 
 	private static final String PARTNER_NAME = "Jazz";
-
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
 	public JazzPartnerUtil() {
@@ -160,6 +159,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setPositionId(position.getId());
 			respondant.setLocationId(location.getId());
 			respondant.setAccountSurveyId(survey.getId());
+			respondant.setAccountSurvey(survey);
 			respondant.setPartner(getPartner());
 			respondant.setPartnerId(getPartner().getId());
 			try {
@@ -269,7 +269,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 			respondantNVPRepository.save(nvps);
 
-			if (json.has("email")) {
+			if (json.has("email") && json.getBoolean("email")) {
 				emailService.sendEmailInvitation(savedRespondant);
 			}
 		}

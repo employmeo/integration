@@ -33,7 +33,7 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	public void trackJazzedApplicants() {
 	    log.debug("Scheduled trigger (Jazz): Tracking partner applicants");
 	    
-	    // Supported account for now is SalesRoad, with apiKey as below 
+	    // Supported account for now is SalesRoad, with specific configs as below 
 	    JazzApplicantPollConfiguration pollConfiguration = getSalesRoadSpecificPollConfiguration();
 	    jazzPartnerUtil.orderNewCandidateAssessments(pollConfiguration);	
 	    
