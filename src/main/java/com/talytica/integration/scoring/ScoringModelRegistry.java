@@ -42,6 +42,8 @@ public class ScoringModelRegistry {
 		                   .put(ScoringModelType.LIKERTFIVE, SimpleAverageScoring.class)
 		                   .put(ScoringModelType.SLIDERSIXTY, SimpleAverageScoring.class)
 		                   .put(ScoringModelType.SLIDERHUNDRED, SimpleAverageScoring.class)
+		                   .put(ScoringModelType.TRAIT, BlendedTypeScoring.class)
+		                   .put(ScoringModelType.HEXACO, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.KNOCKOUT, KnockoutScoring.class)
 		                   .put(ScoringModelType.DECEPTION, KnockoutScoring.class)
 		                   .put(ScoringModelType.RANKER, RankerScoring.class)
