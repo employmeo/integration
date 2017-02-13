@@ -52,7 +52,12 @@ public class RankerScoring implements ScoringModelEngine {
 						ranks = new ArrayList<Double>();
 						rankings.put(corefactor, ranks);
 					}
-					ranks.add(new Double(1.0d - ((double) i / (double) (priorities.length-1)))); // inverted percentile ranking.
+					
+					if (answer.get().getDirection() < 0) {
+						ranks.add(new Double((double) i / (double) (priorities.length-1))); // inverted percentile ranking.						
+					} else {
+						ranks.add(new Double(1.0d - ((double) i / (double) (priorities.length-1)))); // inverted percentile ranking.
+					}
 				}
 			}
 		});

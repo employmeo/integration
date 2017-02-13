@@ -18,6 +18,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -154,6 +155,15 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setAccount(account);
 			respondant.setAccountId(account.getId());
 			respondant.setAtsId(addPrefix(application.getString("id")));
+			String phoneNum = savedPerson.getPhone();
+			if (null == phoneNum || phoneNum.isEmpty()) {
+				log.warn("JazzApp {} no phone {}", respondant.getAtsId(), savedPerson);
+			} else {
+				phoneNum = phoneNum.replaceAll("[^\\d]", "");
+				phoneNum = phoneNum.startsWith("1") ? phoneNum.substring(1) : phoneNum;
+				respondant.setPayrollId(StringUtils.left(phoneNum,10)); //shorten to 10 digits.
+				log.debug("JazzApp {} using phone as lookupid {}", respondant.getAtsId(), phoneNum);
+			}
 			respondant.setPerson(savedPerson);
 			respondant.setPersonId(savedPerson.getId());
 			respondant.setPositionId(position.getId());
@@ -323,7 +333,8 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		
 		for(JazzJobApplicant applicant: applicants) {
 			ATSAssessmentOrder order = new ATSAssessmentOrder(applicant, configuration.getApiKey());
-			order.setEmail(configuration.getSendEmail());
+			//order.setEmail(configuration.getSendEmail());
+			order.setEmail(Boolean.FALSE);
 			orders.add(order);
 		}
 				
@@ -373,6 +384,10 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	private Set<JazzJobApplicant> fetchApplicants(JazzApplicantPollConfiguration configuration) {
 		Set<JazzJobApplicant> applicants = Sets.newHashSet();
+
+		
+		/*
+		 *  remove the code for grab by status. just grab all. and don't email!
 		for (String status : configuration.getWorkFlowIds()) {
 			log.debug("Fetching applicants for statusId: {}", status);
 			
@@ -380,6 +395,10 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			applicants.addAll(jobApplicantsByStatus);
 			log.info("Fetched a batch of {} applicants, with total applicants now at {}", jobApplicantsByStatus.size(), applicants.size());
 		}
+		*/
+		List<JazzJobApplicant> jobApplicantsByStatus = fetchJobApplicantsByDate(configuration.getApiKey(), configuration.getLookbackBeginDate(), configuration.getLookbackEndDate());
+		applicants.addAll(jobApplicantsByStatus);
+		
 		return applicants;
 	}
 
@@ -402,6 +421,25 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		return applicants;
 	}
 
+	public List<JazzJobApplicant> fetchJobApplicantsByDate(String accountApiKey, String beginDate, String endDate) {
+		List<JazzJobApplicant> applicants = Lists.newArrayList();
+		String applicantsServiceEndpoint = "applicants/from_apply_date/" + beginDate + "/to_apply_date/" + endDate;
+
+		try {
+			String applicantsServiceResponse = jazzGet(applicantsServiceEndpoint, accountApiKey, null);
+
+			if (null != applicantsServiceResponse) {
+				applicants = parseApplicants(applicantsServiceResponse);
+				log.debug("Retrieved jazzed applicants: {}", applicants.size());
+			}
+
+		} catch (Exception e) {
+			log.warn("Failed to retrieve/process applicants from Jazzed API service", e);
+		}
+
+		return applicants;
+	}	
+	
 	List<JazzJobApplicant> parseApplicants(String applicantsServiceResponse)
 			throws JsonParseException, JsonMappingException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
