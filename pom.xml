@@ -23,7 +23,7 @@
 		<json-version>20151123</json-version>
 		<jersey-jackson.version>2.24.1</jersey-jackson.version>
 		<commons-math-version>3.6.1</commons-math-version>
-		<persistence-unit.version>0.0.25</persistence-unit.version>
+		<persistence-unit.version>0.0.26-SNAPSHOT</persistence-unit.version>
 		<sendgrid.version>3.1.0</sendgrid.version>
 		<swagger.version>1.5.9</swagger.version>
 		<metrics.version>3.1.3</metrics.version>

@@ -12,6 +12,8 @@ public enum ScoringModelType {
 	SLIDERHUNDRED("sliderhundred"),
 	KNOCKOUT("knockout"),
 	DECEPTION("deception"),
+	HEXACO("hexaco"),
+	TRAIT("trait"),
 	AVERAGE("average"),
 	RIGHTWRONGBLANK("rightwrongblank"),
 	NONE("none");
