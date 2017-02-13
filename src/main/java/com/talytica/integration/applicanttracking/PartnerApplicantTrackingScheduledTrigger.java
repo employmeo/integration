@@ -23,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class PartnerApplicantTrackingScheduledTrigger {
 
+	@Value("${jobs.applicanttracking.jazz.schedule.days}")
+	Integer DAYSFROMTODAY;
+	
 	@Autowired
 	private JazzPartnerUtil jazzPartnerUtil;
 
@@ -36,7 +39,7 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	 * integration of Jazz ATS)
 	 */
 	@Scheduled(cron = "${jobs.applicanttracking.jazz.schedule.cron}", zone = "${jobs.applicanttracking.jazz.schedule.timezone}")
-	// @ConditionalOnProperty(name="jobs.applicanttracking.jazz.enabled") 
+	//@ConditionalOnProperty(name="jobs.applicanttracking.jazz.enabled") 
 	public void trackJazzedApplicants() {
 		if (jazzPartnerTrackingJobEnabled) {
 			log.info("Scheduled trigger (Jazz): Tracking partner applicants");
@@ -55,7 +58,7 @@ public class PartnerApplicantTrackingScheduledTrigger {
 		config.setApiKey("qNBh5onDQGu00yeHA4dHW8Fxb4r9m9G9");
 		config.setWorkFlowIds(Arrays.asList("2827415", "2886659", "2827450", "2878899", "2878947"));
 
-		Range<Date> lookbackPeriod = getRangeInDaysFromToday(180);
+		Range<Date> lookbackPeriod = getRangeInDaysFromToday(DAYSFROMTODAY);
 		final SimpleDateFormat JazzDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
 		config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
