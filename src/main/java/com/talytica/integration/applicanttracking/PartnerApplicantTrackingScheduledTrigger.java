@@ -39,7 +39,7 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	 * integration of Jazz ATS)
 	 */
 	@Scheduled(cron = "${jobs.applicanttracking.jazz.schedule.cron}", zone = "${jobs.applicanttracking.jazz.schedule.timezone}")
-	//@ConditionalOnProperty(name="jobs.applicanttracking.jazz.enabled") 
+	@ConditionalOnProperty(name="jobs.applicanttracking.jazz.enabled") 
 	public void trackJazzedApplicants() {
 		if (jazzPartnerTrackingJobEnabled) {
 			log.info("Scheduled trigger (Jazz): Tracking partner applicants");
