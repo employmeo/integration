@@ -196,7 +196,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	}
 
 	@Override
-	public Respondant getRespondantFrom(JSONObject json) {
+	public Respondant getRespondantFrom(JSONObject json, Account account) {
 		Respondant respondant = null;
 		String workflowLink = ICIMS_API+json.getString("customerId") +
 				"/applicantworkflows/" +json.getString("systemId");
@@ -209,7 +209,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
-		Respondant respondant = getRespondantFrom(json);
+		Respondant respondant = getRespondantFrom(json, account);
 		if (respondant != null)
 		 {
 			return respondant; // Check that its not a duplicate request

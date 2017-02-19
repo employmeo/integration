@@ -1,10 +1,10 @@
 package com.talytica.integration.objects;
 
-import java.util.Date;
-
 import lombok.Data;
+import lombok.ToString;
 
 @Data
+@ToString
 public class JazzJobApplicant {
 
 	private String id; // applicantId

@@ -48,7 +48,7 @@ public class GetScoreResource {
 		log.debug("processing with: {}", json);
 		try { // the required parameters
 			account = pu.getAccountFrom(json.getJSONObject("account"));
-			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"));
+			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"), account);
 			if ((account == null) || (respondant == null)) {
 				log.debug("account: {} applicant {}", account, respondant);
 				throw new Exception ("Not Found: " + json);

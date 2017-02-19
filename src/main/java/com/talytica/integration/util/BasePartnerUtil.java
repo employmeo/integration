@@ -89,7 +89,6 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public Account getAccountFrom(JSONObject jAccount) {
-		log.debug("get account called with {} by {}", jAccount, partner);
 		Account account = null;
 		String accountAtsId = jAccount.optString("account_ats_id");
 		if (accountAtsId != null) {
@@ -178,7 +177,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	}
 
 	@Override
-	public Respondant getRespondantFrom(JSONObject applicant) {
+	public Respondant getRespondantFrom(JSONObject applicant, Account account) {
 		Respondant respondant = null;
 		String applicantAtsId = applicant.optString("applicant_ats_id");
 		if (applicantAtsId != null) {
