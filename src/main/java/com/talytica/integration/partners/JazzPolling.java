@@ -122,7 +122,7 @@ public class JazzPolling {
 		while (limit) {
 			int counter = 0;
 			try {
-				String applicantsServiceResponse = pu.jazzGet(applicantsServiceEndpoint+"/page/"+page, accountApiKey, null);		
+				String applicantsServiceResponse = pu.jazzGet(applicantsServiceEndpoint+"page/"+page, accountApiKey, null);		
 				if (null != applicantsServiceResponse) {
 					List<JazzHire> allhires = Lists.newArrayList();
 					try {
