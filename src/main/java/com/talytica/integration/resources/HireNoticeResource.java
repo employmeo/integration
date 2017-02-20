@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
 import com.employmeo.data.service.RespondantService;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.Api;
 
@@ -60,10 +60,10 @@ public class HireNoticeResource {
 
 		try { // the required parameters
 			account = pu.getAccountFrom(json.getJSONObject("account"));
-			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"));
+			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"), account);
 			status = json.getJSONObject("applicant").getString("applicant_status");
-			String hireDate = json.getJSONObject("applicant").getString("applicant_change_date");
-			changeDate = Date.valueOf(hireDate);
+			Long hireDate = json.getJSONObject("applicant").getLong("applicant_change_date");
+			changeDate = new Date(hireDate);
 			if ((respondant == null) || (account == null)) {
 				throw new Exception("Can't find applicant or account.");
 			}
@@ -77,31 +77,40 @@ public class HireNoticeResource {
 			throw new WebApplicationException(ACCOUNT_MATCH);
 		}
 
+		Integer newStatus = null;
 		switch (status) {
+		case "invited":
+			newStatus = Respondant.STATUS_INVITED;
+			break;
 		case "notoffered":
-			respondant.setRespondantStatus(Respondant.STATUS_REJECTED);
+			newStatus = Respondant.STATUS_REJECTED;
 			break;
 		case "offered":
-			respondant.setRespondantStatus(Respondant.STATUS_OFFERED);
+			newStatus = Respondant.STATUS_OFFERED;
 			break;
 		case "declinedoffer":
-			respondant.setRespondantStatus(Respondant.STATUS_DECLINED);
+			newStatus = Respondant.STATUS_DECLINED;
 			break;
 		case "hired":
-			respondant.setRespondantStatus(Respondant.STATUS_HIRED);
+			newStatus = Respondant.STATUS_HIRED;
 			respondant.setHireDate(changeDate);
 			break;
 		case "quit":
-			respondant.setRespondantStatus(Respondant.STATUS_QUIT);
+			newStatus = Respondant.STATUS_QUIT;
 			break;
 		case "terminated":
-			respondant.setRespondantStatus(Respondant.STATUS_TERMINATED);
+			newStatus = Respondant.STATUS_TERMINATED;
 			break;
 		default:
 			throw new WebApplicationException(UNKNOWN_STATUS);
 		}
-
-		respondantService.save(respondant);
+		if ((newStatus != null) && (newStatus > respondant.getRespondantStatus())) {
+			respondant.setRespondantStatus(newStatus);
+			respondantService.save(respondant);
+		} else if ((newStatus == null) || (newStatus < respondant.getRespondantStatus())){
+			log.debug("Did not update respondant {} from status {} to {}",respondant.getId(),respondant.getRespondantStatus(),newStatus);
+			return Response.status(Response.Status.NOT_MODIFIED).entity("Status: " + status + " not accepted").build();
+		}
 
 		return Response.status(Response.Status.ACCEPTED).build();
 	}

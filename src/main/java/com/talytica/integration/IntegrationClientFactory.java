@@ -1,4 +1,4 @@
-package com.talytica.integration.util;
+package com.talytica.integration;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;

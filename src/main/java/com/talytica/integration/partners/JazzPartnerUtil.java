@@ -1,19 +1,14 @@
-package com.talytica.integration.util;
+package com.talytica.integration.partners;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -24,7 +19,6 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Account;
@@ -35,18 +29,10 @@ import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
+import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.repository.RespondantNVPRepository;
 import com.employmeo.data.service.PartnerService;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.talytica.integration.objects.ATSAssessmentOrder;
-import com.talytica.integration.objects.JazzApplicantPollConfiguration;
-import com.talytica.integration.objects.JazzJobApplicant;
+import com.talytica.integration.IntegrationClientFactory;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -65,24 +51,12 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Autowired
 	IntegrationClientFactory integrationClientFactory;
 
-	@Value("https://api.resumatorapi.com/v1/")
+	@Value("${partners.jazz.api}")
 	private String JAZZ_SERVICE;
 
-	@Getter
-	private Partner partner;
-
-	private static final String PARTNER_NAME = "Jazz";
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
 	public JazzPartnerUtil() {
-	}
-
-	@PostConstruct
-	public void initializePartner() {
-		Set<Partner> allPartners = partnerService.getAllPartners();
-		partner = allPartners.stream().filter(partner -> PARTNER_NAME.equalsIgnoreCase(partner.getPartnerName()))
-				.findFirst().get();
-		log.debug("JazzPartner initialized: {}", partner);
 	}
 
 	@Override
@@ -117,14 +91,24 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	}
 
 	@Override
-	public Respondant getRespondantFrom(JSONObject applicant) {
-		return respondantService.getRespondantByAtsId(addPrefix(applicant.getString("id")));
+	public Respondant getRespondantFrom(JSONObject applicant, Account account) {
+		Respondant respondant = null;
+		respondant = respondantService.getRespondantByAtsId(addPrefix(applicant.get("id").toString()));
+		if ((null == respondant) && (applicant.has("applicant_id")) && (applicant.has("job_id"))) {
+			Person person = personService.getPersonByAtsId(addPrefix(applicant.getString("applicant_id")));
+			Position position = accountService.getPositionByAtsId(account.getId(),addPrefix(applicant.getString("job_id")));
+			if ((null != person) & (null != position)) {
+				respondant = respondantService.getRespondantByPersonAndPosition(person,position);
+			}
+		}
+		
+		return respondant;
 	}
 
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
 		String jobId = json.getString("job_id");
-		String appId = (json.getString("id"));
+		String appId = json.getString("id");
 		String appservice = "applicants/" + appId;
 		String appjobservice = "applicants2jobs/applicant_id/" + appId + "/job_id/" + jobId;
 		JSONObject candidate = new JSONObject(jazzGet(appservice, account));
@@ -147,7 +131,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			person.setAddress(candidate.optString("location"));
 			savedPerson = personService.save(person);
 		} else {
-			savedRespondant = getRespondantFrom(application);
+			savedRespondant = getRespondantFrom(application, account);
 		}
 
 		if (savedRespondant == null) {
@@ -174,6 +158,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setAccountSurvey(survey);
 			respondant.setPartner(getPartner());
 			respondant.setPartnerId(getPartner().getId());
+			respondant.setScorePostMethod(JAZZ_SERVICE+"/notes");
 			respondant.setRespondantStatus(Respondant.STATUS_CREATED);
 			try {
 				String applyDate = json.getString("apply_date");
@@ -300,14 +285,38 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		return jApplicant;
 	}
 
+	
+	@Override
+	public JSONObject getScoresMessage(Respondant respondant) {
+		JSONObject message = new JSONObject();
+		message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
+		message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
+		message.put("user_id", "usr_anonymous");
+		message.put("security", "0");
+		
+		StringBuffer notes = new StringBuffer();
+		notes.append("Talytica Overall Score: ");
+		notes.append(respondant.getCompositeScore());
+		notes.append("\n");
+		for (RespondantScore rs : respondant.getRespondantScores()) {
+			notes.append(corefactorService.findCorefactorById(rs.getId().getCorefactorId()).getName());
+			notes.append(": ");
+			notes.append(String.format("%.2f", rs.getValue()));
+			notes.append("\n");	
+		}
+		message.put("contents", notes.toString());
+
+		return message;
+	}	
+	
 	// Special calls to Jazz HR to get data for applicant
 
-	private String jazzGet(String getTarget, Account account) {
+	public String jazzGet(String getTarget, Account account) {
 		String apiKey = trimPrefix(account.getAtsId());
 		return jazzGet(getTarget, apiKey, null);
 	}
 
-	private String jazzGet(String getTarget, String apiKey, Map<String, String> params) {
+	public String jazzGet(String getTarget, String apiKey, Map<String, String> params) {
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target(JAZZ_SERVICE + getTarget).queryParam("apikey", apiKey);
 
@@ -326,141 +335,14 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		}
 		return serviceResponse;
 	}
-
-	public void orderNewCandidateAssessments(JazzApplicantPollConfiguration configuration) {
-		List<ATSAssessmentOrder> orders = Lists.newArrayList();
-		
-		Set<JazzJobApplicant> applicants = fetchApplicants(configuration);
-		
-		for(JazzJobApplicant applicant: applicants) {
-			ATSAssessmentOrder order = new ATSAssessmentOrder(applicant, configuration.getApiKey());
-			//order.setEmail(configuration.getSendEmail());
-			order.setEmail(Boolean.FALSE);
-			orders.add(order);
-		}
-				
-		log.debug("Prepared {} ATS order requests", orders.size());
-		orderAssessments(orders);
-	}
-
-	private void orderAssessments(List<ATSAssessmentOrder> orders) {
-		log.debug("Ordering assessments...");
-
-		Client client = integrationClientFactory.newInstance(getPartner().getLogin(), getPartner().getPassword());
-		String serverHost = integrationClientFactory.getServer();
-		String orderAssessmentsUriPath = "/integration/atsorder";
-		String targetPath = serverHost + orderAssessmentsUriPath;
-
-		int counter = 0;
-		for (ATSAssessmentOrder order : orders) {
-			String applicantName = "'" + order.getFirst_name() + " " + order.getLast_name() + "'";
-			log.info("Placing order #{} for {}", ++counter, applicantName);
-
-			WebTarget target = client.target(targetPath);
-			try {
-				Response response = target
-									.request(new String[] { "application/json" })
-									.post(Entity.entity(order, "application/json"));
-				Boolean success = (null == response || response.getStatus() >= 300) ? false : true;
-				String serviceResponse = response.readEntity(String.class); 
-				if (success) {
-					log.debug("Posted ATS order to integration server for applicant {}", applicantName);
-				} else {
-					log.warn("Failed to post ATS order successfully for {}. Server response: {}", applicantName, serviceResponse);
-				}
-			} catch(Exception e) {
-				log.warn("Failed to post ATS order to integration server: {}", order, e );
-			}
-		}
-		log.info("All {} ATS order requests complete.", orders.size());
-
-		try {
-			client.close();
-			log.debug("Integration client closed successfully");
-		} catch (Exception e) {
-			log.warn("Failed to close integrationClient cleanly. Watch for leaks", e);
-		}
-
-	}
-
-	private Set<JazzJobApplicant> fetchApplicants(JazzApplicantPollConfiguration configuration) {
-		Set<JazzJobApplicant> applicants = Sets.newHashSet();
-
-		
-		/*
-		 *  remove the code for grab by status. just grab all. and don't email!
-		for (String status : configuration.getWorkFlowIds()) {
-			log.debug("Fetching applicants for statusId: {}", status);
-			
-			List<JazzJobApplicant> jobApplicantsByStatus = fetchJobApplicantsByStatus(status, configuration.getApiKey(), configuration.getLookbackBeginDate(), configuration.getLookbackEndDate());
-			applicants.addAll(jobApplicantsByStatus);
-			log.info("Fetched a batch of {} applicants, with total applicants now at {}", jobApplicantsByStatus.size(), applicants.size());
-		}
-		*/
-		List<JazzJobApplicant> jobApplicantsByStatus = fetchJobApplicantsByDate(configuration.getApiKey(), configuration.getLookbackBeginDate(), configuration.getLookbackEndDate());
-		applicants.addAll(jobApplicantsByStatus);
-		
-		return applicants;
-	}
-
-	public List<JazzJobApplicant> fetchJobApplicantsByStatus(String status, String accountApiKey, String beginDate, String endDate) {
-		List<JazzJobApplicant> applicants = Lists.newArrayList();
-		String applicantsServiceEndpoint = "applicants/from_apply_date/" + beginDate + "/to_apply_date/" + endDate + "/status/" + status;
-
-		try {
-			String applicantsServiceResponse = jazzGet(applicantsServiceEndpoint, accountApiKey, null);
-
-			if (null != applicantsServiceResponse) {
-				applicants = parseApplicants(applicantsServiceResponse);
-				log.debug("Retrieved jazzed applicants: {}", applicants.size());
-			}
-
-		} catch (Exception e) {
-			log.warn("Failed to retrieve/process applicants from Jazzed API service", e);
-		}
-
-		return applicants;
-	}
-
-	public List<JazzJobApplicant> fetchJobApplicantsByDate(String accountApiKey, String beginDate, String endDate) {
-		List<JazzJobApplicant> applicants = Lists.newArrayList();
-		String applicantsServiceEndpoint = "applicants/from_apply_date/" + beginDate + "/to_apply_date/" + endDate;
-
-		try {
-			String applicantsServiceResponse = jazzGet(applicantsServiceEndpoint, accountApiKey, null);
-
-			if (null != applicantsServiceResponse) {
-				applicants = parseApplicants(applicantsServiceResponse);
-				log.debug("Retrieved jazzed applicants: {}", applicants.size());
-			}
-
-		} catch (Exception e) {
-			log.warn("Failed to retrieve/process applicants from Jazzed API service", e);
-		}
-
-		return applicants;
-	}	
 	
-	List<JazzJobApplicant> parseApplicants(String applicantsServiceResponse)
-			throws JsonParseException, JsonMappingException, IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper = mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-		List<JazzJobApplicant> partnerApplicants = Lists.newArrayList();
-		
+	public Date getDateFrom(String date) {
+		Date returnDate = new Date();
 		try {
-			partnerApplicants = mapper.readValue(
-					applicantsServiceResponse,
-					new TypeReference<List<JazzJobApplicant>>() {
-					});
-		} catch(Exception e) {
-			log.warn("Failed to deserialize fetchApplicants api response to a collection, will try as single object next.", e);
-			
-			JazzJobApplicant singleApplicant = mapper.readValue(applicantsServiceResponse, JazzJobApplicant.class);
-			partnerApplicants.add(singleApplicant);
+			returnDate = JAZZ_SDF.parse(date);
+		} catch (Exception e) {
+			log.warn("failed to convert Jazz Date {}", date);
 		}
-
-		log.trace("Parsed Jazz applicants: {}", partnerApplicants);
-		return partnerApplicants;
+		return returnDate;
 	}
 }

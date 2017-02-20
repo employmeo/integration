@@ -6,7 +6,7 @@ import com.employmeo.data.model.*;
 import com.talytica.integration.objects.CorefactorScore;
 import com.talytica.integration.objects.PredictionResult;
 
-public interface PredictionModelEngine<MC> {
+public interface PredictionModelEngine {
 
 	/**
 	 * Prediction implementations can do local processing, or make requisite
@@ -15,9 +15,10 @@ public interface PredictionModelEngine<MC> {
 	 * @param respondant
 	 * @return
 	 */
-	public abstract PredictionResult runPredictions(Respondant respondant, Position position, Location location, List<CorefactorScore> corefactorScores);
+	public abstract PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, Location location, List<CorefactorScore> corefactorScores);
 	public abstract String getModelName();
-	public abstract void initialize(String modelName);
-	public abstract MC getModelConfiguration();
+	public abstract Long getModelId();
+	public abstract String getModelType();
+	public abstract void initialize(PredictionModel model);
 
 }

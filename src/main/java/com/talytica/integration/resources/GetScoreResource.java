@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.Api;
 
@@ -48,7 +48,7 @@ public class GetScoreResource {
 		log.debug("processing with: {}", json);
 		try { // the required parameters
 			account = pu.getAccountFrom(json.getJSONObject("account"));
-			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"));
+			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"), account);
 			if ((account == null) || (respondant == null)) {
 				log.debug("account: {} applicant {}", account, respondant);
 				throw new Exception ("Not Found: " + json);

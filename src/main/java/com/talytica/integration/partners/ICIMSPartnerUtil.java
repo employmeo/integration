@@ -1,10 +1,8 @@
-package com.talytica.integration.util;
+package com.talytica.integration.partners;
 
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.ws.rs.client.*;
@@ -20,7 +18,6 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
@@ -38,11 +35,11 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public class ICIMSPartnerUtil implements PartnerUtil {
 
-	@Value("employmeoapiuser")
+	@Value("${partners.icims.user}")
 	private String ICIMS_USER;
-	@Value("YN9rEQnU")
+	@Value("${partners.icims.password}")
 	private String ICIMS_PASS;
-	@Value("https://api.icims.com/customers/")
+	@Value("${partners.icims.api}")
 	private String ICIMS_API;
 	@Value ("${com.talytica.urls.proxy}")
 	private String PROXY_URL;
@@ -196,7 +193,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	}
 
 	@Override
-	public Respondant getRespondantFrom(JSONObject json) {
+	public Respondant getRespondantFrom(JSONObject json, Account account) {
 		Respondant respondant = null;
 		String workflowLink = ICIMS_API+json.getString("customerId") +
 				"/applicantworkflows/" +json.getString("systemId");
@@ -209,7 +206,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
-		Respondant respondant = getRespondantFrom(json);
+		Respondant respondant = getRespondantFrom(json, account);
 		if (respondant != null)
 		 {
 			return respondant; // Check that its not a duplicate request

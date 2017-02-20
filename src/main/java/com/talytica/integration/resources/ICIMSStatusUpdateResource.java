@@ -16,8 +16,8 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
 import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.Api;
 

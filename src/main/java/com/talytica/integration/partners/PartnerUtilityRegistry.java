@@ -1,4 +1,4 @@
-package com.talytica.integration.util;
+package com.talytica.integration.partners;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
