@@ -1,4 +1,4 @@
-package com.talytica.integration.applicanttracking;
+package com.talytica.integration.partners;
 
 import java.io.IOException;
 import java.util.Date;
@@ -23,14 +23,12 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.talytica.integration.IntegrationClientFactory;
 import com.talytica.integration.objects.ATSAssessmentOrder;
 import com.talytica.integration.objects.ATSStatusUpdate;
 import com.talytica.integration.objects.JazzApplicantPollConfiguration;
 import com.talytica.integration.objects.JazzHire;
 import com.talytica.integration.objects.JazzJobApplicant;
-import com.talytica.integration.util.IntegrationClientFactory;
-import com.talytica.integration.util.JazzPartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
 
 import lombok.extern.slf4j.Slf4j;
 

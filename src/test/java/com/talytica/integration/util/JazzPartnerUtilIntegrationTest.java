@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.employmeo.data.config.PersistenceConfiguration;
 import com.talytica.integration.IntegrationConfiguration;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
 import com.employmeo.data.service.RespondantService;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.Api;
 
@@ -107,9 +107,9 @@ public class HireNoticeResource {
 		if ((newStatus != null) && (newStatus > respondant.getRespondantStatus())) {
 			respondant.setRespondantStatus(newStatus);
 			respondantService.save(respondant);
-		} else {
-			log.warn("Failed to update respondant {} from status {} to {}",respondant.getId(),respondant.getRespondantStatus(),newStatus);
-			return Response.status(Response.Status.NOT_MODIFIED).build();
+		} else if ((newStatus == null) || (newStatus < respondant.getRespondantStatus())){
+			log.debug("Did not update respondant {} from status {} to {}",respondant.getId(),respondant.getRespondantStatus(),newStatus);
+			return Response.status(Response.Status.NOT_MODIFIED).entity("Status: " + status + " not accepted").build();
 		}
 
 		return Response.status(Response.Status.ACCEPTED).build();

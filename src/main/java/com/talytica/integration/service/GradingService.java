@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

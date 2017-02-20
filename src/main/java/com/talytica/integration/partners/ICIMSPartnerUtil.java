@@ -1,4 +1,4 @@
-package com.talytica.integration.util;
+package com.talytica.integration.partners;
 
 import java.net.URL;
 import java.text.SimpleDateFormat;

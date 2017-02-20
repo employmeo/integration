@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.triggers;
 
 import java.util.List;
 
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.service.RespondantService;
+import com.talytica.integration.service.AssessmentPipelineService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +19,7 @@ public class AssessmentAnalysisScheduledTrigger {
 	@Autowired
 	private RespondantService respondantService;
 	@Autowired
-	private AssessmentPipeline assessmentPipeline;
+	private AssessmentPipelineService assessmentPipeline;
 
 	@Value(value = "${jobs.assessmentpipeline.responsesubmissionanalysis.enabled:false}")
 	private Boolean respondantSubmissionAnalysisJobEnabled;

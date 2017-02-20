@@ -1,4 +1,4 @@
-package com.talytica.integration.applicanttracking;
+package com.talytica.integration.triggers;
 
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -16,6 +16,7 @@ import com.employmeo.data.model.Account;
 import com.employmeo.data.service.AccountService;
 import com.google.common.collect.Sets;
 import com.talytica.integration.objects.JazzApplicantPollConfiguration;
+import com.talytica.integration.partners.JazzPolling;
 
 import lombok.extern.slf4j.Slf4j;
 

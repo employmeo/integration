@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.service;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,6 +12,8 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PredictionRepository;
 import com.employmeo.data.service.CorefactorService;
 import com.google.common.collect.Lists;
+import com.talytica.integration.analytics.PredictionModelEngine;
+import com.talytica.integration.analytics.PredictionModelRegistry;
 import com.talytica.integration.objects.CorefactorScore;
 import com.talytica.integration.objects.PredictionResult;
 

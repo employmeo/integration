@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.service;
 
 import java.util.List;
 
@@ -14,8 +14,8 @@ import com.employmeo.data.service.RespondantService;
 import com.talytica.common.service.EmailService;
 import com.talytica.integration.objects.GradingResult;
 import com.talytica.integration.objects.PredictionResult;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @Transactional
-public class AssessmentPipeline {
+public class AssessmentPipelineService {
 
 	@Autowired
 	private RespondantService respondantService;

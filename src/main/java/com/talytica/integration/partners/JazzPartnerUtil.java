@@ -1,4 +1,4 @@
-package com.talytica.integration.util;
+package com.talytica.integration.partners;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
@@ -28,8 +29,10 @@ import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
+import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.repository.RespondantNVPRepository;
 import com.employmeo.data.service.PartnerService;
+import com.talytica.integration.IntegrationClientFactory;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +53,6 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	@Value("https://api.resumatorapi.com/v1/")
 	private String JAZZ_SERVICE;
-
-	@Getter
-	private Partner partner;
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -108,7 +108,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
 		String jobId = json.getString("job_id");
-		String appId = (json.getString("id"));
+		String appId = json.getString("id");
 		String appservice = "applicants/" + appId;
 		String appjobservice = "applicants2jobs/applicant_id/" + appId + "/job_id/" + jobId;
 		JSONObject candidate = new JSONObject(jazzGet(appservice, account));
@@ -158,6 +158,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setAccountSurvey(survey);
 			respondant.setPartner(getPartner());
 			respondant.setPartnerId(getPartner().getId());
+			respondant.setScorePostMethod(JAZZ_SERVICE+"/notes");
 			respondant.setRespondantStatus(Respondant.STATUS_CREATED);
 			try {
 				String applyDate = json.getString("apply_date");
@@ -284,6 +285,30 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		return jApplicant;
 	}
 
+	
+	@Override
+	public JSONObject getScoresMessage(Respondant respondant) {
+		JSONObject message = new JSONObject();
+		message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
+		message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
+		message.put("user_id", "usr_anonymous");
+		message.put("security", "0");
+		
+		StringBuffer notes = new StringBuffer();
+		notes.append("Talytica Overall Score: ");
+		notes.append(respondant.getCompositeScore());
+		notes.append("\n");
+		for (RespondantScore rs : respondant.getRespondantScores()) {
+			notes.append(corefactorService.findCorefactorById(rs.getId().getCorefactorId()).getName());
+			notes.append(": ");
+			notes.append(String.format("%.2f", rs.getValue()));
+			notes.append("\n");	
+		}
+		message.put("contents", notes.toString());
+
+		return message;
+	}	
+	
 	// Special calls to Jazz HR to get data for applicant
 
 	public String jazzGet(String getTarget, Account account) {
@@ -310,7 +335,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		}
 		return serviceResponse;
 	}
-
+	
 	public Date getDateFrom(String date) {
 		Date returnDate = new Date();
 		try {

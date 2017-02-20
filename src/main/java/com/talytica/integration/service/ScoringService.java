@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.service;
 
 import java.util.*;
 
@@ -126,7 +126,7 @@ public class ScoringService {
 
 		for (Grader grader : graders) {
 		    grades.addAll(graderService.getGradesByGraderId(grader.getId()));
-		    log.debug("Respondant {} has grader {}", respondant.getId(), grader);
+		    log.debug("Respondant {} has grader {} with {} total grades", respondant.getId(), grader.getId(), grades.size());
 		}
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		
@@ -148,6 +148,7 @@ public class ScoringService {
 			responseSet.add(response);
 		});
 		
+		Set<RespondantScore> gradedScores = new HashSet<RespondantScore>();
 		for (Map.Entry<String, List<Response>> pair : responseTable.entrySet()) {
 			Optional<ScoringModelEngine> result = scoringModelRegistry.getScoringModelEngineByName(pair.getKey());
 			if (!result.isPresent()) {
@@ -155,13 +156,13 @@ public class ScoringService {
 			}
 			ScoringModelEngine scoringModelEngine = result.get();
 			List<RespondantScore> scores = scoringModelEngine.scoreResponses(respondant, pair.getValue());
-			if (scores == null)	continue;
-			respondant.getRespondantScores().addAll(scores);
+			log.debug("Scoring model {} produced {} for respondant {}", pair.getKey(), scores, respondant.getId());
+			if (scores != null)	gradedScores.addAll(scores);
 		}
 
 		// then update respondant status to Scored		
 		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-		respondantScoreRepository.save(respondant.getRespondantScores());
+		if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
 		return respondantService.save(respondant);
 	}
 }
