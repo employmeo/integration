@@ -39,11 +39,15 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	 */
 	@Scheduled(initialDelayString = "${jobs.frequent.trigger.init.seconds:1800}000", fixedDelayString = "${jobs.frequent.trigger.delay.seconds:10800}000")
 	public void frequentPolling() {
-		log.info("Scheduled Frequent Polling Launched");
 		Set<JazzApplicantPollConfiguration> configs = getFrequentPollingConfigs();
-		for (JazzApplicantPollConfiguration config : configs) {
-			if (jazzPartnerTrackingJobEnabled) jazzPolling.pollJazzApplicants(config);
-		} 
+		if (jazzPartnerTrackingJobEnabled) {
+			log.info("Scheduled Frequent Polling Launched");
+			for (JazzApplicantPollConfiguration config : configs) {
+				jazzPolling.pollJazzApplicants(config);
+			}
+		} else {
+			log.info("Jazz frequent polling disabled.");				
+		}	
 	}
 
 	private Set<JazzApplicantPollConfiguration> getFrequentPollingConfigs() {
@@ -53,22 +57,21 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	}
 	
 	/**
-	 * Runs polling task(s) every 180 minutes.
+	 * Runs polling task(s) every day.
 	 * Presently, caters to only one account 
 	 */
 	@Scheduled(initialDelayString = "${jobs.daily.trigger.init.seconds:3600}000", fixedDelayString = "${jobs.daily.trigger.delay.seconds:86400}000")
 	public void dailyPolling() {
-		log.info("Scheduled Daily Polling Launched");
 		Set<JazzApplicantPollConfiguration> configs = getDailyPollingConfigs();
-		for (JazzApplicantPollConfiguration config : configs) {
-			if (jazzPartnerTrackingJobEnabled) {
+		if (jazzPartnerTrackingJobEnabled) {
+			log.info("Scheduled Daily Jazz Polling Launched");
+			for (JazzApplicantPollConfiguration config : configs) {
 				if ("hired".equalsIgnoreCase(config.getStatus())) jazzPolling.pollJazzHires(config);
 				if ("invited".equalsIgnoreCase(config.getStatus())) jazzPolling.pollJazzApplicantsByStatus(config);				
-			} else {
-				log.info("Jazz applicants daily polling disabled.");				
-			}
-			log.info("Jazz applicants daily status updating complete.");
-		} 
+			} 
+		} else {
+			log.info("Jazz Daily polling disabled.");				
+		}
 	}
 	
 	private Set<JazzApplicantPollConfiguration> getDailyPollingConfigs() {
