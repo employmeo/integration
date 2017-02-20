@@ -51,7 +51,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Autowired
 	IntegrationClientFactory integrationClientFactory;
 
-	@Value("https://api.resumatorapi.com/v1/")
+	@Value("${partners.jazz.api}")
 	private String JAZZ_SERVICE;
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");

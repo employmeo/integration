@@ -30,24 +30,19 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	@Autowired
 	private AccountService accountService;
 
-	@Value(value = "${jobs.applicanttracking.jazz.enabled:false}")
+	@Value(value = "${partners.jazz.polling.enabled:false}")
 	private Boolean jazzPartnerTrackingJobEnabled;
 
 	/**
 	 * Runs polling task(s) every 180 minutes.
 	 * Presently, caters to only one account 
 	 */
-	@Scheduled(initialDelayString = "${frequent.polling.trigger.init.seconds:1800}000", fixedDelayString = "${frequent.polling.trigger.delay.seconds:10800}000")
+	@Scheduled(initialDelayString = "${jobs.frequent.trigger.init.seconds:1800}000", fixedDelayString = "${jobs.frequent.trigger.delay.seconds:10800}000")
 	public void frequentPolling() {
 		log.info("Scheduled Frequent Polling Launched");
 		Set<JazzApplicantPollConfiguration> configs = getFrequentPollingConfigs();
 		for (JazzApplicantPollConfiguration config : configs) {
 			if (jazzPartnerTrackingJobEnabled) jazzPolling.pollJazzApplicants(config);
-				
-			//jazzPolling.pollJazzApplicantsByStatus(getSalesRoadsInterviewConfig());
-			//jazzPolling.pollJazzHires(getSalesRoadsHiredConfig());
-			
-			log.info("Jazz applicants assessment ordering complete.");
 		} 
 	}
 
@@ -61,7 +56,7 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	 * Runs polling task(s) every 180 minutes.
 	 * Presently, caters to only one account 
 	 */
-	@Scheduled(initialDelayString = "${daily.polling.trigger.init.seconds:3600}000", fixedDelayString = "${daily.polling.trigger.delay.seconds:86400}000")
+	@Scheduled(initialDelayString = "${jobs.daily.trigger.init.seconds:3600}000", fixedDelayString = "${jobs.daily.trigger.delay.seconds:86400}000")
 	public void dailyPolling() {
 		log.info("Scheduled Daily Polling Launched");
 		Set<JazzApplicantPollConfiguration> configs = getDailyPollingConfigs();
