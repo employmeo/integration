@@ -1,4 +1,4 @@
-package com.talytica.integration.analytics;
+package com.talytica.integration.triggers;
 
 import java.util.List;
 
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.service.RespondantService;
+import com.talytica.integration.service.AssessmentPipelineService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,14 +19,15 @@ public class AssessmentAnalysisScheduledTrigger {
 	@Autowired
 	private RespondantService respondantService;
 	@Autowired
-	private AssessmentPipeline assessmentPipeline;
+	private AssessmentPipelineService assessmentPipeline;
 
-	@Value(value = "${jobs.assessmentpipeline.responsesubmissionanalysis.enabled:false}")
+	@Value(value = "${jobs.submissionanalysis.enabled:false}")
 	private Boolean respondantSubmissionAnalysisJobEnabled;
-	@Value(value = "${jobs.assessmentpipeline.graderscoring.enabled:false}")
+	
+	@Value(value = "${jobs.graderscoring.enabled:false}")
 	private Boolean graderFulfilledScoringJobEnabled;
 
-	@Scheduled(initialDelayString = "${scheduled.assessment.trigger.init.seconds:60}000", fixedDelayString = "${scheduled.assessment.trigger.delay.seconds:60}000")
+	@Scheduled(initialDelayString = "${jobs.submissionanalysis.trigger.init.seconds:60}000", fixedDelayString = "${jobs.submissionanalysis.trigger.delay.seconds:60}000")
 	public void triggerEligibleRespondantSubmissionAnalysis() {
 		if (respondantSubmissionAnalysisJobEnabled) {
 			log.debug("Scheduled trigger: Assessing eligible respondant submissions");
@@ -46,7 +48,7 @@ public class AssessmentAnalysisScheduledTrigger {
 		}
 	}
 
-	@Scheduled(initialDelayString = "${scheduled.grader.trigger.init.seconds:90}000", fixedDelayString = "${scheduled.grader.trigger.delay.seconds:900}000")
+	@Scheduled(initialDelayString = "${jobs.graderscoring.trigger.init.seconds:90}000", fixedDelayString = "${jobs.graderscoring.trigger.delay.seconds:900}000")
 	public void triggerGraderFulfilledScoring() {
 		if (graderFulfilledScoringJobEnabled) {
 			log.debug("Scheduled trigger: Assessing eligible respondants whose graders are fulfilled for scoring");

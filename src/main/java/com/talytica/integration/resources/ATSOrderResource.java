@@ -4,18 +4,18 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.*;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -30,8 +30,6 @@ public class ATSOrderResource {
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
-	private static final Logger log = LoggerFactory.getLogger(ATSOrderResource.class);
-
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -41,7 +39,6 @@ public class ATSOrderResource {
 	   })
 	public String doPost(String body) {
 		JSONObject json = new JSONObject(body);
-		log.debug("ATS Requesting Assessment with: " + json.toString());
 
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);

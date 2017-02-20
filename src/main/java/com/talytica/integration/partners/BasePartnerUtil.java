@@ -1,18 +1,19 @@
-package com.talytica.integration.util;
+package com.talytica.integration.partners;
 
 import java.util.Set;
 
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
@@ -55,13 +56,10 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	PersonService personService;
 
 	@Autowired
-	LocationRepository locationRepository;
-
-	@Autowired
-	PositionRepository positionRepository;
-
-	@Autowired
-	CorefactorRepository corefactorRepository;
+	CorefactorService corefactorService;
+	
+	@Value("${partners.default.intercept.outbound:true}")
+	Boolean interceptOutbound;
 
 	public BasePartnerUtil() {
 	}
@@ -89,7 +87,6 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public Account getAccountFrom(JSONObject jAccount) {
-		log.debug("get account called with {} by {}", jAccount, partner);
 		Account account = null;
 		String accountAtsId = jAccount.optString("account_ats_id");
 		if (accountAtsId != null) {
@@ -106,11 +103,11 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 		if (jLocation != null) {
 			if (jLocation.has("location_id")) {
-				return locationRepository.findOne(jLocation.getLong("location_id"));
+				return accountService.getLocationById(jLocation.getLong("location_id"));
 			}
 
 			if ((jLocation != null) && (jLocation.has("location_ats_id"))) {
-				location = locationRepository.findByAccountIdAndAtsId(account.getId(), partner.getPrefix() + jLocation.getString("location_ats_id"));
+				location = accountService.getLocationByAtsId(account.getId(),addPrefix(jLocation.getString("location_ats_id")));
 				if (location != null) {
 					return location;
 				}
@@ -146,10 +143,10 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 				}
 				location.setAccount(account);
 
-				return locationRepository.save(location);
+				return accountService.save(location);
 			}
 		}
-		return locationRepository.findOne(account.getDefaultLocationId());
+		return accountService.getLocationById(account.getDefaultLocationId());
 	}
 
 	@Override
@@ -157,10 +154,10 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 		Position pos = null;
 		if ((position != null) && (position.has("position_id"))) {
-			pos = positionRepository.findOne(position.getLong("position_id"));
+			pos = accountService.getPositionById(position.getLong("position_id"));
 		}
 		if (pos == null) {
-			pos = positionRepository.findOne(account.getDefaultPositionId());
+			pos = accountService.getPositionById(account.getDefaultPositionId());
 		}
 		return pos;
 	}
@@ -178,7 +175,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	}
 
 	@Override
-	public Respondant getRespondantFrom(JSONObject applicant) {
+	public Respondant getRespondantFrom(JSONObject applicant, Account account) {
 		Respondant respondant = null;
 		String applicantAtsId = applicant.optString("applicant_ats_id");
 		if (applicantAtsId != null) {
@@ -231,6 +228,9 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		respondant.setAccountSurveyId(aSurvey.getId());
 		respondant.setLocationId(location.getId());
 		respondant.setPositionId(position.getId());
+		respondant.setAccountSurvey(aSurvey);
+		respondant.setLocation(location);
+		respondant.setPosition(position);
 		respondant.setPartner(this.partner);
 		respondant.setPartnerId(this.partner.getId());
 		
@@ -306,7 +306,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 					PositionProfile.getProfileDefaults(PositionProfile.PROFILE_D).getString("profile_name"));
 			JSONArray scoreset = new JSONArray();
 			for (RespondantScore score : scores) {
-				Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
+				Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
 				JSONObject item = new JSONObject();
 				item.put("corefactor_name", cf.getName());
 				item.put("corefactor_score", score.getValue());
@@ -332,16 +332,20 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		String postmethod = respondant.getScorePostMethod();
 		if (postmethod == null || postmethod.isEmpty()) {
 			return;
+		} else if (interceptOutbound){
+			postmethod = externalLinksService.getIntegrationEcho();
 		}
 
 		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target(postmethod);
+		Response result = null;
 		try {
-			String result = target.request(MediaType.APPLICATION_JSON)
-					.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON), String.class);
-			log.debug("posted scores to echo with result:\n" + result);
+			result = target.request(MediaType.APPLICATION_JSON)
+					.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
+			log.debug("posted scores to {} with result:\n {}", postmethod, result.readEntity(String.class));
 		} catch (Exception e) {
-			log.warn("failed posting scores to: " + postmethod);
+			log.warn("failed posting scores to {}: ", postmethod);
+			if (result != null) log.info("Error: ", result.getStatusInfo());
 		}
 
 	}

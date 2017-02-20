@@ -15,8 +15,8 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PartnerRepository;
 import com.employmeo.data.service.AccountService;
 import com.talytica.integration.objects.*;
-import com.talytica.integration.util.PartnerUtil;
-import com.talytica.integration.util.PartnerUtilityRegistry;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
