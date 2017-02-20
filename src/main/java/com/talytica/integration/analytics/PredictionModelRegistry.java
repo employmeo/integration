@@ -42,6 +42,7 @@ public class PredictionModelRegistry {
 				Maps.newHashMap(
 						new ImmutableMap.Builder<PredictionModelType, Class<? extends PredictionModelEngine<?>>>()
 		                   .put(PredictionModelType.LINEAR_REGRESSION, SimpleLinearRegressionEngine.class)
+		                   .put(PredictionModelType.BIGML_MODEL, BigMLModelEngine.class)
 		                   .build()
 				);
 		log.info("PredictionModelRegistry state: {}", modelRegistry);

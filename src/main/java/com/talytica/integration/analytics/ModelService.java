@@ -72,4 +72,8 @@ public class ModelService {
 		return predictionModel;
 	}
 
+	public BigMLModelConfiguration getBigMLModelConfiguration(String modelName) {	
+		return new BigMLModelConfiguration(predictionModelRepository.findByName(modelName));
+	}
+
 }
