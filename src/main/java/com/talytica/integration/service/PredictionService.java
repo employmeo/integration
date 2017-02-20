@@ -50,12 +50,12 @@ public class PredictionService {
 			PositionPredictionConfiguration predictionConfig) {
 		PredictionTarget predictionTarget = predictionConfig.getPredictionTarget();
 		PredictionModel predictionModel = predictionConfig.getPredictionModel();
-		PredictionModelEngine<?> predictionEngine = getPredictionModelEngine(predictionModel);
+		PredictionModelEngine predictionEngine = getPredictionModelEngine(predictionModel);
 
 		log.debug("Initiating predictions run for respondant {} and target {} with predictionEngine {} for position {} at location {} with corefactorScores as {}",
 				respondant.getId(), predictionTarget.getName(), predictionEngine, respondant.getPosition().getPositionName(), respondant.getLocation().getLocationName(), corefactorScores);
 
-		PredictionResult predictionResult = predictionEngine.runPredictions(respondant, respondant.getPosition(), respondant.getLocation(), corefactorScores);
+		PredictionResult predictionResult = predictionEngine.runPredictions(respondant, predictionConfig, respondant.getLocation(), corefactorScores);
 		predictionResult.setModelName(predictionModel.getName());
 		predictionResult.setPredictionTarget(predictionTarget);
 
@@ -84,8 +84,8 @@ public class PredictionService {
 		log.debug("Prediction persisted: {}", savedPrediction);
 	}
 
-	private PredictionModelEngine<?> getPredictionModelEngine(@NonNull PredictionModel predictionModel) {
-		Optional<PredictionModelEngine<?>> registeredPredictionEngine = predictionModelRegistry.getPredictionModelEngineByName(predictionModel.getName());
+	private PredictionModelEngine getPredictionModelEngine(@NonNull PredictionModel predictionModel) {
+		Optional<PredictionModelEngine> registeredPredictionEngine = predictionModelRegistry.getPredictionModelEngineById(predictionModel.getModelId());
 
 		log.debug("Retrieved {} as prediction engine for {}", registeredPredictionEngine, predictionModel.getName() );
 		return registeredPredictionEngine.orElseThrow(() -> new IllegalStateException(
