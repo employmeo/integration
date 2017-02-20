@@ -56,7 +56,7 @@ public class BigMLModelEngine implements PredictionModelEngine {
 		try {
 			BigMLClient api = BigMLClient.getInstance(userName,apiKey,devMode);
 			JSONObject args = null;
-			JSONObject model = api.getModel("");
+			JSONObject model = api.getModel(this.model.getForeignId());
 			JSONObject inputData = new JSONObject();
 			for (CorefactorScore cs : corefactorScores) {
 				inputData.put(cs.getCorefactor().getName(), cs.getScore());
