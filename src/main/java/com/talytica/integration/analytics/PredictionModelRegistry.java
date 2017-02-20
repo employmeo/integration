@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.PredictionModel;
 import com.employmeo.data.model.PredictionModelType;
+import com.employmeo.data.service.PredictionModelService;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
@@ -29,18 +30,18 @@ import lombok.extern.slf4j.Slf4j;
 public class PredictionModelRegistry {
 
 	@Autowired
-	ModelService modelService;
+	PredictionModelService predictionModelService;
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	private Map<PredictionModelType, Class<? extends PredictionModelEngine<?>>> modelRegistry;
+	private Map<PredictionModelType, Class<? extends PredictionModelEngine>> modelRegistry;
 
 	@PostConstruct
 	public void initialize() {
 		log.info("Initializing prediction model registry");
 		modelRegistry =
 				Maps.newHashMap(
-						new ImmutableMap.Builder<PredictionModelType, Class<? extends PredictionModelEngine<?>>>()
+						new ImmutableMap.Builder<PredictionModelType, Class<? extends PredictionModelEngine>>()
 		                   .put(PredictionModelType.LINEAR_REGRESSION, SimpleLinearRegressionEngine.class)
 		                   .put(PredictionModelType.BIGML_MODEL, BigMLModelEngine.class)
 		                   .build()
@@ -48,33 +49,33 @@ public class PredictionModelRegistry {
 		log.info("PredictionModelRegistry state: {}", modelRegistry);
 	}
 
-	public Optional<PredictionModelEngine<?>> getPredictionModelEngineByName(@NotNull String modelName) {
-		Optional<PredictionModelEngine<?>> modelEngine = Optional.empty();
+	public Optional<PredictionModelEngine> getPredictionModelEngineById(@NotNull Long modelId) {
+		Optional<PredictionModelEngine> modelEngine = Optional.empty();
 
-		log.debug("Registry consulted for modelName {}", modelName);
-		PredictionModel predictionModel = modelService.getModelByName(modelName);
+		log.debug("Registry consulted for model id: {}", modelId);
+		PredictionModel predictionModel = predictionModelService.getModelById(modelId);
 
 		log.debug("Checking registry for mappings for modelType {}", predictionModel.getModelType());
-		Optional<Class<? extends PredictionModelEngine<?>>> modelEngineClass = Optional.ofNullable(modelRegistry.get(predictionModel.getModelType()));
+		Optional<Class<? extends PredictionModelEngine>> modelEngineClass = Optional.ofNullable(modelRegistry.get(predictionModel.getModelType()));
 
-		log.debug("Registry is configured for {} with {}", modelName, modelEngineClass);
+		log.debug("Registry is configured for {} with {}", modelId, modelEngineClass);
 		if(modelEngineClass.isPresent()) {
 			try {
 
-				PredictionModelEngine<?> engineInstance = applicationContext.getBean(modelEngineClass.get());
-				log.debug("Attempting to create a new engine instance for {}", modelName);
+				PredictionModelEngine engineInstance = applicationContext.getBean(modelEngineClass.get());
+				log.debug("Attempting to create a new engine instance for model ID {}", modelId);
 				//Constructor<? extends PredictionModelEngine<?>> engineConstructor = modelEngineClass.get().getConstructor(modelName.getClass());
 				//PredictionModelEngine<?> engineInstance = engineConstructor.newInstance(modelName);
 
 				log.debug("PredictionModelEngine {} instantiated. Now initializing..", engineInstance);
-				engineInstance.initialize(modelName);
+				engineInstance.initialize(predictionModel);
 
 				modelEngine = Optional.of(engineInstance);
 			} catch ( IllegalArgumentException | SecurityException e) {
-				log.warn("Failed to create new instance of prediction model engine for " + modelName, e);
+				log.warn("Failed to create new instance of prediction model engine for model id {}", modelId, e);
 			}
 		}
-		log.debug("Returning modelEngine for {} as {}", modelName, modelEngine);
+		log.debug("Returning modelEngine for {} as {}", modelId, modelEngine);
 
 		return modelEngine;
 	}

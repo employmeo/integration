@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Scope("prototype")
-public class BigMLModelEngine implements PredictionModelEngine<BigMLModelConfiguration> {
+public class BigMLModelEngine implements PredictionModelEngine {
 
 	@Value("${com.talytica.apis.bigml.name}")
 	private String userName;
@@ -29,36 +29,26 @@ public class BigMLModelEngine implements PredictionModelEngine<BigMLModelConfigu
 	private Boolean devMode;
 	
 	@Autowired
-	private ModelService modelService;
-	
-	private String modelName;
-	private BigMLModelConfiguration modelConfig;
+	private PredictionModel model;
 	
 	private NormalDistribution normalDistribution;
 
 	public BigMLModelEngine() {
 		log.info("New Big ML prediction model instantiated");
 	}
-	
-	public BigMLModelEngine(String modelName) {
-		this.modelName = modelName;
-
-		log.info("New Big ML prediction model instantiated for " + modelName);
-	}
 
 	@Override
-	public void initialize(String modelName) {
+	public void initialize(PredictionModel model) {
 		log.info("Initializing ..");
-		modelConfig = modelService.getBigMLModelConfiguration(getModelName());
 		
-		this.modelName = modelName;
-		log.info("New Big ML prediction model instantiated for " + modelName);
+		this.model = model;
+		log.info("New Big ML prediction model instantiated for {} (ID: {})", model.getName(), model.getModelId());
 
 		log.info("Initialization complete.");
 	}
 
 	@Override
-	public PredictionResult runPredictions(Respondant respondant, Position position, Location location,
+	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, Location location,
 			List<CorefactorScore> corefactorScores) {
 		log.debug("Running predictions for {}", respondant.getId());
 		
@@ -66,7 +56,7 @@ public class BigMLModelEngine implements PredictionModelEngine<BigMLModelConfigu
 		try {
 			BigMLClient api = BigMLClient.getInstance(userName,apiKey,devMode);
 			JSONObject args = null;
-			JSONObject model = api.getModel(modelConfig.getModelId());
+			JSONObject model = api.getModel("");
 			JSONObject inputData = new JSONObject();
 			for (CorefactorScore cs : corefactorScores) {
 				inputData.put(cs.getCorefactor().getName(), cs.getScore());
@@ -79,7 +69,9 @@ public class BigMLModelEngine implements PredictionModelEngine<BigMLModelConfigu
 		}
 		
 		Double targetOutcomeScore = 0d;
-		Double percentile = getPercentile(targetOutcomeScore);
+		normalDistribution = new NormalDistribution(posConfig.getMean(),posConfig.getStDev());
+		Double percentile = normalDistribution.cumulativeProbability(targetOutcomeScore);
+		
 		prediction.setScore(targetOutcomeScore);
 		prediction.setPercentile(percentile);
 
@@ -87,18 +79,9 @@ public class BigMLModelEngine implements PredictionModelEngine<BigMLModelConfigu
 		return prediction;
 	}
 
-
-	private Double getPercentile(Double score) {
-		Double cumulativeProbability = normalDistribution.cumulativeProbability(score);
-
-		log.debug("Normal distribution cumulative probability with mean {} and stdDev {} for score {}  is {}", normalDistribution.getMean(), normalDistribution.getStandardDeviation(), score, cumulativeProbability);
-		return cumulativeProbability;
-	}
-
-
 	@Override
 	public String getModelName() {
-		return this.modelName;
+		return this.model.getName();
 	}
 
 	@Override
@@ -107,9 +90,13 @@ public class BigMLModelEngine implements PredictionModelEngine<BigMLModelConfigu
 	}
 
 	@Override
-	public BigMLModelConfiguration getModelConfiguration() {
-		// TODO Auto-generated method stub
-		return null;
+	public Long getModelId() {
+		return this.model.getModelId();
+	}
+
+	@Override
+	public String getModelType() {
+		return this.model.getModelTypeValue();
 	}
 
 }

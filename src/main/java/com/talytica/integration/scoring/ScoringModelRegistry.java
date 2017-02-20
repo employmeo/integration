@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.talytica.integration.analytics.ModelService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,8 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ScoringModelRegistry {
 
-	@Autowired
-	ModelService modelService;
 	@Autowired
 	private ApplicationContext applicationContext;
 
