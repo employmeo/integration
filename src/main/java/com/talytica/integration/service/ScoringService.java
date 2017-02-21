@@ -34,14 +34,14 @@ public class ScoringService {
 	private CorefactorService corefactorService;
 
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
-		log.debug("Scoring assessment for respondant {}", respondant);
+		log.debug("Scoring assessment for respondant {}", respondant.getId());
 		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		HashMap<Corefactor, List<RespondantScore>> parents = new HashMap<Corefactor, List<RespondantScore>>();
 		
 		if ((responses == null) || (responses.size() == 0))
 		{
-			log.debug("No responses found for respondant {}", respondant);
+			log.debug("No responses found for respondant {}", respondant.getId());
 			return respondant; // return nothing
 		}
 
@@ -109,7 +109,7 @@ public class ScoringService {
 		// Section below saves all scores to the DB.
 		if (respondant.getRespondantScores().size() > 0) {
 			respondantScoreRepository.save(respondant.getRespondantScores());
-			log.debug("Saved Scores for respondant {}", respondant.getRespondantScores());
+			log.debug("Saved {} Scores for respondant {}", respondant.getRespondantScores().size(), respondant.getId());
 		}
 		if (complete) {
 			respondant.setRespondantStatus(Respondant.STATUS_SCORED);

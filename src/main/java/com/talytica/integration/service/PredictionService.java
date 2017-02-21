@@ -52,8 +52,8 @@ public class PredictionService {
 		PredictionModel predictionModel = predictionConfig.getPredictionModel();
 		PredictionModelEngine predictionEngine = getPredictionModelEngine(predictionModel);
 
-		log.debug("Initiating predictions run for respondant {} and target {} with predictionEngine {} for position {} at location {} with corefactorScores as {}",
-				respondant.getId(), predictionTarget.getName(), predictionEngine, respondant.getPosition().getPositionName(), respondant.getLocation().getLocationName(), corefactorScores);
+		log.debug("Initiating predictions run for respondant {} and target {} with predictionEngine {} for position {} at location {} with {} corefactorScores}",
+				respondant.getId(), predictionTarget.getName(), predictionEngine, respondant.getPosition().getPositionName(), respondant.getLocation().getLocationName(), corefactorScores.size());
 
 		PredictionResult predictionResult = predictionEngine.runPredictions(respondant, predictionConfig, respondant.getLocation(), corefactorScores);
 		predictionResult.setModelName(predictionModel.getName());

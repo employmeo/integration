@@ -1,9 +1,13 @@
 package com.talytica.integration.analytics;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.bigml.binding.BigMLClient;
+import org.bigml.binding.LocalEnsemble;
+import org.bigml.binding.PredictionMethod;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
@@ -18,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Scope("prototype")
-public class BigMLModelEngine implements PredictionModelEngine {
+public class BigMLEnsembleEngine implements PredictionModelEngine {
 
 	@Value("${com.talytica.apis.bigml.name}")
 	private String userName;
@@ -27,12 +31,15 @@ public class BigMLModelEngine implements PredictionModelEngine {
 	@Value("${com.talytica.apis.bigml.devmode:true}")
 	private Boolean devMode;
 	
+	private static boolean byName = true;
+    private static boolean withConfidence = true;
+	
 	private PredictionModel model;
 	
 	private NormalDistribution normalDistribution;
 
-	public BigMLModelEngine() {
-		log.info("New Big ML prediction model instantiated");
+	public BigMLEnsembleEngine() {
+		log.info("New Big ML ensemble model instantiated");
 	}
 
 	@Override
@@ -40,7 +47,7 @@ public class BigMLModelEngine implements PredictionModelEngine {
 		log.info("Initializing ..");
 		
 		this.model = model;
-		log.info("New Big ML prediction model instantiated for {} (ID: {})", model.getName(), model.getModelId());
+		log.info("New Big ML ensemble model instantiated for {} (ID: {})", model.getName(), model.getModelId());
 
 		log.info("Initialization complete.");
 	}
@@ -54,15 +61,22 @@ public class BigMLModelEngine implements PredictionModelEngine {
 		Double targetOutcomeScore = 0d;
 		try {
 			BigMLClient api = BigMLClient.getInstance(userName,apiKey,devMode);
-			JSONObject args = null;
-			JSONObject model = api.getModel(this.model.getForeignId());
+	
+			JSONObject ensemble = api.getEnsemble(this.model.getForeignId());
+			LocalEnsemble localEnsemble = new LocalEnsemble(ensemble,null,10);
+
 			JSONObject inputData = new JSONObject();
 			for (CorefactorScore cs : corefactorScores) {
 				inputData.put(cs.getCorefactor().getName(), cs.getScore());
-			}
-			JSONObject pred = api.createPrediction((String)model.get("resource"), inputData, true, args, null, null);
-			pred = api.getPrediction(pred);
-			
+			}	
+			HashMap<Object,Object> pred = (HashMap<Object,Object>) localEnsemble.predict(inputData, byName, PredictionMethod.PLURALITY, withConfidence);
+            Boolean outcome = new Boolean( pred.get("prediction").toString());
+            Double confidence = (Double) pred.get("confidence");
+            targetOutcomeScore = (outcome) ? confidence : 1 - confidence;
+            
+            log.info("Ensemble Prediction is: {}, with {} confidence", pred.get("prediction"),pred.get("confidence"));
+
+
 		} catch (Exception e) {
 			log.error("Ensemble Prediction failed for {}, with exception {}", respondant.getId(), e);
 		}
