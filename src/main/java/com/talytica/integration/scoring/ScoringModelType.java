@@ -3,13 +3,13 @@ package com.talytica.integration.scoring;
 import lombok.*;
 
 public enum ScoringModelType {
+	WORKINGMEM("workingmem"),
+	SELECTIVE("selective"),
+	REACTION("reaction"),	
 	MERCER("mercer"),
 	AUDIO("audio"),
 	REFERENCE("reference"),
 	RANKER("ranker"),
-	LIKERTFIVE("likertfive"),
-	SLIDERSIXTY("slidersixty"),
-	SLIDERHUNDRED("sliderhundred"),
 	KNOCKOUT("knockout"),
 	DECEPTION("deception"),
 	HEXACO("hexaco"),

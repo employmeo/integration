@@ -55,18 +55,22 @@ public class BigMLModelEngine implements PredictionModelEngine {
 		try {
 			BigMLClient api = BigMLClient.getInstance(userName,apiKey,devMode);
 			JSONObject args = null;
-			JSONObject model = api.getModel(this.model.getForeignId());
 			JSONObject inputData = new JSONObject();
 			for (CorefactorScore cs : corefactorScores) {
 				inputData.put(cs.getCorefactor().getName(), cs.getScore());
 			}
-			JSONObject pred = api.createPrediction((String)model.get("resource"), inputData, true, args, null, null);
+			JSONObject pred = api.createPrediction(this.model.getForeignId(), inputData, true, args, null, null);
 			pred = api.getPrediction(pred);
-			
+			JSONObject object = (JSONObject) api.getPrediction(pred).get("object");
+			JSONObject result = (JSONObject) object.get("prediction");
+			Boolean outcome = new Boolean( result.get(object.get("objective_field")).toString());
+            Double confidence = (Double) object.get("confidence");
+            
+            targetOutcomeScore = (outcome) ? confidence : 1 - confidence;
 		} catch (Exception e) {
 			log.error("Ensemble Prediction failed for {}, with exception {}", respondant.getId(), e);
 		}
-
+		
 		prediction.setScore(targetOutcomeScore);
 		try {		
 			normalDistribution = new NormalDistribution(posConfig.getMean(),posConfig.getStDev());

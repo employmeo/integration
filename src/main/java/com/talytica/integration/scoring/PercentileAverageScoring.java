@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,14 +22,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class BlendedTypeScoring implements ScoringModelEngine {
+public class PercentileAverageScoring implements ScoringModelEngine {
 	
 	@Autowired
 	private QuestionService questionService;
 	@Autowired
 	private CorefactorService corefactorService;
 	
-	private String modelName = ScoringModelType.TRAIT.getValue();
+	private double MEAN;
+	private double STDEV;
+	private NormalDistribution normalDistribution;
+	private String modelName;
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
@@ -45,20 +49,8 @@ public class BlendedTypeScoring implements ScoringModelEngine {
 				responseSet = new ArrayList<Double>();
 				responseTable.put(corefactor, responseSet);
 			}
-			Double value = (double)response.getResponseValue();
-			Double translatedValue = null;
-			
-			switch(question.getQuestionType()) {
-				case 11: //likert
-					translatedValue = (value - 2d) / 8d;						
-				case 17: //slider
-				default:
-					translatedValue = value / 100d;
-					break;				
-			}
-			if (question.getDirection() < 0) translatedValue = 1d - translatedValue;			
-			responseSet.add(translatedValue);
-			
+			double value = (double)response.getResponseValue();
+			responseSet.add(value);
 		});
 	
 		for (Map.Entry<Corefactor, List<Double>> pair : responseTable.entrySet()) {
@@ -68,18 +60,17 @@ public class BlendedTypeScoring implements ScoringModelEngine {
 			for (Double response : responseSet) {
 				total += response;
 			}
-			double percentage = total / ((double) responseSet.size());
+			double average = total  / (double) responseSet.size();
+			double percentile = normalDistribution.cumulativeProbability(average);
 			RespondantScore rs = new RespondantScore();
 			rs.setId(new RespondantScorePK(corefactor.getId(), respondant.getId()));
 			rs.setQuestionCount(responseSet.size());
-			rs.setValue(percentage *(corefactor.getHighValue()-corefactor.getLowValue())+corefactor.getLowValue());
+			rs.setValue(percentile *(corefactor.getHighValue()-corefactor.getLowValue())+corefactor.getLowValue());
 			rs.setRespondant(respondant);
 			log.debug("Corefactor {} scored with {} questons as {}: ", corefactor.getName(), rs.getQuestionCount(), rs.getValue());
 			scores.add(rs);
 		}
 		
-		// if type hexaco - calculate hexaco parent scores before returning collection of scores.
-		 
 		return scores;
 	}
 
@@ -91,6 +82,24 @@ public class BlendedTypeScoring implements ScoringModelEngine {
 	@Override
 	public void initialize(String modelName) {
 		this.modelName = modelName;
+		switch (modelName) {
+		case "workingmem":
+			MEAN = 5.3d;
+			STDEV = 2.39d;
+			break;	
+		case "selective":
+			MEAN = 19.57d;
+			STDEV = 4.51d;
+			break;
+		case "reaction":
+			MEAN = 25.65d;
+			STDEV = 5.38d;
+			break;
+		default:
+			MEAN = 6d;
+			STDEV = 1.5d;
+		}
+		normalDistribution = new NormalDistribution(MEAN,STDEV);
 	}
 
 }

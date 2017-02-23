@@ -61,20 +61,21 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 		Double targetOutcomeScore = 0d;
 		try {
 			BigMLClient api = BigMLClient.getInstance(userName,apiKey,devMode);
-	
-			JSONObject ensemble = api.getEnsemble(this.model.getForeignId());
-			LocalEnsemble localEnsemble = new LocalEnsemble(ensemble,null,10);
-
 			JSONObject inputData = new JSONObject();
 			for (CorefactorScore cs : corefactorScores) {
 				inputData.put(cs.getCorefactor().getName(), cs.getScore());
 			}	
-			HashMap<Object,Object> pred = (HashMap<Object,Object>) localEnsemble.predict(inputData, byName, PredictionMethod.PLURALITY, withConfidence);
-            Boolean outcome = new Boolean( pred.get("prediction").toString());
-            Double confidence = (Double) pred.get("confidence");
+			          
+			JSONObject args = null;
+			JSONObject pred  = api.createPrediction(this.model.getForeignId(), inputData, byName, args, null, null);
+			JSONObject object = (JSONObject) api.getPrediction(pred).get("object");
+			JSONObject result = (JSONObject) object.get("prediction");
+			Boolean outcome = new Boolean( result.get(object.get("objective_field")).toString());
+            Double confidence = (Double) object.get("confidence");
+
             targetOutcomeScore = (outcome) ? confidence : 1 - confidence;
             
-            log.info("Ensemble Prediction is: {}, with {} confidence", pred.get("prediction"),pred.get("confidence"));
+            log.info("Ensemble Prediction is: {}, with {} confidence",object.get("prediction"),object.get("confidence"));
 
 
 		} catch (Exception e) {

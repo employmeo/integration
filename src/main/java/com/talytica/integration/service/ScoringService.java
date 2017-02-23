@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
+import com.talytica.integration.objects.CorefactorScore;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
 
@@ -35,7 +36,7 @@ public class ScoringService {
 
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant.getId());
-		Set<Response> responses = respondantService.getResponses(respondant.getRespondantUuid());
+		Set<Response> responses = cleanseResponses(respondantService.getResponses(respondant.getRespondantUuid()));
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		HashMap<Corefactor, List<RespondantScore>> parents = new HashMap<Corefactor, List<RespondantScore>>();
 		
@@ -120,6 +121,32 @@ public class ScoringService {
 	}
 
 	
+	private Set<Response> cleanseResponses(Set<Response> responses) {
+		Set<Response> returnSet = new HashSet<Response>();
+		Set<Response> duplicates = new HashSet<Response>();
+		for (Response response : responses) {
+			Optional<Response> conflict = findResponse(response.getQuestionId(),returnSet);
+			if(conflict.isPresent()) {
+				Response orig = conflict.get();
+				log.debug("Duplicate found: {} vs {}",response,orig);
+				if (response.getLastModDate().after(orig.getLastModDate())) {
+					returnSet.remove(orig);
+					duplicates.add(orig);
+					returnSet.add(response);
+				} else {
+					duplicates.add(response);					
+				}
+			} else {
+				returnSet.add(response);
+			}	
+		}
+		return returnSet;
+	}
+	
+	private Optional<Response> findResponse(Long questionId, Set<Response> responses) {
+		return responses.stream().filter(response -> questionId.equals(response.getQuestionId())).findFirst();
+	}
+
 	public Respondant scoreGraders(@NonNull Respondant respondant) {
 		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
 		List<Grade> grades = new ArrayList<Grade>();
