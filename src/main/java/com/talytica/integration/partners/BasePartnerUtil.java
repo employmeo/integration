@@ -333,6 +333,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		if (postmethod == null || postmethod.isEmpty()) {
 			return;
 		} else if (interceptOutbound){
+			log.info("Intercepting Post to {}", postmethod);
 			postmethod = externalLinksService.getIntegrationEcho();
 		}
 
@@ -342,10 +343,19 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		try {
 			result = target.request(MediaType.APPLICATION_JSON)
 					.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
-			log.debug("posted scores to {} with result:\n {}", postmethod, result.readEntity(String.class));
+			
+			Boolean success = (null == result || result.getStatus() >= 300) ? false : true;
+			String serviceResponse = result.readEntity(String.class); 
+			if (success) {
+				log.debug("Successfully posted scores to {}. Server response: {}", postmethod, serviceResponse);
+			} else {
+				log.warn("Failed to post {} {}' scores to {}. Server response: {}", 
+						respondant.getPerson().getFirstName(), respondant.getPerson().getLastName(), 
+						postmethod, serviceResponse);
+			}
+
 		} catch (Exception e) {
 			log.warn("failed posting scores to {}: ", postmethod);
-			if (result != null) log.info("Error: ", result.getStatusInfo());
 		}
 
 	}

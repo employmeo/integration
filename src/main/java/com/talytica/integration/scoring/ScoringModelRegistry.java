@@ -35,20 +35,20 @@ public class ScoringModelRegistry {
 		modelRegistry =
 				Maps.newHashMap(
 						new ImmutableMap.Builder<ScoringModelType, Class<? extends ScoringModelEngine>>()
-		                   .put(ScoringModelType.AVERAGE, SimpleAverageScoring.class)
-		                   .put(ScoringModelType.LIKERTFIVE, SimpleAverageScoring.class)
-		                   .put(ScoringModelType.SLIDERSIXTY, SimpleAverageScoring.class)
-		                   .put(ScoringModelType.SLIDERHUNDRED, SimpleAverageScoring.class)
+		                   .put(ScoringModelType.AUDIO, AudioScoring.class)
 		                   .put(ScoringModelType.TRAIT, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.HEXACO, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.KNOCKOUT, KnockoutScoring.class)
 		                   .put(ScoringModelType.DECEPTION, KnockoutScoring.class)
-		                   .put(ScoringModelType.RANKER, RankerScoring.class)
 		                   .put(ScoringModelType.MERCER, MercerScoring.class)
-		                   .put(ScoringModelType.REFERENCE, ReferenceScoring.class)
-		                   .put(ScoringModelType.AUDIO, AudioScoring.class)
-		                   .put(ScoringModelType.RIGHTWRONGBLANK, RightWrongBlankScoring.class)
 		                   .put(ScoringModelType.NONE, NoScoring.class)
+		                   .put(ScoringModelType.WORKINGMEM, PercentileAverageScoring.class)
+		                   .put(ScoringModelType.REACTION, PercentileAverageScoring.class)
+		                   .put(ScoringModelType.SELECTIVE, PercentileAverageScoring.class)
+		                   .put(ScoringModelType.RANKER, RankerScoring.class)
+		                   .put(ScoringModelType.REFERENCE, ReferenceScoring.class)
+		                   .put(ScoringModelType.RIGHTWRONGBLANK, RightWrongBlankScoring.class)
+		                   .put(ScoringModelType.AVERAGE, SimpleAverageScoring.class)
 		                   .build()
 				);
 		log.info("ScoringModelRegistry state: {}", modelRegistry);
