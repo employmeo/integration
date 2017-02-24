@@ -1,6 +1,6 @@
 package com.talytica.integration.resources;
 
-import java.sql.Date;
+import java.util.Date;
 
 import javax.annotation.security.PermitAll;
 import javax.ws.rs.*;
@@ -8,8 +8,6 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,21 +18,16 @@ import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
 
 import io.swagger.annotations.Api;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/hirenotice")
 @Api( value="/hirenotice", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
 @PermitAll
 public class HireNoticeResource {
-	private final static Response MISSING_REQUIRED_PARAMS = Response.status(Response.Status.BAD_REQUEST)
-			.entity("{ message: 'Missing Required Parameters' }").build();
-	private final static Response UNKNOWN_STATUS = Response.status(Response.Status.BAD_REQUEST)
-			.entity("{ message: 'Unknown Applicant Status' }").build();
-	private final static Response ACCOUNT_MATCH = Response.status(Response.Status.CONFLICT)
-			.entity("{ message: 'Applicant ID not found for Account ID' }").build();
-	private static final Logger log = LoggerFactory.getLogger(HireNoticeResource.class);
 
 	@Context
 	private SecurityContext sc;
@@ -61,20 +54,22 @@ public class HireNoticeResource {
 		try { // the required parameters
 			account = pu.getAccountFrom(json.getJSONObject("account"));
 			respondant = pu.getRespondantFrom(json.getJSONObject("applicant"), account);
-			status = json.getJSONObject("applicant").getString("applicant_status");
-			Long hireDate = json.getJSONObject("applicant").getLong("applicant_change_date");
-			changeDate = new Date(hireDate);
 			if ((respondant == null) || (account == null)) {
-				throw new Exception("Can't find applicant or account.");
+				return Response.status(Response.Status.BAD_REQUEST).entity("{ message: 'Applicant Not Found' }").build();
 			}
+			status = json.getJSONObject("applicant").optString("applicant_status");
+			if (status == null) Response.status(Response.Status.BAD_REQUEST).entity("{ message: 'Unknown Applicant Status' }").build();
+			try {changeDate = new Date( json.getJSONObject("applicant").getLong("applicant_change_date"));}
+			catch (Exception e) {log.warn("Failed to convert date: " + e.getMessage());}
 		} catch (Exception e) {
-			log.warn("Missing Parameters: " + e.getMessage());
-			throw new WebApplicationException(e, MISSING_REQUIRED_PARAMS);
+			log.warn("Error Interpreting Parameters: " + e.getMessage());
+			return Response.status(Response.Status.BAD_REQUEST)
+					.entity("{ message: 'Error Interpreting Parameters: "+e.getMessage()+"' }").build();
 		}
-
+		log.debug("Updating {} to status {}", respondant.getId(), status);
 		if (account.getId() != respondant.getAccountId()) {
 			log.warn("Account does not match applicant");
-			throw new WebApplicationException(ACCOUNT_MATCH);
+			return Response.status(Response.Status.CONFLICT).entity("{ message: 'Applicant ID not found for Account ID' }").build();
 		}
 
 		Integer newStatus = null;
@@ -93,7 +88,7 @@ public class HireNoticeResource {
 			break;
 		case "hired":
 			newStatus = Respondant.STATUS_HIRED;
-			respondant.setHireDate(changeDate);
+			if (changeDate != null) respondant.setHireDate(changeDate);
 			break;
 		case "quit":
 			newStatus = Respondant.STATUS_QUIT;
@@ -102,7 +97,7 @@ public class HireNoticeResource {
 			newStatus = Respondant.STATUS_TERMINATED;
 			break;
 		default:
-			throw new WebApplicationException(UNKNOWN_STATUS);
+			return Response.status(Response.Status.BAD_REQUEST).entity("{ message: 'Unknown Applicant Status' }").build();
 		}
 		if ((newStatus != null) && (newStatus > respondant.getRespondantStatus())) {
 			respondant.setRespondantStatus(newStatus);
@@ -112,6 +107,6 @@ public class HireNoticeResource {
 			return Response.status(Response.Status.NOT_MODIFIED).entity("Status: " + status + " not accepted").build();
 		}
 
-		return Response.status(Response.Status.ACCEPTED).build();
+		return Response.status(Response.Status.ACCEPTED).entity("{ message: 'Status Change Accepted' }").build();
 	}
 }
