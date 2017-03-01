@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
-import com.talytica.integration.objects.CorefactorScore;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
 

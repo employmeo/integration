@@ -3,20 +3,18 @@ package com.talytica.integration.partners;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,32 +22,18 @@ import org.springframework.stereotype.Component;
 import com.employmeo.data.model.Account;
 import com.employmeo.data.model.AccountSurvey;
 import com.employmeo.data.model.Location;
-import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.RespondantScore;
-import com.employmeo.data.repository.RespondantNVPRepository;
-import com.employmeo.data.service.PartnerService;
-import com.talytica.integration.IntegrationClientFactory;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 @Scope("prototype")
 public class JazzPartnerUtil extends BasePartnerUtil {
-
-	@Autowired
-	RespondantNVPRepository respondantNVPRepository;
-
-	@Autowired
-	PartnerService partnerService;
-
-	@Autowired
-	IntegrationClientFactory integrationClientFactory;
 
 	@Value("${partners.jazz.api}")
 	private String JAZZ_SERVICE;
@@ -168,11 +152,11 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			}
 			savedRespondant = respondantService.save(respondant);
 
-			Iterator<String> keys = candidate.keys();
+			@SuppressWarnings("unchecked")
+			Set<String> keys = candidate.keySet();
 			List<RespondantNVP> nvps = new ArrayList<RespondantNVP>();
 
-			while (keys.hasNext()) {
-				String key = keys.next();
+			for (String key : keys) {
 				switch (key) {
 				case "id":
 				case "first_name":
@@ -265,7 +249,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				}
 			}
 
-			respondantNVPRepository.save(nvps);
+			respondantService.save(nvps);
 
 			if (json.has("email") && json.getBoolean("email")) {
 				emailService.sendEmailInvitation(savedRespondant);
