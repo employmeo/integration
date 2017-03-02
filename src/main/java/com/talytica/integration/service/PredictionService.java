@@ -140,7 +140,7 @@ public class PredictionService {
 	}
 
 	private NameValuePair getModelInputFromNvp(RespondantNVP nvp) {
-		NameValuePair nvPair = new NameValuePair(nvp.getNameId().toString(), nvp.getValue());
+		NameValuePair nvPair = new NameValuePair("Var" + nvp.getNameId().toString(), nvp.getValue());
 		return nvPair;
 	}
 }

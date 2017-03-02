@@ -13,11 +13,9 @@ import com.talytica.integration.objects.GradingResult;
 import com.talytica.integration.objects.PredictionResult;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
-import com.talytica.integration.service.AssessmentPipelineService;
 import com.talytica.integration.service.GradingService;
 import com.talytica.integration.service.PredictionService;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -47,18 +45,20 @@ public class PreScreenPredictionScheduleTrigger {
 				log.info("Scheduled trigger: Analyzing {} prescreen candidates", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					try {
-						List<PredictionResult> results = predictionService.runPreAssessmentPredictions(respondant);
-						GradingResult grade = gradingService.gradeRespondantByPredictions(respondant, results);
-						respondant.setCompositeScore(grade.getCompositeScore());
-						respondant.setProfileRecommendation(grade.getRecommendedProfile());
 						respondant.setRespondantStatus(Respondant.STATUS_CREATED);
-						Respondant updatedRespondant = respondantService.save(respondant);
-						if ((updatedRespondant.getPartner() != null) && (updatedRespondant.getScorePostMethod()!=null)) {
+						List<PredictionResult> results = predictionService.runPreAssessmentPredictions(respondant);
+						if ((null != results) && (results.size() > 0)) {
+							GradingResult grade = gradingService.gradeRespondantByPredictions(respondant, results);
+							respondant.setCompositeScore(grade.getCompositeScore());
+							respondant.setProfileRecommendation(grade.getRecommendedProfile());
+						if ((respondant.getPartner() != null) && (respondant.getScorePostMethod()!=null)) {
 							PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
-							pu.postScoresToPartner(updatedRespondant, pu.getScoresMessage(updatedRespondant));							
+							pu.postScoresToPartner(respondant, pu.getScoresMessage(respondant));							
 						}
+						}
+						respondantService.save(respondant);
 					} catch (Exception e) {
-						log.warn("Failed to process prescreen for respondant {}", respondant.getId(), e);
+						log.warn("Failed to prescreen respondant {}", respondant.getId(), e);
 					}
 				});
 			}	

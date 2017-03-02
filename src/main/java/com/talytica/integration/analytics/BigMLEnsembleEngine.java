@@ -1,9 +1,19 @@
 package com.talytica.integration.analytics;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 
 import org.bigml.binding.BigMLClient;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -19,6 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public class BigMLEnsembleEngine implements PredictionModelEngine {
 
+	private static final Integer ATTEMPT_LIMIT = 5;
+	private static final Integer RETRY_WAIT = 3000;
+	
 	@Value("${com.talytica.apis.bigml.name}")
 	private String userName;
 	@Value("${com.talytica.apis.bigml.key}")
@@ -56,7 +69,11 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 			inputData.put(nvp.getName(), nvp.getValue());
 		}
 		
-		if ((null != model.getPrep()) && (!model.getPrep().isEmpty())) inputData = prepInputData(inputData);
+		if ((null != model.getPrep()) && (!model.getPrep().isEmpty())) {
+			inputData = prepInputData(inputData);
+		} else {
+			log.info("No Topic Model: {}", model);
+		}
 		
 		try {
 			BigMLClient api = BigMLClient.getInstance(userName,apiKey,devMode);		          
@@ -82,6 +99,43 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 
 	private JSONObject prepInputData(JSONObject inputData) {
 		//call topic model!
+		log.info("Topic Model: {}", model.getPrepName());	
+		try {
+			JSONObject createargs = new JSONObject();
+			createargs.put("input_data", inputData);
+			createargs.put("topicmodel", model.getPrepName());
+			//log.info("posting {} to big ml", createargs);
+			JSONObject dist = bigMLPost(model.getPrep(), createargs);
+			String topicDistId = (String) dist.get("resource");
+			Boolean executed = false;
+			Integer attempts = 0;
+			while (!executed) {
+				JSONObject topicDist = (JSONObject) bigMLGet(topicDistId).get("topic_distribution");
+				attempts++;
+				if (!topicDist.containsKey("result")) {		
+					// if failed attempts too high, log issue, executed = true;
+					if (attempts >= ATTEMPT_LIMIT) {
+						log.warn("Attempted {} topic dists and gave up", attempts);
+						executed = Boolean.TRUE;
+					} else {
+						log.warn("Attempted {} topic dists, now retrying again", attempts);
+						Thread.sleep(RETRY_WAIT);
+					}
+					continue;
+				}
+				JSONArray values = (JSONArray) topicDist.get("result");
+				JSONArray topics = (JSONArray) topicDist.get("topics");
+				
+				for (int i=0;i<topics.size();i++) {
+					String name = (String) ((JSONObject) topics.get(i)).get("name");
+					inputData.put(name, values.get(i));
+					log.debug("Added Topic {} with value: {}",name,values.get(i));
+				}
+				executed = Boolean.TRUE;
+			}
+		} catch (Exception e){
+			log.warn("Topic Model Failure with exception {}", e);
+		}
 		return inputData;
 	}
 
@@ -131,4 +185,38 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 		return this.model.getModelTypeValue();
 	}
 
+	public JSONObject bigMLPost(String postTarget, JSONObject params) {
+		Client client = ClientBuilder.newClient();
+		String dev = "";
+		if (devMode) dev = "dev/";
+		WebTarget target = client.target("https://bigml.io/" + dev + postTarget + "?username="+userName+";api_key="+apiKey);
+		JSONObject json = null;
+		javax.ws.rs.core.Response response = null;
+		try {
+			response = target.request(MediaType.APPLICATION_JSON).post(Entity.entity(params.toString(), MediaType.APPLICATION_JSON));
+			log.trace("Service {} yielded response : {}", postTarget, response);
+			json = (JSONObject) JSONValue.parse(response.readEntity(String.class));
+		} catch (Exception e) {
+			log.warn("Failed to grab service {}. Exception: {}", postTarget, e);
+		}
+		return json;
+	}
+	
+	public JSONObject bigMLGet(String getTarget) {
+		Client client = ClientBuilder.newClient();
+		String dev = "";
+		if (devMode) dev = "dev/";
+		WebTarget target = client.target("https://bigml.io/" + dev + getTarget + "?username="+userName+";api_key="+apiKey);
+		JSONObject json = null;
+		javax.ws.rs.core.Response response = null;
+		try {
+			response = target.request(MediaType.APPLICATION_JSON).get();
+			log.trace("Service {} yielded response : {}", getTarget, response);
+			json = (JSONObject) JSONValue.parse(response.readEntity(String.class));
+		} catch (Exception e) {
+			log.warn("Failed to grab service {}. Exception: {}", getTarget, e);
+		}
+		return json;
+	}
+	
 }

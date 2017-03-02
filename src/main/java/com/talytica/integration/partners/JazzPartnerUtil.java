@@ -3,6 +3,7 @@ package com.talytica.integration.partners;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -155,6 +156,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			@SuppressWarnings("unchecked")
 			Set<String> keys = candidate.keySet();
 			List<RespondantNVP> nvps = new ArrayList<RespondantNVP>();
+			HashMap<String,Integer> questionSet = new HashMap<String,Integer>();
 
 			for (String key : keys) {
 				switch (key) {
@@ -173,7 +175,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				case "rating":
 				case "categories":
 				case "comments":
-				case "comment_count":
+				case "comments_count":
 				case "feedback":
 					break; // Do nothing... these are arrays of data that don't
 							// come from candidate.
@@ -192,24 +194,25 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				case "over_18":
 					break; // Do nothing... these are empty fields, and not
 							// allowed for hiring decisions
-				case "desired_start_date":
-				case "can_work_evenings":
-				case "can_work_overtime":
-				case "can_work_weekends":
-				case "citizenship_status":
-				case "college_gpa":
-				case "education_level":
-				case "twitter_username":
-				case "website":
-				case "willing_to_relocate":
-					break; // Do nothing... these are empty fields,
 				case "questionnaire":
 					JSONArray array = candidate.getJSONArray(key);
 					for (int j = 0; j < array.length(); j++) {
 						RespondantNVP nvp = new RespondantNVP();
-						nvp.setName(array.getJSONObject(j).getString("question"));
-						nvp.setValue(array.getJSONObject(j).getString("answer"));
+						String question = array.getJSONObject(j).getString("question");
+						String value = array.getJSONObject(j).getString("answer");
+						if (null == value || value.isEmpty()) break;
+						Integer count = questionSet.get(question); 
+						if (count != null) {
+							count++;
+							questionSet.put(question, count);
+							question = question + " (" + count.toString() + ")";
+						} else {
+							count = Integer.valueOf(1);
+							questionSet.put(question, count);
+						}		
 						nvp.setRespondantId(savedRespondant.getId());
+						nvp.setName(question);
+						nvp.setValue(value);
 						nvps.add(nvp);
 					}
 					break;
@@ -231,9 +234,20 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 						nvp.setRespondantId(savedRespondant.getId());
 						nvp.setName("applicant_progress");
 						nvps.add(nvp);
+						if ("NEW".equalsIgnoreCase(nvp.getValue())) savedRespondant.setRespondantStatus(Respondant.STATUS_PRESCREEN); 
 					}
 					break;
 				case "desired_salary":
+				case "desired_start_date":
+				case "can_work_evenings":
+				case "can_work_overtime":
+				case "can_work_weekends":
+				case "citizenship_status":
+				case "college_gpa":
+				case "education_level":
+				case "twitter_username":
+				case "website":
+				case "willing_to_relocate":
 				default:
 					RespondantNVP nvp = new RespondantNVP();
 					nvp.setRespondantId(savedRespondant.getId());
@@ -244,8 +258,10 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 					} else {
 						value = candidate.get(key).toString();
 					}
-					nvp.setValue(value.substring(0, Math.min(value.length(), 4096)));
+					if (null == value || value.isEmpty()) break;
+					nvp.setValue(value);
 					nvps.add(nvp);
+					break;
 				}
 			}
 
@@ -253,8 +269,12 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 			if (json.has("email") && json.getBoolean("email")) {
 				emailService.sendEmailInvitation(savedRespondant);
-			}
+				savedRespondant.setRespondantStatus(Respondant.STATUS_INVITED);
+			} 
+			
+			if(respondant.getRespondantStatus() != Respondant.STATUS_CREATED) respondantService.save(savedRespondant);
 		}
+		
 		return savedRespondant;
 	}
 
