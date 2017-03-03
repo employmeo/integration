@@ -68,7 +68,7 @@ public class AssessmentPipelineService {
 			if (respondant.getPosition().getPositionPredictionConfigurations().size() >= 0) {
 				try {
 					// Stage 1
-					List<PredictionResult> predictions = predictionService.runPredictionsStageForAllTargets(respondant);
+					List<PredictionResult> predictions = predictionService.runPostAssessmentPredictions(respondant);
 	
 					// Stage 2
 					GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);

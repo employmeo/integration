@@ -3,20 +3,19 @@ package com.talytica.integration.partners;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,32 +23,18 @@ import org.springframework.stereotype.Component;
 import com.employmeo.data.model.Account;
 import com.employmeo.data.model.AccountSurvey;
 import com.employmeo.data.model.Location;
-import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.RespondantScore;
-import com.employmeo.data.repository.RespondantNVPRepository;
-import com.employmeo.data.service.PartnerService;
-import com.talytica.integration.IntegrationClientFactory;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 @Scope("prototype")
 public class JazzPartnerUtil extends BasePartnerUtil {
-
-	@Autowired
-	RespondantNVPRepository respondantNVPRepository;
-
-	@Autowired
-	PartnerService partnerService;
-
-	@Autowired
-	IntegrationClientFactory integrationClientFactory;
 
 	@Value("${partners.jazz.api}")
 	private String JAZZ_SERVICE;
@@ -168,11 +153,12 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			}
 			savedRespondant = respondantService.save(respondant);
 
-			Iterator<String> keys = candidate.keys();
+			@SuppressWarnings("unchecked")
+			Set<String> keys = candidate.keySet();
 			List<RespondantNVP> nvps = new ArrayList<RespondantNVP>();
+			HashMap<String,Integer> questionSet = new HashMap<String,Integer>();
 
-			while (keys.hasNext()) {
-				String key = keys.next();
+			for (String key : keys) {
 				switch (key) {
 				case "id":
 				case "first_name":
@@ -189,7 +175,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				case "rating":
 				case "categories":
 				case "comments":
-				case "comment_count":
+				case "comments_count":
 				case "feedback":
 					break; // Do nothing... these are arrays of data that don't
 							// come from candidate.
@@ -208,24 +194,25 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				case "over_18":
 					break; // Do nothing... these are empty fields, and not
 							// allowed for hiring decisions
-				case "desired_start_date":
-				case "can_work_evenings":
-				case "can_work_overtime":
-				case "can_work_weekends":
-				case "citizenship_status":
-				case "college_gpa":
-				case "education_level":
-				case "twitter_username":
-				case "website":
-				case "willing_to_relocate":
-					break; // Do nothing... these are empty fields,
 				case "questionnaire":
 					JSONArray array = candidate.getJSONArray(key);
 					for (int j = 0; j < array.length(); j++) {
 						RespondantNVP nvp = new RespondantNVP();
-						nvp.setName(array.getJSONObject(j).getString("question"));
-						nvp.setValue(array.getJSONObject(j).getString("answer"));
+						String question = array.getJSONObject(j).getString("question");
+						String value = array.getJSONObject(j).getString("answer");
+						if (null == value || value.isEmpty()) break;
+						Integer count = questionSet.get(question); 
+						if (count != null) {
+							count++;
+							questionSet.put(question, count);
+							question = question + " (" + count.toString() + ")";
+						} else {
+							count = Integer.valueOf(1);
+							questionSet.put(question, count);
+						}		
 						nvp.setRespondantId(savedRespondant.getId());
+						nvp.setName(question);
+						nvp.setValue(value);
 						nvps.add(nvp);
 					}
 					break;
@@ -247,9 +234,20 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 						nvp.setRespondantId(savedRespondant.getId());
 						nvp.setName("applicant_progress");
 						nvps.add(nvp);
+						if ("NEW".equalsIgnoreCase(nvp.getValue())) savedRespondant.setRespondantStatus(Respondant.STATUS_PRESCREEN); 
 					}
 					break;
 				case "desired_salary":
+				case "desired_start_date":
+				case "can_work_evenings":
+				case "can_work_overtime":
+				case "can_work_weekends":
+				case "citizenship_status":
+				case "college_gpa":
+				case "education_level":
+				case "twitter_username":
+				case "website":
+				case "willing_to_relocate":
 				default:
 					RespondantNVP nvp = new RespondantNVP();
 					nvp.setRespondantId(savedRespondant.getId());
@@ -260,17 +258,23 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 					} else {
 						value = candidate.get(key).toString();
 					}
-					nvp.setValue(value.substring(0, Math.min(value.length(), 4096)));
+					if (null == value || value.isEmpty()) break;
+					nvp.setValue(value);
 					nvps.add(nvp);
+					break;
 				}
 			}
 
-			respondantNVPRepository.save(nvps);
+			respondantService.save(nvps);
 
 			if (json.has("email") && json.getBoolean("email")) {
 				emailService.sendEmailInvitation(savedRespondant);
-			}
+				savedRespondant.setRespondantStatus(Respondant.STATUS_INVITED);
+			} 
+			
+			if(respondant.getRespondantStatus() != Respondant.STATUS_CREATED) respondantService.save(savedRespondant);
 		}
+		
 		return savedRespondant;
 	}
 
