@@ -5,16 +5,18 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.repository.PredictionRepository;
 import com.employmeo.data.service.CorefactorService;
+import com.employmeo.data.service.RespondantService;
 import com.google.common.collect.Lists;
 import com.talytica.integration.analytics.PredictionModelEngine;
 import com.talytica.integration.analytics.PredictionModelRegistry;
-import com.talytica.integration.objects.CorefactorScore;
+import com.talytica.integration.objects.NameValuePair;
 import com.talytica.integration.objects.PredictionResult;
 
 import lombok.NonNull;
@@ -31,34 +33,55 @@ public class PredictionService {
 	private PredictionRepository predictionRepository;
 	@Autowired
 	private PredictionModelRegistry predictionModelRegistry;
+	@Autowired
+	private RespondantService respondantService;
 
-	public List<PredictionResult> runPredictionsStageForAllTargets(@NonNull Respondant respondant) {
+	public List<PredictionResult> runPostAssessmentPredictions(@NonNull Respondant respondant) {
 		List<PredictionResult> predictions = Lists.newArrayList();
-		List<CorefactorScore> corefactorScores = getCorefactorScores(respondant);
+		List<NameValuePair> corefactorScores = getModelInputsFromCorefactorScores(respondant);
 
 		Set<PositionPredictionConfiguration> positionPredictionConfigs = respondant.getPosition().getPositionPredictionConfigurations();
 		positionPredictionConfigs.forEach(predictionConfig -> {
-				PredictionResult predictionResult = predictForTarget(respondant, corefactorScores, predictionConfig);
-				predictions.add(predictionResult);
+				if (predictionConfig.getTriggerPoint() == PositionPredictionConfiguration.TRIGGER_POINT_ASSESSMENT) {
+					PredictionResult predictionResult = predictForTarget(respondant, corefactorScores, predictionConfig);
+					if (null != predictionResult) predictions.add(predictionResult);
+				}
 		});
 
 		return predictions;
 	}
 
+	public List<PredictionResult> runPreAssessmentPredictions(@NonNull Respondant respondant) {
+		List<PredictionResult> predictions = Lists.newArrayList();
+		List<NameValuePair> modelInputs = getModelInputsFromNvps(respondant);
 
-	private PredictionResult predictForTarget(Respondant respondant, List<CorefactorScore> corefactorScores,
+		Set<PositionPredictionConfiguration> positionPredictionConfigs = respondant.getPosition().getPositionPredictionConfigurations();
+		positionPredictionConfigs.forEach(predictionConfig -> {
+			if (predictionConfig.getTriggerPoint() == PositionPredictionConfiguration.TRIGGER_POINT_CREATION) {
+				PredictionResult predictionResult = predictForTarget(respondant, modelInputs, predictionConfig);
+				if (predictionResult != null) predictions.add(predictionResult);
+			}
+		});
+
+		return predictions;
+	}
+
+	private PredictionResult predictForTarget(Respondant respondant, List<NameValuePair> modelInputs,
 			PositionPredictionConfiguration predictionConfig) {
 		PredictionTarget predictionTarget = predictionConfig.getPredictionTarget();
 		PredictionModel predictionModel = predictionConfig.getPredictionModel();
 		PredictionModelEngine predictionEngine = getPredictionModelEngine(predictionModel);
 
-		log.debug("Initiating predictions run for respondant {} and target {} with predictionEngine {} for position {} at location {} with {} corefactorScores}",
-				respondant.getId(), predictionTarget.getName(), predictionEngine, respondant.getPosition().getPositionName(), respondant.getLocation().getLocationName(), corefactorScores.size());
+		log.debug("Initiating predictions run for respondant {} and target {} with predictionEngine {} for position {} at location {} with {} model inputs}",
+				respondant.getId(), predictionTarget.getName(), predictionEngine, respondant.getPosition().getPositionName(), respondant.getLocation().getLocationName(), modelInputs.size());
 
-		PredictionResult predictionResult = predictionEngine.runPredictions(respondant, predictionConfig, respondant.getLocation(), corefactorScores);
+		PredictionResult predictionResult = predictionEngine.runPredictions(respondant, predictionConfig, modelInputs);
+		if (predictionResult == null) return null;
 		predictionResult.setModelName(predictionModel.getName());
 		predictionResult.setPredictionTarget(predictionTarget);
-
+		NormalDistribution normalDistribution = new NormalDistribution(predictionConfig.getMean(),predictionConfig.getStDev());
+		predictionResult.setPercentile(normalDistribution.cumulativeProbability(predictionResult.getScore()));
+		
 		log.info("Prediction for respondant {} for position {} and target {} : {}",
 				respondant.getId(), respondant.getPosition().getPositionName(), predictionTarget.getName(), predictionResult);
 
@@ -76,7 +99,10 @@ public class PredictionService {
 		prediction.setRespondantId(respondant.getId());
 		prediction.setPositionPredictionConfig(predictionConfig);
 		prediction.setPositionPredictionConfigId(predictionConfig.getPositionPredictionConfigId());
+		prediction.setTargetId(predictionConfig.getPredictionTargetId());
 		prediction.setPredictionScore(predictionResult.getScore());
+		prediction.setForeignId(predictionResult.getForeignId());
+		prediction.setValue(predictionResult.getOutcome());
 		prediction.setScorePercentile(predictionResult.getPercentile());
 
 		Prediction savedPrediction = predictionRepository.save(prediction);
@@ -92,19 +118,29 @@ public class PredictionService {
 				"No prediction engines registered for prediction target: " + predictionModel.getName()));
 	}
 
-
-	private List<CorefactorScore> getCorefactorScores(Respondant respondant) {
-		List<CorefactorScore> corefactorScores = respondant.getRespondantScores().stream()
-					.map(rs -> getCorefactorById(rs))
+	private List<NameValuePair> getModelInputsFromCorefactorScores(Respondant respondant) {
+		List<NameValuePair> modelInputs = respondant.getRespondantScores().stream()
+					.map(rs ->  getModelInputFromScore(rs))
 					.collect(Collectors.toList());
-
-		log.debug("CorefactorScores for respondant {} are {}", respondant.getId(), corefactorScores);
-		return corefactorScores;
+		log.debug("CorefactorScores for respondant {} are {}", respondant.getId(), modelInputs);
+		return modelInputs;
 	}
 
-	private CorefactorScore getCorefactorById(RespondantScore rs) {
+	private NameValuePair getModelInputFromScore(RespondantScore rs) {
 		Corefactor cf = corefactorService.findCorefactorById(rs.getId().getCorefactorId());
-		CorefactorScore cfScore = new CorefactorScore(cf, rs.getValue());
-		return cfScore;
+		NameValuePair nvPair = new NameValuePair(cf.getName(), rs.getValue());
+		return nvPair;
+	}
+	
+	private List<NameValuePair> getModelInputsFromNvps(Respondant respondant) {
+		List<NameValuePair> modelInputs = respondantService.getNVPsForRespondant(respondant.getId()).stream()
+					.map(nvp ->  getModelInputFromNvp(nvp)).collect(Collectors.toList());
+		log.debug("CorefactorScores for respondant {} are {}", respondant.getId(), modelInputs);
+		return modelInputs;
+	}
+
+	private NameValuePair getModelInputFromNvp(RespondantNVP nvp) {
+		NameValuePair nvPair = new NameValuePair("Var" + nvp.getNameId().toString(), nvp.getValue());
+		return nvPair;
 	}
 }

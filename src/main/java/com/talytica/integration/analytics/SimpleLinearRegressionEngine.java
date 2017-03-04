@@ -3,14 +3,14 @@ package com.talytica.integration.analytics;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.commons.math3.distribution.NormalDistribution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
+import com.employmeo.data.service.CorefactorService;
 import com.employmeo.data.service.PredictionModelService;
-import com.talytica.integration.objects.CorefactorScore;
+import com.talytica.integration.objects.NameValuePair;
 import com.talytica.integration.objects.PredictionResult;
 
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +23,15 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine {
 	@Autowired
 	private PredictionModelService predictionModelService;
 
+	@Autowired
+	private CorefactorService corefactorService;
+	
 	private static final Double DEFAULT_EXPONENT = 1.0D;
 	private static final Double DEFAULT_COEFFICIENT = 1.0D;
 	private static final Double DEFAULT_INTERCEPT = 0.0D;
 
 	private PredictionModel model;
 	private List<LinearRegressionConfig> modelConfigs;
-	private NormalDistribution normalDistribution;
 
 	public SimpleLinearRegressionEngine() {
 		log.info("New linear regression prediction model instantiated");
@@ -47,24 +49,19 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine {
 	}
 
 	@Override
-	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, Location location,
-			List<CorefactorScore> corefactorScores) {
+	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig,
+			List<NameValuePair> inputs) {
 		log.debug("Running predictions for {}", respondant.getId());
 
 		PredictionResult prediction = new PredictionResult();
-		Double targetOutcomeScore = evaluate(corefactorScores);
-		
-		normalDistribution = new NormalDistribution(posConfig.getMean(),posConfig.getStDev());
-		Double percentile = normalDistribution.cumulativeProbability(targetOutcomeScore);
-		
+		Double targetOutcomeScore = evaluate(inputs);	
 		prediction.setScore(targetOutcomeScore);
-		prediction.setPercentile(percentile);
 
 		log.info("Prediction outcome for respondant {} is {}", respondant.getId(), targetOutcomeScore);
 		return prediction;
 	}
 
-	public Double evaluate(List<CorefactorScore> corefactorScores) {
+	public Double evaluate(List<NameValuePair> corefactorScores) {
 			Double scoreSigma = 0.0D;
 			for(LinearRegressionConfig config : modelConfigs) {
 				if(config.getConfigType() == LinearRegressionConfigType.INTERCEPT) {
@@ -86,19 +83,19 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine {
 
 	}
 
-	private Double getCorefactorComponentScore(LinearRegressionConfig config, List<CorefactorScore> corefactorScores) {
+	private Double getCorefactorComponentScore(LinearRegressionConfig config, List<NameValuePair> corefactorScores) {
 		Double componentScore = 0.0D;
-
-		Optional<CorefactorScore> corefactorScore = findCorefactorScore(config.getCorefactorId(), corefactorScores);
+		Corefactor corefactor = corefactorService.findCorefactorById(config.getCorefactorId());
+		Optional<NameValuePair> corefactorScore = findCorefactorScore(corefactor, corefactorScores);
 		if(corefactorScore.isPresent()) {
-			Double corefactorScoreValue = corefactorScore.get().getScore();
+			Double corefactorScoreValue = (Double) corefactorScore.get().getValue();
 			Double exponent = (null == config.getExponent()) ? DEFAULT_EXPONENT : config.getExponent();
 			Double coefficient = (null == config.getCoefficient()) ? DEFAULT_COEFFICIENT : config.getCoefficient();
 
 			log.debug("Evaluating for corefactor {}: {} * {}^{}", corefactorScore.get(), coefficient, corefactorScoreValue, exponent);
 			componentScore = (coefficient * (Math.pow(corefactorScoreValue, exponent)));
 
-			log.debug("Corefactor {} component score = {}", corefactorScore.get(), componentScore);
+			log.debug("Corefactor {} component score = {}", corefactor.getName(), componentScore);
 		} else {
 			if(config.getRequired()) {
 				throw new IllegalStateException("Corefactor scores for corefactorId " + config.getCorefactorId() + " required for this model, but not present");
@@ -110,8 +107,8 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine {
 		return componentScore;
 	}
 	
-	private Optional<CorefactorScore> findCorefactorScore(Long corefactorId, List<CorefactorScore> corefactorScores) {
-		return corefactorScores.stream().filter(cfs -> corefactorId.equals(cfs.getCorefactor().getId())).findFirst();
+	private Optional<NameValuePair> findCorefactorScore(Corefactor corefactor, List<NameValuePair> corefactorScores) {
+		return corefactorScores.stream().filter(cfs -> corefactor.getName().equals(cfs.getName())).findFirst();
 	}
 
 	@Override
@@ -133,5 +130,7 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine {
 	public String getModelType() {
 		return this.model.getModelTypeValue();
 	}
+
+
 
 }
