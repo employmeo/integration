@@ -9,10 +9,9 @@ import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import com.employmeo.data.model.PositionProfile;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
-import com.google.common.collect.Range;
+import com.employmeo.data.model.ScoringScale;
 import com.talytica.integration.objects.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Transactional
 public class GradingService {
-
-	private static final Range<Double> gradeCurveProfileD = Range.closed(0.0D, 40.0D);
-	private static final Range<Double> gradeCurveProfileC = Range.closed(40.001D, 65.00D);
-	private static final Range<Double> gradeCurveProfileB = Range.closed(65.001D, 90.00D);
-	private static final Range<Double> gradeCurveProfileA = Range.closed(90.001D, 100.0D);
 
 
 	/**
@@ -64,17 +58,11 @@ public class GradingService {
 			compositeScore = new BigDecimal(averagePercentile).setScale(2, RoundingMode.HALF_UP).doubleValue();
 		}
 		
-		if(gradeCurveProfileD.contains(compositeScore)) {
-			result.setRecommendedProfile(PositionProfile.PROFILE_D);
-		} else if (gradeCurveProfileC.contains(compositeScore)) {
-			result.setRecommendedProfile(PositionProfile.PROFILE_C);
-		} else if (gradeCurveProfileB.contains(compositeScore)) {
-			result.setRecommendedProfile(PositionProfile.PROFILE_B);
-		} else {
-			result.setRecommendedProfile(PositionProfile.PROFILE_A);
-		}
+		ScoringScale scale = new ScoringScale();
 
 		result.setCompositeScore(compositeScore);
+		result.setRecommendedProfile(scale.getProfile(compositeScore));
+
 
 		log.debug("Grade results for respondant {} determined as {}", respondant.getId(), result);
 		return result;

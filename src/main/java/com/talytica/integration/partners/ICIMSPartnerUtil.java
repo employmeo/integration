@@ -278,7 +278,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
-
+		CustomProfile customProfile = new CustomProfile();
 		Set<RespondantScore> scores = respondant.getRespondantScores();
 		StringBuffer notes = new StringBuffer();
 		notes.append("Factor Scores: ");
@@ -298,8 +298,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		results.put("assessmentname", assessment);
 		results.put("assessmentdate", ICIMS_SDF.format(new Date(respondant.getFinishTime().getTime())));
 		results.put("assessmentscore", respondant.getCompositeScore());
-		results.put("assessmentresult", PositionProfile.getProfileDefaults(
-				respondant.getProfileRecommendation()).getString("profile_name"));
+		results.put("assessmentresult", customProfile.getName(respondant.getProfileRecommendation()));
 		results.put("assessmentnotes", notes.toString());
 		results.put("assessmentstatus", ASSESSMENT_COMPLETE);
 		results.put("assessmenturl", externalLinksService.getPortalLink(respondant));

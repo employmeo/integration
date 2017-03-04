@@ -2,6 +2,7 @@ package com.talytica.integration.resources;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response;
 
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,18 +38,22 @@ public class ATSOrderResource {
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 201, message = "Order Processed"),
 	   })
-	public String doPost(String body) {
+	public Response doPost(String body) {
 		JSONObject json = new JSONObject(body);
 
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = pu.getAccountFrom(json.getJSONObject("account"));
+		if (null == account) return Response.status(Response.Status.BAD_REQUEST)
+				.entity("{ message: 'Unable to match account'}").build();
 		Respondant respondant = pu.createRespondantFrom(json, account);
+		if (null == respondant) return Response.status(Response.Status.BAD_REQUEST)
+				.entity("{ message: 'Unable to process order'}").build();
 		JSONObject output = pu.prepOrderResponse(json, respondant);
 
 		log.debug("ATS Request for Assessment Complete: " + respondant.getAtsId());
-		return output.toString();
+		return Response.status(Response.Status.ACCEPTED).entity(output.toString()).build();
 	}
 
 }
