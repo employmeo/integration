@@ -286,7 +286,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		applicant.put("applicant_id", respondant.getId());
 		
 		if (respondant.getRespondantStatus() >= Respondant.STATUS_SCORED) {
-			CustomProfile customProfile = new CustomProfile();				
+			CustomProfile customProfile = account.getCustomProfile();				
 			Set<RespondantScore> scores = respondant.getRespondantScores();		
 			applicant.put("applicant_profile", respondant.getProfileRecommendation());
 			applicant.put("applicant_composite_score", respondant.getCompositeScore());

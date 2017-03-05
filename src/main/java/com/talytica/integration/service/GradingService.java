@@ -58,7 +58,7 @@ public class GradingService {
 			compositeScore = new BigDecimal(averagePercentile).setScale(2, RoundingMode.HALF_UP).doubleValue();
 		}
 		
-		ScoringScale scale = new ScoringScale();
+		ScoringScale scale = respondant.getPosition().getScoringScale();
 
 		result.setCompositeScore(compositeScore);
 		result.setRecommendedProfile(scale.getProfile(compositeScore));

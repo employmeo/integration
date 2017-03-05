@@ -278,7 +278,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
-		CustomProfile customProfile = new CustomProfile();
+		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
 		Set<RespondantScore> scores = respondant.getRespondantScores();
 		StringBuffer notes = new StringBuffer();
 		notes.append("Factor Scores: ");
