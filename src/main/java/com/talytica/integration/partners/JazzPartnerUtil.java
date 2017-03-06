@@ -22,9 +22,12 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Account;
 import com.employmeo.data.model.AccountSurvey;
+import com.employmeo.data.model.CustomProfile;
 import com.employmeo.data.model.Location;
 import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
+import com.employmeo.data.model.Prediction;
+import com.employmeo.data.model.PredictionTarget;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.RespondantScore;
@@ -299,13 +302,42 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		message.put("security", "0");
 		
 		StringBuffer notes = new StringBuffer();
-		notes.append("Talytica Overall Score: ");
+		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
+		notes.append("Talytica Profile (Score): ");
+		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
+		notes.append(" (");
 		notes.append(respondant.getCompositeScore());
-		notes.append("\n");
+		notes.append(")\n");
 		for (RespondantScore rs : respondant.getRespondantScores()) {
 			notes.append(corefactorService.findCorefactorById(rs.getId().getCorefactorId()).getName());
 			notes.append(": ");
 			notes.append(String.format("%.2f", rs.getValue()));
+			notes.append("\n");	
+		}
+		message.put("contents", notes.toString());
+
+		return message;
+	}	
+	
+	@Override
+	public JSONObject getScreeningMessage(Respondant respondant) {
+		JSONObject message = new JSONObject();
+		message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
+		message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
+		message.put("user_id", "usr_anonymous");
+		message.put("security", "0");
+		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
+		StringBuffer notes = new StringBuffer();
+		notes.append("Talytica Profile (Score): ");
+		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
+		notes.append(" (");
+		notes.append(respondant.getCompositeScore());
+		notes.append(")\n");
+		for (Prediction prediction : respondant.getPredictions()) {			
+			PredictionTarget target = predictionModelService.getTargetById(prediction.getTargetId());
+			notes.append(target.getLabel());
+			notes.append(": ");
+			notes.append(String.format("%.2f", prediction.getPredictionScore()));
 			notes.append("\n");	
 		}
 		message.put("contents", notes.toString());

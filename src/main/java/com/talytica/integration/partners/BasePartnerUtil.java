@@ -58,6 +58,9 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	@Autowired
 	CorefactorService corefactorService;
 	
+	@Autowired
+	PredictionModelService predictionModelService;
+	
 	@Value("${partners.default.intercept.outbound:true}")
 	Boolean interceptOutbound;
 
@@ -320,7 +323,46 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		return message;
 
 	}
+	
+	@Override
+	public JSONObject getScreeningMessage(Respondant respondant) {
+		
+		Account account = respondant.getAccount();
+		JSONObject jAccount = new JSONObject();
+		JSONObject applicant = new JSONObject();
+		jAccount.put("account_ats_id", trimPrefix(account.getAtsId()));
+		jAccount.put("account_id", account.getId());
+		jAccount.put("account_name", account.getAccountName());
+		applicant.put("applicant_ats_id", trimPrefix(respondant.getAtsId()));
+		applicant.put("applicant_id", respondant.getId());
+		Set<Prediction> predictions = respondant.getPredictions();
+		
+		CustomProfile customProfile = account.getCustomProfile();				
+		applicant.put("applicant_profile", respondant.getProfileRecommendation());
+		applicant.put("applicant_composite_score", respondant.getCompositeScore());
+		applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
+		JSONArray predset = new JSONArray();
+		
+		for (Prediction prediction : predictions) {
+				PredictionTarget target = predictionModelService.getTargetById(prediction.getTargetId());
+				JSONObject item = new JSONObject();
+				item.put("target_name", target.getLabel());
+				item.put("target_probabilty", prediction.getPredictionScore());
+				item.put("precentile_rank", prediction.getScorePercentile());
+				predset.put(item);
+		}
+	
+		applicant.put("predictions", predset);
+		applicant.put("portal_link", externalLinksService.getPortalLink(respondant));
 
+		
+		JSONObject message = new JSONObject();
+		message.put("account", jAccount);
+		message.put("applicant", applicant);
+	
+		return message;
+
+	}
 	@Override
 	public void postScoresToPartner(Respondant respondant, JSONObject message) {
 

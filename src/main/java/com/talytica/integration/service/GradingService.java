@@ -63,7 +63,6 @@ public class GradingService {
 		result.setCompositeScore(compositeScore);
 		result.setRecommendedProfile(scale.getProfile(compositeScore));
 
-
 		log.debug("Grade results for respondant {} determined as {}", respondant.getId(), result);
 		return result;
 

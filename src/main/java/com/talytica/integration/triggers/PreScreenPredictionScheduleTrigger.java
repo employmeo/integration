@@ -51,10 +51,10 @@ public class PreScreenPredictionScheduleTrigger {
 							GradingResult grade = gradingService.gradeRespondantByPredictions(respondant, results);
 							respondant.setCompositeScore(grade.getCompositeScore());
 							respondant.setProfileRecommendation(grade.getRecommendedProfile());
-						if ((respondant.getPartner() != null) && (respondant.getScorePostMethod()!=null)) {
-							PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
-							pu.postScoresToPartner(respondant, pu.getScoresMessage(respondant));							
-						}
+							if ((respondant.getPartner() != null) && (respondant.getScorePostMethod()!=null)) {
+								PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+								pu.postScoresToPartner(respondant, pu.getScreeningMessage(respondant));							
+							}
 						}
 						respondantService.save(respondant);
 					} catch (Exception e) {

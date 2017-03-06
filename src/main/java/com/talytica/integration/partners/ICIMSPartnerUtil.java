@@ -392,4 +392,10 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		return response;
 	}
 
+	@Override
+	public JSONObject getScreeningMessage(Respondant respondant) {
+		// TODO Auto-generated method stub
+		return getScoresMessage(respondant);
+	}
+
 }
