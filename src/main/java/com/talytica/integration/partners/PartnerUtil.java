@@ -18,6 +18,7 @@ public interface PartnerUtil {
 	public Respondant createRespondantFrom(JSONObject json, Account account);
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant);
 	public JSONObject getScoresMessage(Respondant respondant);
+	public JSONObject getScreeningMessage(Respondant respondant);
 	public void postScoresToPartner(Respondant respondant, JSONObject message);
 
 }
