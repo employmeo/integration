@@ -45,17 +45,13 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 	private PredictionModel model;
 
 	public BigMLEnsembleEngine() {
-		log.info("New Big ML ensemble model instantiated");
+		log.debug("New Big ML ensemble model instantiated");
 	}
 
 	@Override
-	public void initialize(PredictionModel model) {
-		log.info("Initializing ..");
-		
+	public void initialize(PredictionModel model) {	
 		this.model = model;
-		log.info("New Big ML ensemble model instantiated for {} (ID: {})", model.getName(), model.getModelId());
-
-		log.info("Initialization complete.");
+		log.debug("New Big ML ensemble model initialized for {} (ID: {})", model.getName(), model.getModelId());
 	}
 
 	@Override
@@ -72,7 +68,7 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 		if ((null != model.getPrep()) && (!model.getPrep().isEmpty())) {
 			inputData = prepInputData(inputData);
 		} else {
-			log.info("No Topic Model: {}", model);
+			log.debug("No Topic Model: {}", model);
 		}
 		
 		try {
@@ -87,19 +83,19 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
             
             prediction.setOutcome(outcome);
             prediction.setScore((outcome) ? confidence : 1 - confidence);  		
-            log.info("Ensemble Prediction is: {}, with {} confidence",object.get("prediction"),object.get("confidence"));
+            log.debug("Ensemble Prediction is: {}, with {} confidence",object.get("prediction"),object.get("confidence"));
 
 		} catch (Exception e) {
 			log.error("Ensemble Prediction failed for {}, with exception {}", respondant.getId(), e);
 		}
 
-		log.info("Prediction outcome for respondant {} is {}", respondant.getId(), prediction.getScore());
+		log.info("Prediction of {} for respondant {} is {}", posConfig.getPredictionTarget().getLabel(), respondant.getId(), prediction.getScore());
 		return prediction;
 	}
 
 	private JSONObject prepInputData(JSONObject inputData) {
 		//call topic model!
-		log.info("Topic Model: {}", model.getPrepName());	
+		log.debug("Topic Model: {}", model.getPrepName());	
 		try {
 			JSONObject createargs = new JSONObject();
 			createargs.put("input_data", inputData);

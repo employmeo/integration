@@ -146,7 +146,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setAccountSurvey(survey);
 			respondant.setPartner(getPartner());
 			respondant.setPartnerId(getPartner().getId());
-			respondant.setScorePostMethod(JAZZ_SERVICE+"/notes");
+			respondant.setScorePostMethod(JAZZ_SERVICE+"notes");
 			respondant.setRespondantStatus(Respondant.STATUS_CREATED);
 			try {
 				String applyDate = json.getString("apply_date");
