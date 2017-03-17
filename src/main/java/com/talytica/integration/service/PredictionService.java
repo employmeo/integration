@@ -82,8 +82,8 @@ public class PredictionService {
 		NormalDistribution normalDistribution = new NormalDistribution(predictionConfig.getMean(),predictionConfig.getStDev());
 		predictionResult.setPercentile(normalDistribution.cumulativeProbability(predictionResult.getScore()));
 		
-		log.info("Prediction for respondant {} for position {} and target {} : {}",
-				respondant.getId(), respondant.getPosition().getPositionName(), predictionTarget.getName(), predictionResult);
+		log.debug("Prediction for respondant {} for position {} and target {} : {}",
+				respondant.getId(), respondant.getPosition().getPositionName(), predictionTarget.getName(), predictionResult.getScore());
 
 		savePrediction(respondant, predictionConfig, predictionResult);
 		return predictionResult;
