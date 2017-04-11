@@ -303,7 +303,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		
 		StringBuffer notes = new StringBuffer();
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		notes.append("Talytica Profile (Score): ");
+		notes.append("Assessment Result: ");
 		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
 		notes.append(" (");
 		notes.append(respondant.getCompositeScore());
@@ -328,7 +328,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		message.put("security", "0");
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
 		StringBuffer notes = new StringBuffer();
-		notes.append("Talytica Profile (Score): ");
+		notes.append("Initial Screen Result: ");
 		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
 		notes.append(" (");
 		notes.append(respondant.getCompositeScore());
