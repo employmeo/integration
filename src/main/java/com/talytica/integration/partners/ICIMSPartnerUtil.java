@@ -351,10 +351,11 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	// Specific methods for talking to ICIMS
 
-	private WebTarget prepTarget(String target) {
+	private Client getClient() {
 		ClientConfig cc = new ClientConfig();
 		cc.property(ApacheClientProperties.PREEMPTIVE_BASIC_AUTHENTICATION, true);
 		cc.property(ClientProperties.PROXY_URI, PROXY_URL);
+		
 		try {
 			URL proxyUrl = new URL(PROXY_URL);
 			String userInfo = proxyUrl.getUserInfo();
@@ -363,21 +364,31 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 			cc.property(ClientProperties.PROXY_USERNAME, pUser);
 			cc.property(ClientProperties.PROXY_PASSWORD, pPass);
 		} catch (Exception e) {
-			log.error("Exception: {}. Failed to set proxy uname pass: {}",e.getMessage(), PROXY_URL);
+			log.info("No User & Pass for Proxy: {}",PROXY_URL);
 		}
 		cc.property(ClientProperties.REQUEST_ENTITY_PROCESSING, "BUFFERED");
 		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
+		cc.property("sslProtocol","TLSv1.2");
 		cc.connectorProvider(new ApacheConnectorProvider());
 		Client client = ClientBuilder.newClient(cc);
+		
 		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(ICIMS_USER, ICIMS_PASS);
 		client.register(feature);
 
-		return client.target(target);
+		return client;
 	}
 
 	private String icimsGet(String getTarget) {
-		String response = prepTarget(getTarget).request(MediaType.APPLICATION_JSON).get(String.class);
-		return response;
+		Client client = getClient();
+		Response response = client.target(getTarget).request(MediaType.APPLICATION_JSON).get();
+		
+		String result = response.readEntity(String.class);
+		if (Response.Status.OK.getStatusCode() != response.getStatus()) {
+			log.error("iCIMS GET Error {} responded with: {} {}, {}",getTarget,
+					response.getStatusInfo().getStatusCode(),
+					response.getStatusInfo().getReasonPhrase(), result);
+		}
+		return result;
 	}
 
 	//private Response icimsPost(String postTarget, JSONObject json) {
@@ -387,7 +398,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	//}
 
 	private Response icimsPatch(String postTarget, JSONObject json) {
-		Response response = prepTarget(postTarget).request(MediaType.APPLICATION_JSON)
+		Response response = getClient().target(postTarget).request(MediaType.APPLICATION_JSON)
 				.method("PATCH",Entity.entity(json.toString(), MediaType.APPLICATION_JSON));
 		return response;
 	}
