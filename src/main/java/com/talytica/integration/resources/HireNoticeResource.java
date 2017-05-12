@@ -7,6 +7,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,7 +41,7 @@ public class HireNoticeResource {
 
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response doPost( String body) {
+	public Response doPost( String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
 		log.debug("processing with:" + json.toString());
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());

@@ -4,9 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -50,19 +50,27 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Override
 	public Position getPositionFrom(JSONObject position, Account account) {
 
-		String jobId = position.getString("job_id");
+		String jobId = position.optString("job_id");
 		Position savedPosition = accountService.getPositionByAtsId(account.getId(), addPrefix(jobId));
 
 		if (savedPosition == null) {
 			Position pos = new Position();
 			pos.setAccount(account);
 			pos.setAccountId(account.getId());
-			String jobservice = "jobs/" + jobId;
-			JSONObject response = new JSONObject(jazzGet(jobservice, account));
-			pos.setPositionName(response.getString("title"));
 			pos.setAtsId(addPrefix(jobId));
-			String desc = response.getString("description");
-			pos.setDescription(desc.substring(0, Math.min(desc.length(), 1083)));
+
+			String jobservice = "jobs/" + jobId;
+			try {
+				JSONObject response = new JSONObject(jazzGet(jobservice, account));
+				pos.setPositionName(response.optString("title"));
+				String desc = response.optString("description");
+				pos.setDescription(desc.substring(0, Math.min(desc.length(), 1083)));
+			} catch (Exception e) {
+				log.error("Failed to get position details: {}", e.getMessage());
+				pos.setPositionName("TEMP-NAME");
+				pos.setDescription("PLEASE EDIT NAME AND DESCRIPTION");
+			}
+
 			savedPosition = accountService.save(pos);
 		}
 		return savedPosition;
@@ -81,37 +89,45 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Override
 	public Respondant getRespondantFrom(JSONObject applicant, Account account) {
 		Respondant respondant = null;
-		respondant = respondantService.getRespondantByAtsId(addPrefix(applicant.get("id").toString()));
+		respondant = respondantService.getRespondantByAtsId(addPrefix(applicant.opt("id").toString()));
 		if ((null == respondant) && (applicant.has("applicant_id")) && (applicant.has("job_id"))) {
-			Person person = personService.getPersonByAtsId(addPrefix(applicant.getString("applicant_id")));
-			Position position = accountService.getPositionByAtsId(account.getId(),addPrefix(applicant.getString("job_id")));
+			Person person = personService.getPersonByAtsId(addPrefix(applicant.optString("applicant_id")));
+			Position position = accountService.getPositionByAtsId(account.getId(),
+					addPrefix(applicant.optString("job_id")));
 			if ((null != person) & (null != position)) {
-				respondant = respondantService.getRespondantByPersonAndPosition(person,position);
+				respondant = respondantService.getRespondantByPersonAndPosition(person, position);
 			}
 		}
-		
+
 		return respondant;
 	}
 
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
-		String jobId = json.getString("job_id");
-		String appId = json.getString("id");
+		String jobId = json.optString("job_id");
+		String appId = json.optString("id");
 		String appservice = "applicants/" + appId;
 		String appjobservice = "applicants2jobs/applicant_id/" + appId + "/job_id/" + jobId;
-		JSONObject candidate = new JSONObject(jazzGet(appservice, account));
-		JSONObject application = new JSONObject(jazzGet(appjobservice, account));
+		JSONObject candidate;
+		JSONObject application;
+		try {
+			candidate = new JSONObject(jazzGet(appservice, account));
+			application = new JSONObject(jazzGet(appjobservice, account));
+		} catch (Exception e) {
+			log.error("Failed to get candidate details: {}", e.getMessage());
+			return null;
+		}
 
 		Position position = getPositionFrom(json, account);
 		Location location = getLocationFrom(null, account);
 		AccountSurvey survey = getSurveyFrom(null, account);
 
-		Person savedPerson = personService.getPersonByAtsId(addPrefix(json.getString("id")));
+		Person savedPerson = personService.getPersonByAtsId(addPrefix(json.optString("id")));
 		Respondant savedRespondant = null;
 		if (savedPerson == null) {
-			log.debug("no person found with id {}", addPrefix(json.getString("id")));
+			log.debug("no person found with id {}", addPrefix(json.optString("id")));
 			Person person = new Person();
-			person.setAtsId(addPrefix(json.getString("id")));
+			person.setAtsId(addPrefix(json.optString("id")));
 			person.setFirstName(json.optString("first_name"));
 			person.setLastName(json.optString("last_name"));
 			person.setPhone(json.optString("prospect_phone"));
@@ -126,14 +142,14 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			Respondant respondant = new Respondant();
 			respondant.setAccount(account);
 			respondant.setAccountId(account.getId());
-			respondant.setAtsId(addPrefix(application.getString("id")));
+			respondant.setAtsId(addPrefix(application.optString("id")));
 			String phoneNum = savedPerson.getPhone();
 			if (null == phoneNum || phoneNum.isEmpty()) {
 				log.warn("JazzApp {} no phone {}", respondant.getAtsId(), savedPerson);
 			} else {
 				phoneNum = phoneNum.replaceAll("[^\\d]", "");
 				phoneNum = phoneNum.startsWith("1") ? phoneNum.substring(1) : phoneNum;
-				respondant.setPayrollId(StringUtils.left(phoneNum,10)); //shorten to 10 digits.
+				respondant.setPayrollId(StringUtils.left(phoneNum, 10)); // shorten
 				log.debug("JazzApp {} using phone as lookupid {}", respondant.getAtsId(), phoneNum);
 			}
 			respondant.setPerson(savedPerson);
@@ -146,7 +162,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			respondant.setAccountSurvey(survey);
 			respondant.setPartner(getPartner());
 			respondant.setPartnerId(getPartner().getId());
-			respondant.setScorePostMethod(JAZZ_SERVICE+"notes");
+			respondant.setScorePostMethod(JAZZ_SERVICE + "notes");
 			respondant.setRespondantStatus(Respondant.STATUS_CREATED);
 			try {
 				String applyDate = json.getString("apply_date");
@@ -157,11 +173,13 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			savedRespondant = respondantService.save(respondant);
 
 			@SuppressWarnings("unchecked")
-			Set<String> keys = candidate.keySet();
+			Iterator<String> keys = candidate.keys();
+			// Set<String> keys = keyIt.;
 			List<RespondantNVP> nvps = new ArrayList<RespondantNVP>();
-			HashMap<String,Integer> questionSet = new HashMap<String,Integer>();
+			HashMap<String, Integer> questionSet = new HashMap<String, Integer>();
 
-			for (String key : keys) {
+			while (keys.hasNext()) {
+				String key = keys.next();
 				switch (key) {
 				case "id":
 				case "first_name":
@@ -198,13 +216,14 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 					break; // Do nothing... these are empty fields, and not
 							// allowed for hiring decisions
 				case "questionnaire":
-					JSONArray array = candidate.getJSONArray(key);
+					JSONArray array = candidate.optJSONArray(key);
 					for (int j = 0; j < array.length(); j++) {
 						RespondantNVP nvp = new RespondantNVP();
-						String question = array.getJSONObject(j).getString("question");
-						String value = array.getJSONObject(j).getString("answer");
-						if (null == value || value.isEmpty()) break;
-						Integer count = questionSet.get(question); 
+						String question = array.optJSONObject(j).optString("question");
+						String value = array.optJSONObject(j).optString("answer");
+						if (null == value || value.isEmpty())
+							break;
+						Integer count = questionSet.get(question);
 						if (count != null) {
 							count++;
 							questionSet.put(question, count);
@@ -212,7 +231,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 						} else {
 							count = Integer.valueOf(1);
 							questionSet.put(question, count);
-						}		
+						}
 						nvp.setRespondantId(savedRespondant.getId());
 						nvp.setName(question);
 						nvp.setValue(value);
@@ -220,24 +239,25 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 					}
 					break;
 				case "jobs": // could be one or multiple jobs.
-					Object object = candidate.get(key);
+					Object object = candidate.opt(key);
 					JSONObject job = null;
 					if (JSONObject.class == object.getClass()) {
-						job = candidate.getJSONObject(key);
+						job = candidate.optJSONObject(key);
 					} else if (JSONArray.class == object.getClass()) {
 						JSONArray jobs = (JSONArray) object;
 						for (int j = 0; j < jobs.length(); j++) {
-							if (jobId == jobs.getJSONObject(j).getString("job_id"))
-								job = jobs.getJSONObject(j);
+							if (jobId == jobs.optJSONObject(j).optString("job_id"))
+								job = jobs.optJSONObject(j);
 						}
 					}
 					if (job != null) {
 						RespondantNVP nvp = new RespondantNVP();
-						nvp.setValue(job.getString("applicant_progress"));
+						nvp.setValue(job.optString("applicant_progress"));
 						nvp.setRespondantId(savedRespondant.getId());
 						nvp.setName("applicant_progress");
 						nvps.add(nvp);
-						if ("NEW".equalsIgnoreCase(nvp.getValue())) savedRespondant.setRespondantStatus(Respondant.STATUS_PRESCREEN); 
+						if ("NEW".equalsIgnoreCase(nvp.getValue()))
+							savedRespondant.setRespondantStatus(Respondant.STATUS_PRESCREEN);
 					}
 					break;
 				case "desired_salary":
@@ -256,12 +276,13 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 					nvp.setRespondantId(savedRespondant.getId());
 					nvp.setName(key);
 					String value;
-					if (String.class == candidate.get(key).getClass()) {
-						value = candidate.getString(key);
+					if (String.class == candidate.opt(key).getClass()) {
+						value = candidate.optString(key);
 					} else {
-						value = candidate.get(key).toString();
+						value = candidate.opt(key).toString();
 					}
-					if (null == value || value.isEmpty()) break;
+					if (null == value || value.isEmpty())
+						break;
 					nvp.setValue(value);
 					nvps.add(nvp);
 					break;
@@ -270,14 +291,15 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 			respondantService.save(nvps);
 
-			if (json.has("email") && json.getBoolean("email")) {
+			if (json.has("email") && json.optBoolean("email")) {
 				emailService.sendEmailInvitation(savedRespondant);
 				savedRespondant.setRespondantStatus(Respondant.STATUS_INVITED);
-			} 
-			
-			if(respondant.getRespondantStatus() != Respondant.STATUS_CREATED) respondantService.save(savedRespondant);
+			}
+
+			if (respondant.getRespondantStatus() != Respondant.STATUS_CREATED)
+				respondantService.save(savedRespondant);
 		}
-		
+
 		return savedRespondant;
 	}
 
@@ -285,66 +307,75 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant) {
 
 		JSONObject jApplicant = new JSONObject();
-		jApplicant.put("applicant_ats_id", this.trimPrefix(respondant.getAtsId()));
-		jApplicant.put("applicant_id", respondant.getId());
-		jApplicant.put("first_name", respondant.getPerson().getFirstName());
-		jApplicant.put("last_name", respondant.getPerson().getLastName());
+		try {
+			jApplicant.put("applicant_ats_id", this.trimPrefix(respondant.getAtsId()));
+			jApplicant.put("applicant_id", respondant.getId());
+			jApplicant.put("first_name", respondant.getPerson().getFirstName());
+			jApplicant.put("last_name", respondant.getPerson().getLastName());
+		} catch (Exception e) {
+			log.error("Failed to build response: {}", e.getMessage());
+		}
 		return jApplicant;
 	}
 
-	
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject message = new JSONObject();
-		message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
-		message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
-		message.put("user_id", "usr_anonymous");
-		message.put("security", "0");
-		
-		StringBuffer notes = new StringBuffer();
-		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		notes.append("Assessment Result: ");
-		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
-		notes.append(" (");
-		notes.append(respondant.getCompositeScore());
-		notes.append(")\n");
-		for (RespondantScore rs : respondant.getRespondantScores()) {
-			notes.append(corefactorService.findCorefactorById(rs.getId().getCorefactorId()).getName());
-			notes.append(": ");
-			notes.append(String.format("%.2f", rs.getValue()));
-			notes.append("\n");	
-		}
-		message.put("contents", notes.toString());
+		try {
+			message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
+			message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
+			message.put("user_id", "usr_anonymous");
+			message.put("security", "0");
 
+			StringBuffer notes = new StringBuffer();
+			CustomProfile customProfile = respondant.getAccount().getCustomProfile();
+			notes.append("Assessment Result: ");
+			notes.append(customProfile.getName(respondant.getProfileRecommendation()));
+			notes.append(" (");
+			notes.append(respondant.getCompositeScore());
+			notes.append(")\n");
+			for (RespondantScore rs : respondant.getRespondantScores()) {
+				notes.append(corefactorService.findCorefactorById(rs.getId().getCorefactorId()).getName());
+				notes.append(": ");
+				notes.append(String.format("%.2f", rs.getValue()));
+				notes.append("\n");
+			}
+			message.put("contents", notes.toString());
+		} catch (Exception e) {
+			log.error("Failed to build response: {}", e.getMessage());
+		}
 		return message;
-	}	
-	
+	}
+
 	@Override
 	public JSONObject getScreeningMessage(Respondant respondant) {
 		JSONObject message = new JSONObject();
-		message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
-		message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
-		message.put("user_id", "usr_anonymous");
-		message.put("security", "0");
-		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		StringBuffer notes = new StringBuffer();
-		notes.append("Initial Screen Result: ");
-		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
-		notes.append(" (");
-		notes.append(respondant.getCompositeScore());
-		notes.append(")\n");
-		for (Prediction prediction : respondant.getPredictions()) {			
-			PredictionTarget target = predictionModelService.getTargetById(prediction.getTargetId());
-			notes.append(target.getLabel());
-			notes.append(": ");
-			notes.append(String.format("%.2f", prediction.getPredictionScore()));
-			notes.append("\n");	
+		try {
+			message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
+			message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
+			message.put("user_id", "usr_anonymous");
+			message.put("security", "0");
+			CustomProfile customProfile = respondant.getAccount().getCustomProfile();
+			StringBuffer notes = new StringBuffer();
+			notes.append("Initial Screen Result: ");
+			notes.append(customProfile.getName(respondant.getProfileRecommendation()));
+			notes.append(" (");
+			notes.append(respondant.getCompositeScore());
+			notes.append(")\n");
+			for (Prediction prediction : respondant.getPredictions()) {
+				PredictionTarget target = predictionModelService.getTargetById(prediction.getTargetId());
+				notes.append(target.getLabel());
+				notes.append(": ");
+				notes.append(String.format("%.2f", prediction.getPredictionScore()));
+				notes.append("\n");
+			}
+			message.put("contents", notes.toString());
+		} catch (Exception e) {
+			log.error("Failed to build response: {}", e.getMessage());
 		}
-		message.put("contents", notes.toString());
-
 		return message;
-	}	
-	
+	}
+
 	// Special calls to Jazz HR to get data for applicant
 
 	public String jazzGet(String getTarget, Account account) {
@@ -371,7 +402,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		}
 		return serviceResponse;
 	}
-	
+
 	public Date getDateFrom(String date) {
 		Date returnDate = new Date();
 		try {

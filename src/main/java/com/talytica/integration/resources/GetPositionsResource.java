@@ -7,6 +7,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ public class GetPositionsResource {
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String doPost(String body) {
+	public String doPost(String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
 		log.debug("processing with: " + json.toString());
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());

@@ -51,41 +51,44 @@ public class MercerScoring implements ScoringModelEngine {
 
 		JSONArray answers = new JSONArray();
 		responses.forEach(response -> {
-			Question question = questionService.getQuestionById(response.getQuestionId());
-			String testname = question.getForeignSource();
-			if (testname.equalsIgnoreCase("behavior_b")) {
-				String[] priorities = Integer.toString(response.getResponseValue()).split("(?!^)");
-				for (int j = 0; j < priorities.length; j++) {
-					int value = Integer.valueOf(priorities[j]);
-					String quesId = question.getForeignId() + "_" + j;
+			try {
+				Question question = questionService.getQuestionById(response.getQuestionId());
+				String testname = question.getForeignSource();
+				if (testname.equalsIgnoreCase("behavior_b")) {
+					String[] priorities = Integer.toString(response.getResponseValue()).split("(?!^)");
+					for (int j = 0; j < priorities.length; j++) {
+						int value = Integer.valueOf(priorities[j]);
+						String quesId = question.getForeignId() + "_" + j;
+						JSONObject jResp = new JSONObject();
+						jResp.put("response_value", value);
+						jResp.put("question_id", quesId);
+						jResp.put("test_name", testname);
+						answers.put(jResp);
+					}
+				} else {
 					JSONObject jResp = new JSONObject();
-					jResp.put("response_value", value);
-					jResp.put("question_id", quesId);
+					jResp.put("response_value", response.getResponseValue());
+					jResp.put("question_id", question.getForeignId());
 					jResp.put("test_name", testname);
 					answers.put(jResp);
 				}
-			} else {
-				JSONObject jResp = new JSONObject();
-				jResp.put("response_value", response.getResponseValue());
-				jResp.put("question_id", question.getForeignId());
-				jResp.put("test_name", testname);
-				answers.put(jResp);
+			} catch (Exception e) {
+				log.error("Failed to convert response");
 			}
 		});
-
 		if (answers.length() > 0) {
 			JSONObject applicant = new JSONObject();
 			JSONObject message = new JSONObject();
-			applicant.put("applicant_id", respondant.getId());
-			applicant.put("applicant_account_name", respondant.getAccount().getAccountName());
-			message.put("applicant", applicant);
-			message.put("responses", answers);
 
 			JSONArray result;
 			javax.ws.rs.core.Response resp = null;
 			String output = null;
 			log.debug("Requesting Mercer Score for respondant {} ", respondant);
 			try {
+				applicant.put("applicant_id", respondant.getId());
+				applicant.put("applicant_account_name", respondant.getAccount().getAccountName());
+				message.put("applicant", applicant);
+				message.put("responses", answers);
 				WebTarget target = client.target(MERCER_SERVICE);
 				resp = target.request(MediaType.APPLICATION_JSON)
 						.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
@@ -100,8 +103,8 @@ public class MercerScoring implements ScoringModelEngine {
 			}
 
 			for (int i = 0; i < result.length(); i++) {
-				JSONObject data = result.getJSONObject(i);
-				int score = data.getInt("score");
+				JSONObject data = result.optJSONObject(i);
+				int score = data.optInt("score");
 				RespondantScore rs = null;
 				Corefactor cf = null;
 				try {
@@ -118,6 +121,7 @@ public class MercerScoring implements ScoringModelEngine {
 					log.error("Failed to record score {}, {} for respondant {}", rs, cf, respondant);
 				}
 			}
+
 		}
 
 		return scores;
