@@ -19,6 +19,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 @Component
@@ -43,7 +44,7 @@ public class EchoResource {
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 201, message = "Echo Processed"),
 	   })	
-	public String doPost(String body) {
+	public String doPost(String body) throws JSONException {
 		JSONObject json = new JSONObject(body);
 		log.debug("Echo Called with: {}" , json.toString());
 		return json.toString();

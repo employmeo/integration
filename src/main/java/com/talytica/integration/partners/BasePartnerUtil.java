@@ -7,6 +7,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,15 +29,16 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public abstract class BasePartnerUtil implements PartnerUtil {
 
-	@Setter @Getter
+	@Setter
+	@Getter
 	private Partner partner = null;
 
 	@Autowired
 	ExternalLinksService externalLinksService;
-	
+
 	@Autowired
 	EmailService emailService;
-	
+
 	@Autowired
 	AddressService addressService;
 
@@ -57,10 +59,10 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Autowired
 	CorefactorService corefactorService;
-	
+
 	@Autowired
 	PredictionModelService predictionModelService;
-	
+
 	@Value("${partners.default.intercept.outbound:true}")
 	Boolean interceptOutbound;
 
@@ -85,7 +87,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		if (id == null) {
 			return null;
 		}
-		return id.substring(id.indexOf(getPrefix())+getPrefix().length());
+		return id.substring(id.indexOf(getPrefix()) + getPrefix().length());
 	}
 
 	@Override
@@ -106,43 +108,44 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 		if (jLocation != null) {
 			if (jLocation.has("location_id")) {
-				return accountService.getLocationById(jLocation.getLong("location_id"));
+				return accountService.getLocationById(jLocation.optLong("location_id"));
 			}
 
 			if ((jLocation != null) && (jLocation.has("location_ats_id"))) {
-				location = accountService.getLocationByAtsId(account.getId(),addPrefix(jLocation.getString("location_ats_id")));
+				location = accountService.getLocationByAtsId(account.getId(),
+						addPrefix(jLocation.optString("location_ats_id")));
 				if (location != null) {
 					return location;
 				}
 
 				// otherwise create a new location from address
 				location = new Location();
-				JSONObject address = jLocation.getJSONObject("address");
+				JSONObject address = jLocation.optJSONObject("address");
 				addressService.validate(address);
-				location.setAtsId(partner.getPrefix() + jLocation.getString("location_ats_id"));
+				location.setAtsId(partner.getPrefix() + jLocation.optString("location_ats_id"));
 				if (jLocation.has("location_name")) {
-					location.setLocationName(jLocation.getString("location_name"));
+					location.setLocationName(jLocation.optString("location_name"));
 				}
 				if (address.has("street")) {
-					location.setStreet1(address.getString("street"));
+					location.setStreet1(address.optString("street"));
 				}
 				if (address.has("formatted_address")) {
-					location.setStreet2(address.getString("formatted_address"));
+					location.setStreet2(address.optString("formatted_address"));
 				}
 				if (address.has("city")) {
-					location.setCity(address.getString("city"));
+					location.setCity(address.optString("city"));
 				}
 				if (address.has("state")) {
-					location.setState(address.getString("state"));
+					location.setState(address.optString("state"));
 				}
 				if (address.has("zip")) {
-					location.setZip(address.getString("zip"));
+					location.setZip(address.optString("zip"));
 				}
 				if (address.has("lat")) {
-					location.setLatitude(address.getDouble("lat"));
+					location.setLatitude(address.optDouble("lat"));
 				}
 				if (address.has("lng")) {
-					location.setLongitude(address.getDouble("lng"));
+					location.setLongitude(address.optDouble("lng"));
 				}
 				location.setAccount(account);
 
@@ -157,7 +160,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 		Position pos = null;
 		if ((position != null) && (position.has("position_id"))) {
-			pos = accountService.getPositionById(position.getLong("position_id"));
+			pos = accountService.getPositionById(position.optLong("position_id"));
 		}
 		if (pos == null) {
 			pos = accountService.getPositionById(account.getDefaultPositionId());
@@ -196,15 +199,14 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		Respondant respondant = new Respondant();
 		respondant.setAccountId(account.getId());
 
-
-		JSONObject applicant = json.getJSONObject("applicant");
-		String appAtsId = applicant.getString("applicant_ats_id");
+		JSONObject applicant = json.optJSONObject("applicant");
+		String appAtsId = applicant.optString("applicant_ats_id");
 		respondant.setAtsId(this.getPrefix() + appAtsId);
 		person.setAtsId(this.getPrefix() + appAtsId);
-		person.setEmail(applicant.getString("email"));
-		person.setFirstName(applicant.getString("fname"));
-		person.setLastName(applicant.getString("lname"));
-		JSONObject personAddress = applicant.getJSONObject("address");
+		person.setEmail(applicant.optString("email"));
+		person.setFirstName(applicant.optString("fname"));
+		person.setLastName(applicant.optString("lname"));
+		JSONObject personAddress = applicant.optJSONObject("address");
 		addressService.validate(personAddress);
 		person.setAddress(personAddress.optString("formatted_address"));
 		person.setLatitude(personAddress.optDouble("lat"));
@@ -236,7 +238,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		respondant.setPosition(position);
 		respondant.setPartner(this.partner);
 		respondant.setPartnerId(this.partner.getId());
-		
+
 		// Create Person & Respondant in database.
 		Person savedPerson = personService.save(person);
 		respondant.setPerson(savedPerson);
@@ -249,127 +251,135 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant) {
 
 		JSONObject delivery = json.optJSONObject("delivery");
-		if (delivery.has("email_applicant") && delivery.getBoolean("email_applicant")) {
+		if (delivery.has("email_applicant") && delivery.optBoolean("email_applicant")) {
 			emailService.sendEmailInvitation(respondant);
 		}
-
-		// Assemble the response object to notify that action is complete
-		JSONObject jAccount = json.getJSONObject("account");
-		jAccount.put("account_ats_id", this.trimPrefix(respondant.getAccount().getAtsId()));
-		jAccount.put("account_id", respondant.getAccount().getId());
-		jAccount.put("account_name", respondant.getAccount().getAccountName());
-
-		JSONObject jApplicant = new JSONObject();
-		jApplicant.put("applicant_ats_id", this.trimPrefix(respondant.getAtsId()));
-		jApplicant.put("applicant_id", respondant.getId());
-
-		delivery = new JSONObject();
-		delivery.put("assessment_url", externalLinksService.getAssessmentLink(respondant));
-
 		JSONObject output = new JSONObject();
-		output.put("account", jAccount);
-		output.put("applicant", jApplicant);
-		output.put("delivery", delivery);
 
+		try {
+			// Assemble the response object to notify that action is complete
+			JSONObject jAccount = json.optJSONObject("account");
+			jAccount.put("account_ats_id", this.trimPrefix(respondant.getAccount().getAtsId()));
+			jAccount.put("account_id", respondant.getAccount().getId());
+			jAccount.put("account_name", respondant.getAccount().getAccountName());
+
+			JSONObject jApplicant = new JSONObject();
+			jApplicant.put("applicant_ats_id", this.trimPrefix(respondant.getAtsId()));
+			jApplicant.put("applicant_id", respondant.getId());
+
+			delivery = new JSONObject();
+			delivery.put("assessment_url", externalLinksService.getAssessmentLink(respondant));
+
+			output.put("account", jAccount);
+			output.put("applicant", jApplicant);
+			output.put("delivery", delivery);
+		} catch (JSONException jse) {
+			log.error("JSON Exception: {}", jse.getMessage());
+		}
 		// get the redirect method, score posting and email handling for results
 		return output;
 	}
 
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
-		
-		
+
+		JSONObject message = new JSONObject();
+
 		Account account = respondant.getAccount();
 		JSONObject jAccount = new JSONObject();
 		JSONObject applicant = new JSONObject();
-		jAccount.put("account_ats_id", trimPrefix(account.getAtsId()));
-		jAccount.put("account_id", account.getId());
-		jAccount.put("account_name", account.getAccountName());
-		applicant.put("applicant_ats_id", trimPrefix(respondant.getAtsId()));
-		applicant.put("applicant_id", respondant.getId());
-		
-		if (respondant.getRespondantStatus() >= Respondant.STATUS_SCORED) {
-			CustomProfile customProfile = account.getCustomProfile();				
-			Set<RespondantScore> scores = respondant.getRespondantScores();		
-			applicant.put("applicant_profile", respondant.getProfileRecommendation());
-			applicant.put("applicant_composite_score", respondant.getCompositeScore());
-			applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
-			applicant.put("applicant_profile_a", respondant.getProfileA());
-			applicant.put("applicant_profile_b", respondant.getProfileB());
-			applicant.put("applicant_profile_c", respondant.getProfileC());
-			applicant.put("applicant_profile_d", respondant.getProfileD());
-			applicant.put("label_profile_a", customProfile.getName(ProfileDefaults.PROFILE_A));
-			applicant.put("label_profile_b", customProfile.getName(ProfileDefaults.PROFILE_B));
-			applicant.put("label_profile_c", customProfile.getName(ProfileDefaults.PROFILE_C));
-			applicant.put("label_profile_d", customProfile.getName(ProfileDefaults.PROFILE_D));
-			JSONArray scoreset = new JSONArray();
-			for (RespondantScore score : scores) {
-				Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
-				JSONObject item = new JSONObject();
-				item.put("corefactor_name", cf.getName());
-				item.put("corefactor_score", score.getValue());
-				scoreset.put(item);
+		try {
+			jAccount.put("account_ats_id", trimPrefix(account.getAtsId()));
+			jAccount.put("account_id", account.getId());
+			jAccount.put("account_name", account.getAccountName());
+			applicant.put("applicant_ats_id", trimPrefix(respondant.getAtsId()));
+			applicant.put("applicant_id", respondant.getId());
+
+			if (respondant.getRespondantStatus() >= Respondant.STATUS_SCORED) {
+				CustomProfile customProfile = account.getCustomProfile();
+				Set<RespondantScore> scores = respondant.getRespondantScores();
+				applicant.put("applicant_profile", respondant.getProfileRecommendation());
+				applicant.put("applicant_composite_score", respondant.getCompositeScore());
+				applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
+				applicant.put("applicant_profile_a", respondant.getProfileA());
+				applicant.put("applicant_profile_b", respondant.getProfileB());
+				applicant.put("applicant_profile_c", respondant.getProfileC());
+				applicant.put("applicant_profile_d", respondant.getProfileD());
+				applicant.put("label_profile_a", customProfile.getName(ProfileDefaults.PROFILE_A));
+				applicant.put("label_profile_b", customProfile.getName(ProfileDefaults.PROFILE_B));
+				applicant.put("label_profile_c", customProfile.getName(ProfileDefaults.PROFILE_C));
+				applicant.put("label_profile_d", customProfile.getName(ProfileDefaults.PROFILE_D));
+				JSONArray scoreset = new JSONArray();
+				for (RespondantScore score : scores) {
+					Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
+					JSONObject item = new JSONObject();
+					item.put("corefactor_name", cf.getName());
+					item.put("corefactor_score", score.getValue());
+					scoreset.put(item);
+				}
+
+				applicant.put("scores", scoreset);
+				applicant.put("portal_link", externalLinksService.getPortalLink(respondant));
+				applicant.put("render_link", externalLinksService.getRenderLink(respondant));
 			}
-	
-			applicant.put("scores", scoreset);
-			applicant.put("portal_link", externalLinksService.getPortalLink(respondant));
-			applicant.put("render_link", externalLinksService.getRenderLink(respondant));
+
+			message.put("account", jAccount);
+			message.put("applicant", applicant);
+		} catch (JSONException jse) {
+			log.error("JSON Exception: {}", jse.getMessage());
 		}
-		
-		JSONObject message = new JSONObject();
-		message.put("account", jAccount);
-		message.put("applicant", applicant);
-	
 		return message;
 
 	}
-	
+
 	@Override
 	public JSONObject getScreeningMessage(Respondant respondant) {
-		
-		Account account = respondant.getAccount();
-		JSONObject jAccount = new JSONObject();
-		JSONObject applicant = new JSONObject();
-		jAccount.put("account_ats_id", trimPrefix(account.getAtsId()));
-		jAccount.put("account_id", account.getId());
-		jAccount.put("account_name", account.getAccountName());
-		applicant.put("applicant_ats_id", trimPrefix(respondant.getAtsId()));
-		applicant.put("applicant_id", respondant.getId());
-		Set<Prediction> predictions = respondant.getPredictions();
-		
-		CustomProfile customProfile = account.getCustomProfile();				
-		applicant.put("applicant_profile", respondant.getProfileRecommendation());
-		applicant.put("applicant_composite_score", respondant.getCompositeScore());
-		applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
-		JSONArray predset = new JSONArray();
-		
-		for (Prediction prediction : predictions) {
+		JSONObject message = new JSONObject();
+		try {
+			Account account = respondant.getAccount();
+			JSONObject jAccount = new JSONObject();
+			JSONObject applicant = new JSONObject();
+			jAccount.put("account_ats_id", trimPrefix(account.getAtsId()));
+			jAccount.put("account_id", account.getId());
+			jAccount.put("account_name", account.getAccountName());
+			applicant.put("applicant_ats_id", trimPrefix(respondant.getAtsId()));
+			applicant.put("applicant_id", respondant.getId());
+			Set<Prediction> predictions = respondant.getPredictions();
+
+			CustomProfile customProfile = account.getCustomProfile();
+			applicant.put("applicant_profile", respondant.getProfileRecommendation());
+			applicant.put("applicant_composite_score", respondant.getCompositeScore());
+			applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
+			JSONArray predset = new JSONArray();
+
+			for (Prediction prediction : predictions) {
 				PredictionTarget target = predictionModelService.getTargetById(prediction.getTargetId());
 				JSONObject item = new JSONObject();
 				item.put("target_name", target.getLabel());
 				item.put("target_probabilty", prediction.getPredictionScore());
 				item.put("precentile_rank", prediction.getScorePercentile());
 				predset.put(item);
-		}
-	
-		applicant.put("predictions", predset);
-		applicant.put("portal_link", externalLinksService.getPortalLink(respondant));
+			}
 
-		
-		JSONObject message = new JSONObject();
-		message.put("account", jAccount);
-		message.put("applicant", applicant);
-	
+			applicant.put("predictions", predset);
+			applicant.put("portal_link", externalLinksService.getPortalLink(respondant));
+
+			message.put("account", jAccount);
+			message.put("applicant", applicant);
+		} catch (JSONException jse) {
+			log.error("JSON Exception: {}", jse.getMessage());
+		}
 		return message;
 
 	}
+
 	@Override
 	public void postScoresToPartner(Respondant respondant, JSONObject message) {
 
 		String postmethod = respondant.getScorePostMethod();
 		if (postmethod == null || postmethod.isEmpty()) {
 			return;
-		} else if (interceptOutbound){
+		} else if (interceptOutbound) {
 			log.info("Intercepting Post to {}", postmethod);
 			postmethod = externalLinksService.getIntegrationEcho();
 		}
@@ -380,15 +390,16 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		try {
 			result = target.request(MediaType.APPLICATION_JSON)
 					.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
-			
+
 			Boolean success = (null == result || result.getStatus() >= 300) ? false : true;
-			String serviceResponse = result.readEntity(String.class); 
+			String serviceResponse = result.readEntity(String.class);
 			if (success) {
-				log.info("Posted respondant {} scores to {}. Server response: {}", respondant.getId(), postmethod, serviceResponse);
+				log.info("Posted respondant {} scores to {}. Server response: {}", respondant.getId(), postmethod,
+						serviceResponse);
 			} else {
-				log.warn("Failed to post {} {}' scores to {}. Server response: {}", 
-						respondant.getPerson().getFirstName(), respondant.getPerson().getLastName(), 
-						postmethod, serviceResponse);
+				log.warn("Failed to post {} {}' scores to {}. Server response: {}",
+						respondant.getPerson().getFirstName(), respondant.getPerson().getLastName(), postmethod,
+						serviceResponse);
 			}
 
 		} catch (Exception e) {

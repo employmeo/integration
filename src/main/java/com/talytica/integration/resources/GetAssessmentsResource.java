@@ -7,6 +7,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class GetAssessmentsResource {
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 200, message = "Request Processed"),
 	   })
-	public String getWithJsonObject(@ApiParam (value = "JSON Object with Account") String body) {
+	public String getWithJsonObject(@ApiParam (value = "JSON Object with Account") String body) throws JSONException {
 		JSONObject json = new JSONObject(body);
 		log.debug("Get Assessments called with: {}" , json.toString());
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());

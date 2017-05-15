@@ -7,6 +7,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -50,7 +51,7 @@ public class AccountResource {
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
 	@Path("/{atsId}/locations")
-	public Response getLocations(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) {
+	public Response getLocations(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) throws JSONException {
 		log.debug("Get Locations called with: {}" , atsId);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
@@ -115,7 +116,7 @@ public class AccountResource {
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
 	@Path("/{atsId}/asssessments")
-	public Response getAssessments(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) {
+	public Response getAssessments(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) throws JSONException {
 		log.debug("Get Assessments called with: {}" , atsId);
 		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
