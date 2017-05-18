@@ -12,7 +12,7 @@
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
 	<description>Talytica Integration Application</description>
-	<version>0.0.18</version>
+	<version>0.0.19-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -20,7 +20,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-		<persistence-unit.version>0.0.33</persistence-unit.version>
+		<persistence-unit.version>0.0.34-SNAPSHOT</persistence-unit.version>
 		<guava.version>21.0</guava.version>
 		<swagger.version>1.5.12</swagger.version>
 		<metrics.version>3.1.3</metrics.version>
@@ -28,6 +28,8 @@
 		<commons-math-version>3.6.1</commons-math-version>
 		<jersey-jackson.version>2.25.1</jersey-jackson.version>
 		<bigml.version>1.4.2</bigml.version>
+		<google-sound.version>1.9.5.4</google-sound.version>
+		<google-jlayer.version>1.0.1.4</google-jlayer.version>
 	</properties>
 
 	<dependencies>
@@ -95,6 +97,11 @@
 			<version>${jersey-jackson.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-multipart</artifactId>
+			<version>${jersey-jackson.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 		</dependency>
@@ -114,11 +121,29 @@
 			<artifactId>sendgrid-java</artifactId>
 			<version>${sendgrid.version}</version>
 		</dependency>
+		<!-- bigml prediction model service -->
 		<dependency>
 		    <groupId>org.bigml</groupId>
 		    <artifactId>bigml-binding</artifactId>
 		    <version>${bigml.version}</version>
 		</dependency>
+		<!-- sound format conversion tool >
+		<dependency>
+		    <groupId>com.googlecode.soundlibs</groupId>
+		    <artifactId>mp3spi</artifactId>
+    		<version>${google-sound.version}</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.googlecode.soundlibs</groupId>
+		    <artifactId>jlayer</artifactId>
+		    <version>${google-jlayer.version}</version>
+		    <exclusions>
+		        <exclusion>
+		            <groupId>junit</groupId>
+		            <artifactId>junit</artifactId>
+		        </exclusion>
+		    </exclusions>
+		</dependency> -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

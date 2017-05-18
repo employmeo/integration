@@ -16,6 +16,7 @@ public enum ScoringModelType {
 	TRAIT("trait"),
 	AVERAGE("average"),
 	RIGHTWRONGBLANK("rightwrongblank"),
+	VIDEO("video"),
 	NONE("none");
 	
 	@Getter

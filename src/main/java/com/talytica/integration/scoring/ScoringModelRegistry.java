@@ -49,6 +49,7 @@ public class ScoringModelRegistry {
 		                   .put(ScoringModelType.REFERENCE, ReferenceScoring.class)
 		                   .put(ScoringModelType.RIGHTWRONGBLANK, RightWrongBlankScoring.class)
 		                   .put(ScoringModelType.AVERAGE, SimpleAverageScoring.class)
+		                   .put(ScoringModelType.VIDEO, NoScoring.class)
 		                   .build()
 				);
 		log.info("ScoringModelRegistry state: {}", modelRegistry);
