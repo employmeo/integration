@@ -28,8 +28,6 @@
 		<commons-math-version>3.6.1</commons-math-version>
 		<jersey-jackson.version>2.25.1</jersey-jackson.version>
 		<bigml.version>1.4.2</bigml.version>
-		<google-sound.version>1.9.5.4</google-sound.version>
-		<google-jlayer.version>1.0.1.4</google-jlayer.version>
 	</properties>
 
 	<dependencies>
@@ -127,23 +125,6 @@
 		    <artifactId>bigml-binding</artifactId>
 		    <version>${bigml.version}</version>
 		</dependency>
-		<!-- sound format conversion tool >
-		<dependency>
-		    <groupId>com.googlecode.soundlibs</groupId>
-		    <artifactId>mp3spi</artifactId>
-    		<version>${google-sound.version}</version>
-		</dependency>
-		<dependency>
-		    <groupId>com.googlecode.soundlibs</groupId>
-		    <artifactId>jlayer</artifactId>
-		    <version>${google-jlayer.version}</version>
-		    <exclusions>
-		        <exclusion>
-		            <groupId>junit</groupId>
-		            <artifactId>junit</artifactId>
-		        </exclusion>
-		    </exclusions>
-		</dependency> -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

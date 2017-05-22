@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Transactional
 public class ScoringService {
+	private static final Long RANKER_CFID = 99l;
 	@Autowired
 	private RespondantService respondantService;
 	@Autowired
@@ -68,19 +69,19 @@ public class ScoringService {
 				complete = false;
 				continue;
 			}
-			ScoringModelEngine scoringModelEngine = result.get();
-			
+			ScoringModelEngine scoringModelEngine = result.get();			
 			List<RespondantScore> scores = scoringModelEngine.scoreResponses(respondant, pair.getValue());
-			if (scores == null) {
-				complete = false;
-				continue;
-			}
 			respondant.getRespondantScores().addAll(scores);
 		}
 
 		// Loop identifies "parent" factors - rolling up factors with a parent id to their parents
 		for (RespondantScore rs : respondant.getRespondantScores()) {
 			Corefactor cf = corefactorService.findCorefactorById(rs.getId().getCorefactorId());
+			if (cf.getId() == RANKER_CFID) { // Graders + Audio add "ranker corefactors" to signify incomplete scoring
+				complete = false;
+				respondant.getRespondantScores().remove(rs);
+				continue;
+			}
 			if (null != cf.getParentId()) {
 				List<RespondantScore> rsList;
 				Corefactor parent = corefactorService.findCorefactorById(cf.getParentId());

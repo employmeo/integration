@@ -36,6 +36,9 @@ public class ScoringModelRegistry {
 				Maps.newHashMap(
 						new ImmutableMap.Builder<ScoringModelType, Class<? extends ScoringModelEngine>>()
 		                   .put(ScoringModelType.AUDIO, AudioScoring.class)
+		                   .put(ScoringModelType.AUDIOPLUS, AudioScoring.class)
+		                   .put(ScoringModelType.AUDIOMINUS, AudioScoring.class)
+		                   .put(ScoringModelType.VIDEO, AudioScoring.class)
 		                   .put(ScoringModelType.TRAIT, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.HEXACO, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.KNOCKOUT, KnockoutScoring.class)
@@ -49,7 +52,6 @@ public class ScoringModelRegistry {
 		                   .put(ScoringModelType.REFERENCE, ReferenceScoring.class)
 		                   .put(ScoringModelType.RIGHTWRONGBLANK, RightWrongBlankScoring.class)
 		                   .put(ScoringModelType.AVERAGE, SimpleAverageScoring.class)
-		                   .put(ScoringModelType.VIDEO, NoScoring.class)
 		                   .build()
 				);
 		log.info("ScoringModelRegistry state: {}", modelRegistry);
