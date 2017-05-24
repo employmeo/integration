@@ -123,7 +123,7 @@ public class AudioTestResource {
 	   })
 	public List<RespondantScore> analyzeResponses(@ApiParam(name="respondantId") @FormParam("respondantId") Long respondantId) {
 
-		List<Response> responses = Lists.newArrayList(respondantService.getGradeableResponses(respondantId));
+		List<Response> responses = Lists.newArrayList(respondantService.getAudioResponses(respondantId));
 		return beyondVerbalService.analyzeResponses(responses);	
 	}
 	

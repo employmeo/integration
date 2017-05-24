@@ -61,12 +61,11 @@ public class ScoringService {
 		}
 		
 		// This loop sends sets of responses to each "scoring model"
-		boolean complete = true;
+		RespondantScore gradesNeeded = null; 
 		for (Map.Entry<String, List<Response>> pair : responseTable.entrySet()) {
 			Optional<ScoringModelEngine> result = scoringModelRegistry.getScoringModelEngineByName(pair.getKey());
 			if (!result.isPresent()) {
-				log.error("Didn't find {} scoring model for responses", pair.getKey());
-				complete = false;
+				log.error("Didn't find {} scoring model for responses - responses ignored", pair.getKey());
 				continue;
 			}
 			ScoringModelEngine scoringModelEngine = result.get();			
@@ -78,8 +77,7 @@ public class ScoringService {
 		for (RespondantScore rs : respondant.getRespondantScores()) {
 			Corefactor cf = corefactorService.findCorefactorById(rs.getId().getCorefactorId());
 			if (cf.getId() == RANKER_CFID) { // Graders + Audio add "ranker corefactors" to signify incomplete scoring
-				complete = false;
-				respondant.getRespondantScores().remove(rs);
+				gradesNeeded = rs;
 				continue;
 			}
 			if (null != cf.getParentId()) {
@@ -94,7 +92,9 @@ public class ScoringService {
 				rsList.add(rs);
 			}
 		}
-		
+
+
+
 		// Loop creates and average of children scores for each parent
 		for (Map.Entry<Corefactor, List<RespondantScore>> pair : parents.entrySet()) {
 			RespondantScore score = new RespondantScore();
@@ -106,17 +106,20 @@ public class ScoringService {
 			score.setValue(total/pair.getValue().size());
 			respondant.getRespondantScores().add(score);
 		}
+		
+		if (null != gradesNeeded) {
+			respondant.getRespondantScores().remove(gradesNeeded);
+			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);
+		} else {
+			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		}
 
 		// Section below saves all scores to the DB.
 		if (respondant.getRespondantScores().size() > 0) {
 			respondantScoreRepository.save(respondant.getRespondantScores());
 			log.debug("Saved {} Scores for respondant {}", respondant.getRespondantScores().size(), respondant.getId());
 		}
-		if (complete) {
-			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-		} else {
-			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);// GRADES INCOMPLETE?
-		}
+
 		return respondantService.save(respondant);
 	}
 

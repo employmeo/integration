@@ -142,23 +142,25 @@ public class AudioScoring implements ScoringModelEngine {
 		this.audioAnalytics = Boolean.TRUE; // default is to use beyond verbal to analyze moods
 		this.speechToText = Boolean.TRUE; // default is to convert media to text & save as text feature
 		this.sentiment = Boolean.TRUE; // default is to get sentiment score from converted text
+		this.internalGrading = Boolean.TRUE;
 
 		switch (modelName) {
+		case "video":
+		case "audio":
+			this.audioAnalytics = Boolean.FALSE;
+			this.speechToText = Boolean.FALSE;
+			this.sentiment = Boolean.FALSE;
+			break;
 			case "video-":
-				contentType = SpeechToTextService.VIDEO_WEBM;
+				this.contentType = SpeechToTextService.VIDEO_WEBM;
+				this.audioAnalytics = Boolean.FALSE;
 			case "audio-":
-				internalGrading = Boolean.FALSE;
+				this.internalGrading = Boolean.FALSE;
 				break;
-			case "video":
-			case "audio":
-				internalGrading = Boolean.TRUE;
-				audioAnalytics = Boolean.FALSE;
-				speechToText = Boolean.FALSE;
-				sentiment = Boolean.FALSE;
-				break;
+
 			case "video+":
-				contentType = SpeechToTextService.VIDEO_WEBM;
-				audioAnalytics = Boolean.FALSE;
+				this.contentType = SpeechToTextService.VIDEO_WEBM;
+				this.audioAnalytics = Boolean.FALSE;
 				break;
 			case "audio+":
 			default:

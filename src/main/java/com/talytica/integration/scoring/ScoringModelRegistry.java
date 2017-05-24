@@ -58,7 +58,7 @@ public class ScoringModelRegistry {
 	}
 
 	public Optional<ScoringModelEngine> getScoringModelEngineByName(@NotNull String modelName) {
-		ScoringModelType type = ScoringModelType.getByValue(modelName);
+		ScoringModelType type = ScoringModelType.getByValue(modelName.toLowerCase());
 		Optional<ScoringModelEngine> modelEngine = Optional.empty();
 		log.debug("Registry consulted for modelName {}", modelName);
 		Optional<Class<? extends ScoringModelEngine>> modelEngineClass = Optional.ofNullable(modelRegistry.get(type));
