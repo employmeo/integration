@@ -8,6 +8,8 @@ public enum ScoringModelType {
 	REACTION("reaction"),	
 	MERCER("mercer"),
 	AUDIO("audio"),
+	AUDIOPLUS("audio+"),
+	AUDIOMINUS("audio-"),
 	REFERENCE("reference"),
 	RANKER("ranker"),
 	KNOCKOUT("knockout"),
@@ -16,6 +18,9 @@ public enum ScoringModelType {
 	TRAIT("trait"),
 	AVERAGE("average"),
 	RIGHTWRONGBLANK("rightwrongblank"),
+	VIDEO("video"),
+	VIDEOPLUS("video+"),
+	VIDEOMINUS("video-"),
 	NONE("none");
 	
 	@Getter

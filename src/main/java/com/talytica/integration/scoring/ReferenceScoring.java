@@ -10,6 +10,7 @@ import com.employmeo.data.model.Grader;
 import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
+import com.employmeo.data.model.RespondantScorePK;
 import com.employmeo.data.model.Response;
 import com.employmeo.data.service.GraderService;
 import com.employmeo.data.service.PersonService;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ReferenceScoring implements ScoringModelEngine {
 
+	private static final Long RANKER_CFID = 99l;
 	
 	@Autowired
 	private PersonService personService;
@@ -32,7 +34,8 @@ public class ReferenceScoring implements ScoringModelEngine {
 	
 	@Override
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
-		boolean referenceSent = false;
+		Double referenceSent = 0d;
+		List<RespondantScore> scores = new ArrayList<RespondantScore>();
 
 		for (Response response : responses) {
 			String email = response.getResponseText();
@@ -66,11 +69,17 @@ public class ReferenceScoring implements ScoringModelEngine {
 			Grader savedGrader = graderService.save(grader);
 
 			emailService.sendReferenceRequest(savedGrader);
-			referenceSent = true;
+			referenceSent++;
 		}
-		if (referenceSent) return null;
-		log.debug("Reference requests sent");
-		return new ArrayList<RespondantScore>();
+		if (referenceSent>0) {
+			RespondantScore ranker = new RespondantScore();
+			ranker.setId(new RespondantScorePK(RANKER_CFID,respondant.getId()));
+			ranker.setValue(referenceSent);
+			scores.add(ranker); // Indicates that there are outstanding "graders"
+		}
+		
+		log.debug("{} reference requests sent", referenceSent);
+		return scores;
 	}
 
 	@Override

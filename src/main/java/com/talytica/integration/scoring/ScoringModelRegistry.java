@@ -36,6 +36,9 @@ public class ScoringModelRegistry {
 				Maps.newHashMap(
 						new ImmutableMap.Builder<ScoringModelType, Class<? extends ScoringModelEngine>>()
 		                   .put(ScoringModelType.AUDIO, AudioScoring.class)
+		                   .put(ScoringModelType.AUDIOPLUS, AudioScoring.class)
+		                   .put(ScoringModelType.AUDIOMINUS, AudioScoring.class)
+		                   .put(ScoringModelType.VIDEO, AudioScoring.class)
 		                   .put(ScoringModelType.TRAIT, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.HEXACO, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.KNOCKOUT, KnockoutScoring.class)
@@ -55,7 +58,7 @@ public class ScoringModelRegistry {
 	}
 
 	public Optional<ScoringModelEngine> getScoringModelEngineByName(@NotNull String modelName) {
-		ScoringModelType type = ScoringModelType.getByValue(modelName);
+		ScoringModelType type = ScoringModelType.getByValue(modelName.toLowerCase());
 		Optional<ScoringModelEngine> modelEngine = Optional.empty();
 		log.debug("Registry consulted for modelName {}", modelName);
 		Optional<Class<? extends ScoringModelEngine>> modelEngineClass = Optional.ofNullable(modelRegistry.get(type));
