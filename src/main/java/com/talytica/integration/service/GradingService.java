@@ -7,11 +7,14 @@ import java.util.Set;
 
 import javax.transaction.Transactional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.employmeo.data.model.Corefactor;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.ScoringScale;
+import com.employmeo.data.service.CorefactorService;
 import com.talytica.integration.objects.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class GradingService {
 
+	@Autowired
+	CorefactorService corefactorService;
 
 	/**
 	 * TODO: Implement grading logic
@@ -44,11 +49,21 @@ public class GradingService {
 		
 		if (predictions.size() == 0) {
 			Set<RespondantScore> scores = respondant.getRespondantScores();
+			Double baseline = 0d;
+			Double total = 0d;
+			for (RespondantScore score : scores) {
+				Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
+				Double coeff = (null != cf.getDefaultCoefficient()) ? cf.getDefaultCoefficient() : 1d;
+				total += coeff * (score.getValue()-cf.getLowValue());
+				baseline += coeff * (cf.getHighValue()-cf.getLowValue());
+			}
+			/* -- Removed old code for scoring the average
 			Double averageScore = scores.stream()
 					.mapToDouble(score -> (null != score.getValue()) ? score.getValue() * 9 : 0.0D)
 					.average()
 					.orElse(0.0D);
-			compositeScore = new BigDecimal(averageScore).setScale(2, RoundingMode.HALF_UP).doubleValue();
+					*/
+			compositeScore = new BigDecimal(100d*total/baseline).setScale(2, RoundingMode.HALF_UP).doubleValue();
 		} else {
 			// compute grade composite score as average of the percentiles * 100
 			Double averagePercentile = predictions.stream()

@@ -98,8 +98,8 @@ public class SimpleAverageScoring implements ScoringModelEngine {
 			break;
 		case "average":
 		default:
-			MAXVAL = 11;
-			MINVAL = 1;
+			MAXVAL = 10;
+			MINVAL = 0;
 			break;
 		}
 	}

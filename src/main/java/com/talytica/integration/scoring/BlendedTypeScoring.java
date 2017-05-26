@@ -49,8 +49,13 @@ public class BlendedTypeScoring implements ScoringModelEngine {
 			Double translatedValue = null;
 			
 			switch(question.getQuestionType()) {
-				case 11: //likert
-					translatedValue = (value - 2d) / 8d;						
+				case 2: //thumbs
+					translatedValue = value / 10d;
+					break;
+				case 4: //likert-star
+				case 5: //likert
+					translatedValue = (value - 2d) / 8d;	
+					break;
 				case 17: //slider
 				default:
 					translatedValue = value / 100d;
