@@ -6,6 +6,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.employmeo.data.model.Corefactor;
 import com.employmeo.data.model.Grader;
 import com.employmeo.data.model.GraderConfig;
 import com.employmeo.data.model.Respondant;
@@ -15,6 +16,7 @@ import com.employmeo.data.model.RespondantScorePK;
 import com.employmeo.data.model.Response;
 import com.employmeo.data.model.User;
 import com.employmeo.data.service.AccountSurveyService;
+import com.employmeo.data.service.CorefactorService;
 import com.employmeo.data.service.GraderService;
 import com.employmeo.data.service.UserService;
 import com.google.common.collect.Lists;
@@ -46,6 +48,9 @@ public class AudioScoring implements ScoringModelEngine {
 	private SpeechToTextService speechToTextService;
 	@Autowired
 	private TextAnalyticsService textAnalyticsService;
+	@Autowired
+	private CorefactorService corefactorService;
+		
 		
 	private String modelName;
 	private String contentType;
@@ -117,10 +122,11 @@ public class AudioScoring implements ScoringModelEngine {
 				if (!allText.isEmpty()) {
 					Double score = textAnalyticsService.analyzeSentiment(allText);
 					log.debug("Respondant {} has sentiment score of: {}", respondant.getId(), score);
+					Corefactor cf = corefactorService.findCorefactorById(WATSON_SENTIMENT);
 					RespondantScorePK pk = new RespondantScorePK(WATSON_SENTIMENT,respondant.getId());
 					RespondantScore rs = new RespondantScore();
 					rs.setId(pk);
-					rs.setValue(score);
+					rs.setValue(((cf.getHighValue()-cf.getLowValue())*score)+cf.getLowValue());
 					rs.setQuestionCount(3);	
 					scores.add(rs);
 				}
