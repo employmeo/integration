@@ -39,7 +39,9 @@ public class PredictionService {
 	public List<PredictionResult> runPostAssessmentPredictions(@NonNull Respondant respondant) {
 		List<PredictionResult> predictions = Lists.newArrayList();
 		List<NameValuePair> corefactorScores = getModelInputsFromCorefactorScores(respondant);
-
+		// also add nvps? 
+		corefactorScores.addAll(getModelInputsFromNvps(respondant));
+		
 		Set<PositionPredictionConfiguration> positionPredictionConfigs = respondant.getPosition().getPositionPredictionConfigurations();
 		positionPredictionConfigs.forEach(predictionConfig -> {
 				if (predictionConfig.getTriggerPoint() == PositionPredictionConfiguration.TRIGGER_POINT_ASSESSMENT) {
