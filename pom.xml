@@ -12,11 +12,11 @@
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
 	<description>Talytica Integration Application</description>
-	<version>0.0.19</version>
+	<version>0.0.20</version>
 	<packaging>jar</packaging>
 
 	<properties>
-		<persistence-unit.version>0.0.34</persistence-unit.version>
+		<persistence-unit.version>0.0.36</persistence-unit.version>
 		<start-class>com.talytica.integration.IntegrationApplication</start-class>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -30,6 +30,7 @@
 		<bigml.version>1.4.2</bigml.version>
 		<spring-cloud-version>1.2.0.RELEASE</spring-cloud-version>
 		<fileupload-version>1.3.1</fileupload-version>
+		<logentries-version>1.1.37</logentries-version>
 	</properties>
 
 	<dependencies>
@@ -104,6 +105,11 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>com.logentries</groupId>
+		    <artifactId>logentries-appender</artifactId>
+		    <version>${logentries-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>

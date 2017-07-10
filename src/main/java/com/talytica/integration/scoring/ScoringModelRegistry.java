@@ -41,6 +41,7 @@ public class ScoringModelRegistry {
 		                   .put(ScoringModelType.VIDEO, AudioScoring.class)
 		                   .put(ScoringModelType.TRAIT, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.HEXACO, BlendedTypeScoring.class)
+		                   .put(ScoringModelType.FREETEXT, FreeTextScoring.class)
 		                   .put(ScoringModelType.KNOCKOUT, KnockoutScoring.class)
 		                   .put(ScoringModelType.DECEPTION, KnockoutScoring.class)
 		                   .put(ScoringModelType.MERCER, MercerScoring.class)

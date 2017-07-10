@@ -14,6 +14,7 @@ public enum ScoringModelType {
 	RANKER("ranker"),
 	KNOCKOUT("knockout"),
 	DECEPTION("deception"),
+	FREETEXT("freetext"),
 	HEXACO("hexaco"),
 	TRAIT("trait"),
 	AVERAGE("average"),
