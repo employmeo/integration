@@ -83,6 +83,9 @@ public class AudioScoring implements ScoringModelEngine {
 				Grader savedGrader = null;
 				for (Response response : responses) {	
 					Grader grader = new Grader();
+					grader.setAccountId(respondant.getAccountId());
+					grader.setAccount(respondant.getAccount());
+					grader.setRelationship("Assigned");
 					grader.setStatus(Grader.STATUS_NEW);
 					grader.setUser(config.getUser());
 					grader.setUserId(config.getUserId());
