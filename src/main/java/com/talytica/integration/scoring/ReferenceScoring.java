@@ -57,6 +57,8 @@ public class ReferenceScoring implements ScoringModelEngine {
 			Person reference = personService.save(person);
 
 			Grader grader = new Grader();
+			grader.setAccount(respondant.getAccount());
+			grader.setAccountId(respondant.getAccountId());
 			grader.setType(Grader.TYPE_PERSON);
 			grader.setStatus(Grader.STATUS_NEW);
 			grader.setPerson(reference);
