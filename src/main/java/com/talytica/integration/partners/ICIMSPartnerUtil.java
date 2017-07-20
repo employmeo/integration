@@ -355,19 +355,23 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		person.setFirstName(applicant.optString("firstname"));
 		person.setLastName(applicant.optString("lastname"));
 
-		JSONObject address = applicant.optJSONArray("addresses").optJSONObject(0);
-		try {
-			address.put("street", address.optString("addressstreet1") + " " + address.optString("addressstreet2"));
-			address.put("city", address.optString("addresscity"));
-			address.put("state", address.optJSONObject("addressstate").optString("abbrev"));
-			address.put("zip", address.optString("addresszip"));
-			addressService.validate(address);
-		} catch (Exception e) {
-			log.error("Failed to vaidate address: {}", address);
+		JSONArray addresses = applicant.optJSONArray("addresses");
+		if (addresses != null) {		
+			JSONObject address = addresses.optJSONObject(0);
+			if (address == null) ;
+			try {
+				address.put("street", address.optString("addressstreet1") + " " + address.optString("addressstreet2"));
+				address.put("city", address.optString("addresscity"));
+				address.put("state", address.optJSONObject("addressstate").optString("abbrev"));
+				address.put("zip", address.optString("addresszip"));
+				addressService.validate(address);
+				person.setAddress(address.optString("formatted_address"));
+				person.setLatitude(address.optDouble("lat"));
+				person.setLongitude(address.optDouble("lng"));
+			} catch (Exception e) {
+				log.error("Failed to vaidate address: {}", address);
+			}
 		}
-		person.setAddress(address.optString("formatted_address"));
-		person.setLatitude(address.optDouble("lat"));
-		person.setLongitude(address.optDouble("lng"));
 
 		return personService.save(person);
 	}
