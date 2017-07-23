@@ -2,7 +2,10 @@ package com.talytica.integration.partners;
 
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.client.*;
@@ -25,6 +28,7 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.ExternalLinksService;
+
 import com.talytica.common.service.AddressService;
 
 import lombok.Getter;
@@ -85,9 +89,13 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Autowired
 	CorefactorRepository corefactorRepository;
+	
+	@Autowired
+	GraderService graderService;
 
 	@Autowired
 	ExternalLinksService externalLinksService;
+	
 
 	public ICIMSPartnerUtil() {
 	}
@@ -296,18 +304,72 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject json = new JSONObject();
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		Set<RespondantScore> scores = respondant.getRespondantScores();
+		List<RespondantScore> scores = new ArrayList<RespondantScore>( respondant.getRespondantScores());
+		
+		scores.sort(new Comparator<RespondantScore>() {
+			public int compare (RespondantScore a, RespondantScore b) {
+				Corefactor corefactorA = corefactorRepository.findOne(a.getId().getCorefactorId());
+				Corefactor corefactorB = corefactorRepository.findOne(a.getId().getCorefactorId());
+				double aCoeff = 1d;
+				double bCoeff = 1d;
+				if (corefactorA.getDefaultCoefficient() != null) aCoeff = Math.abs(corefactorA.getDefaultCoefficient());
+				if (corefactorB.getDefaultCoefficient() != null) bCoeff = Math.abs(corefactorB.getDefaultCoefficient());
+				// first sort by coefficient - descending
+				if (aCoeff != bCoeff) return (int)(bCoeff - aCoeff);
+				// otherwise just sort by name
+				return corefactorA.getName().compareTo(corefactorB.getName());
+			}
+		});
 		StringBuffer notes = new StringBuffer();
-		notes.append("Factor Scores: ");
+		notes.append("Summary Scores:\n");
+		
 		for (RespondantScore score : scores) {
 			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
-			notes.append("[");
 			notes.append(cf.getName());
 			notes.append(" : ");
 			notes.append(score.getValue().intValue());
-			notes.append("]");
+			notes.append("\n");
 		}
 
+		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
+		if (!graders.isEmpty()) {
+			StringBuffer references = new StringBuffer();
+			StringBuffer evaluators = new StringBuffer();
+			for (Grader grader : graders) {
+				switch (grader.getType()) {
+				case Grader.TYPE_PERSON:
+					references.append(grader.getPerson().getFirstName());
+					references.append(" ");
+					references.append(grader.getPerson().getLastName());
+					if ((null != grader.getRelationship()) && (!grader.getRelationship().isEmpty()))
+					  references.append(" ("+grader.getRelationship()+")");
+					references.append(" : ");
+					references.append(grader.getSummaryScore());
+					references.append("\n");
+					break;
+				case Grader.TYPE_SUMMARY_USER:
+				case Grader.TYPE_USER:
+				default:
+					evaluators.append(grader.getUser().getFirstName());
+					evaluators.append(" ");
+					evaluators.append(grader.getUser().getLastName());
+					evaluators.append(" : ");
+					evaluators.append(grader.getSummaryScore());
+					evaluators.append("\n");
+					break;
+				}
+			}
+			if (references.length() > 0) {
+				notes.append("References:\n");
+				notes.append(references);
+			};
+			if (evaluators.length() > 0) {
+				notes.append("Evaluated By:\n");
+				notes.append(evaluators);
+			};
+		}
+		
+		
 		try {
 			JSONObject assessment = new JSONObject();
 			assessment.put("value", respondant.getAccountSurvey().getDisplayName());
@@ -355,19 +417,23 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		person.setFirstName(applicant.optString("firstname"));
 		person.setLastName(applicant.optString("lastname"));
 
-		JSONObject address = applicant.optJSONArray("addresses").optJSONObject(0);
-		try {
-			address.put("street", address.optString("addressstreet1") + " " + address.optString("addressstreet2"));
-			address.put("city", address.optString("addresscity"));
-			address.put("state", address.optJSONObject("addressstate").optString("abbrev"));
-			address.put("zip", address.optString("addresszip"));
-			addressService.validate(address);
-		} catch (Exception e) {
-			log.error("Failed to vaidate address: {}", address);
+		JSONArray addresses = applicant.optJSONArray("addresses");
+		if (addresses != null) {		
+			JSONObject address = addresses.optJSONObject(0);
+			if (address == null) ;
+			try {
+				address.put("street", address.optString("addressstreet1") + " " + address.optString("addressstreet2"));
+				address.put("city", address.optString("addresscity"));
+				address.put("state", address.optJSONObject("addressstate").optString("abbrev"));
+				address.put("zip", address.optString("addresszip"));
+				addressService.validate(address);
+				person.setAddress(address.optString("formatted_address"));
+				person.setLatitude(address.optDouble("lat"));
+				person.setLongitude(address.optDouble("lng"));
+			} catch (Exception e) {
+				log.error("Failed to vaidate address: {}", address);
+			}
 		}
-		person.setAddress(address.optString("formatted_address"));
-		person.setLatitude(address.optDouble("lat"));
-		person.setLongitude(address.optDouble("lng"));
 
 		return personService.save(person);
 	}

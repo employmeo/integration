@@ -1,7 +1,5 @@
 package com.talytica.integration.resources;
 
-import java.net.URI;
-
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
@@ -29,8 +27,6 @@ import io.swagger.annotations.Api;
 @Api( value="/icimsstatusupdate", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
 public class ICIMSStatusUpdateResource {
 
-	@Context
-	private SecurityContext sc;
 	@Autowired
 	PartnerRepository partnerRepository;
 	@Autowired
@@ -46,9 +42,8 @@ public class ICIMSStatusUpdateResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response doPost( String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
-		log.debug("ICIMS Application Complete with: " +json);
-
-		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
+		log.debug("ICIMS Status Update requested: {}", json);
+		Partner partner = partnerRepository.findByPartnerName("ICIMS");
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = pu.getAccountFrom(json);
@@ -67,14 +62,15 @@ public class ICIMSStatusUpdateResource {
 		if (applicant.getRespondantStatus() < Respondant.STATUS_COMPLETED) {
 			emailService.sendEmailInvitation(applicant);
 		}
+		
+		//URI link = null;
+		//
+		//try {
+		//	link = new URI(externalLinksService.getAssessmentLink(applicant));
+		//} catch (Exception e) {
+		//	log.warn("Failed to URI-ify link: " + externalLinksService.getAssessmentLink(applicant));
+		//}
 
-		URI link = null;
-		try {
-			link = new URI(externalLinksService.getAssessmentLink(applicant));
-		} catch (Exception e) {
-			log.warn("Failed to URI-ify link: " + externalLinksService.getAssessmentLink(applicant));
-		}
-
-		return Response.seeOther(link).build();
+		return Response.ok().build();
 	}
 }

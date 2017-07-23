@@ -45,7 +45,7 @@ public class GradingService {
 		log.debug("Initiating grading for respondant {} with {} predictions", respondant.getId(), predictions.size());
 
 		GradingResult result = new GradingResult();
-		Double compositeScore = null;
+		Double compositeScore = 0d;
 		
 		if (predictions.size() == 0) {
 			Set<RespondantScore> scores = respondant.getRespondantScores();
@@ -63,7 +63,7 @@ public class GradingService {
 					.average()
 					.orElse(0.0D);
 					*/
-			compositeScore = new BigDecimal(100d*total/baseline).setScale(2, RoundingMode.HALF_UP).doubleValue();
+			if (baseline > 0) compositeScore = new BigDecimal(100d*total/baseline).setScale(2, RoundingMode.HALF_UP).doubleValue();
 		} else {
 			// compute grade composite score as average of the percentiles * 100
 			Double averagePercentile = predictions.stream()
