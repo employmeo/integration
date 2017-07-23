@@ -1,6 +1,7 @@
 package com.talytica.integration;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -16,6 +17,9 @@ import com.talytica.integration.service.IntegrationPartnerDetailsService;
 @EnableWebSecurity
 public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 
+		@Value("${com.talytica.integration.openpages:/health, /integration/icims**}")
+		String[] openPages;
+		
 	    @Autowired
 	    private IntegrationPartnerDetailsService partnerCredentialService;
 	    
@@ -29,7 +33,7 @@ public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 	    protected void configure(HttpSecurity http) throws Exception {
 			http
 	    		.authorizeRequests()
-	    		  .antMatchers("/health","/integration/icims**").permitAll()
+	    		  .antMatchers(openPages).permitAll()
 	    		  .anyRequest().authenticated()
 	    		.and()
 	    		  .sessionManagement()
