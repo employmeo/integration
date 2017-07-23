@@ -310,10 +310,13 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 			public int compare (RespondantScore a, RespondantScore b) {
 				Corefactor corefactorA = corefactorRepository.findOne(a.getId().getCorefactorId());
 				Corefactor corefactorB = corefactorRepository.findOne(a.getId().getCorefactorId());
-
-				if (Math.abs(corefactorA.getDefaultCoefficient()) != Math.abs(corefactorB.getDefaultCoefficient()))
-					return (int) (Math.abs(corefactorB.getDefaultCoefficient()) - Math.abs(corefactorA.getDefaultCoefficient()));
-				
+				double aCoeff = 1d;
+				double bCoeff = 1d;
+				if (corefactorA.getDefaultCoefficient() != null) aCoeff = Math.abs(corefactorA.getDefaultCoefficient());
+				if (corefactorB.getDefaultCoefficient() != null) bCoeff = Math.abs(corefactorB.getDefaultCoefficient());
+				// first sort by coefficient - descending
+				if (aCoeff != bCoeff) return (int)(bCoeff - aCoeff);
+				// otherwise just sort by name
 				return corefactorA.getName().compareTo(corefactorB.getName());
 			}
 		});
