@@ -40,14 +40,13 @@ public class ICIMSApplicationCompleteResource {
 	private static final Logger log = LoggerFactory.getLogger(ICIMSApplicationCompleteResource.class);
 
 
-
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response doPost( String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
-		log.debug("ICIMS Application Complete with: " +json);
-
-		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
+		log.debug("ICIMS Application Complete with: {} ", json);
+//		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName()); ** allowing anonymous posts from ICIMS
+		Partner partner = partnerRepository.findByPartnerName("ICIMS");
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = pu.getAccountFrom(json);

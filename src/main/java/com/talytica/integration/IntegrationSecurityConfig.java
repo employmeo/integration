@@ -1,14 +1,15 @@
 package com.talytica.integration;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.*;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import com.talytica.integration.service.IntegrationPartnerDetailsService;
 
 @Configuration
@@ -16,8 +17,9 @@ import com.talytica.integration.service.IntegrationPartnerDetailsService;
 @EnableWebSecurity
 public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 
-		private static final int REMEMBERME_TOKEN_SECONDS = 1209600;
-	
+		@Value("${com.talytica.integration.openpages:/health, /integration/icims**}")
+		String[] openPages;
+		
 	    @Autowired
 	    private IntegrationPartnerDetailsService partnerCredentialService;
 	    
@@ -31,16 +33,11 @@ public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 	    protected void configure(HttpSecurity http) throws Exception {
 			http
 	    		.authorizeRequests()
-	    		  .antMatchers("/integration/echo","/integration/icims**").permitAll()
+	    		  .antMatchers(openPages).permitAll()
 	    		  .anyRequest().authenticated()
 	    		.and()
-	    		  .formLogin()
-	    		.and()
-	    			.rememberMe()
-	    			.userDetailsService(partnerCredentialService)
-	    			.rememberMeParameter("rememberme")
-	    			.key("integration")
-	    			.tokenValiditySeconds(REMEMBERME_TOKEN_SECONDS)
+	    		  .sessionManagement()
+	    		  .sessionCreationPolicy(SessionCreationPolicy.NEVER)
 		    	.and()
 		    	  .httpBasic()
 	    		.and()
@@ -52,6 +49,5 @@ public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 			PasswordEncoder encoder = new IntegrationPasswordEncoder();
 			return encoder;
 		}			
-		
-	    
+			    
 }
