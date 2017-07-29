@@ -154,17 +154,21 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public Position getPositionFrom(JSONObject job, Account account) {
-		log.debug("Using Account default position and Ignoring job object: " + job);
-		Set<Position> positions = account.getPositions();
-		Position jobPosition = positionRepository.findOne(account.getDefaultPositionId());
+		Position jobPosition = null;
 
 		if (job.has("jobtitle")) {
 			String title = job.optString("jobtitle");
-			for (Position position : positions) {
-				if (title.equals(position.getPositionName()))
+			for (Position position : account.getPositions()) {
+				if (title.equalsIgnoreCase(position.getPositionName()))
 					jobPosition = position;
 			}
 		}
+
+		if (jobPosition == null) {
+			log.debug("Using Account default position instead of {}", job);
+			jobPosition = positionRepository.findOne(account.getDefaultPositionId());
+		}
+
 		return jobPosition;
 	}
 
@@ -172,14 +176,15 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	public AccountSurvey getSurveyFrom(JSONObject job, Account account) {
 
 		AccountSurvey aSurvey = null;
+		String assessmentName = null;
 		if (job.has("assessmenttype")) {
 			JSONArray assessmenttypes = job.optJSONArray("assessmenttype");
 			if (assessmenttypes.length() > 1) {
 				log.warn("More than 1 Assessment in: " + assessmenttypes);
 			}
 
-			String assessmentName = assessmenttypes.optJSONObject(0).optString("value");
-			// job.put("assessment", assessmenttypes.optJSONObject(0));
+			assessmentName = assessmenttypes.optJSONObject(0).optString("value");
+
 			Set<AccountSurvey> assessments = account.getAccountSurveys();
 			for (AccountSurvey as : assessments) {
 				if (assessmentName.equals(as.getDisplayName())) {
@@ -200,6 +205,8 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		if (aSurvey == null) {
 			aSurvey = accountSurveyService.getAccountSurveyById(account.getDefaultAsId());
 			log.warn("Using Account Default Assessment {}", aSurvey.getDisplayName());
+		} else {
+			log.info("Using {} based on {}", aSurvey.getDisplayName(), assessmentName );
 		}
 
 		return aSurvey;
@@ -342,7 +349,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	}
 
 	public Person getPerson(JSONObject applicant, Account account) {
-
+		
 		Person person = personService.getPersonByAtsId(applicant.optString("link"));
 		if (person != null) {
 			return person;
