@@ -51,14 +51,16 @@ public class PreScreenPredictionScheduleTrigger {
 							GradingResult grade = gradingService.gradeRespondantByPredictions(respondant, results);
 							respondant.setCompositeScore(grade.getCompositeScore());
 							respondant.setProfileRecommendation(grade.getRecommendedProfile());
+							log.debug("Pre-screen completed for respondant {} with results: ", respondant.getId(), results);
 							if ((respondant.getPartner() != null) && (respondant.getScorePostMethod()!=null)) {
 								PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
-								pu.postScoresToPartner(respondant, pu.getScreeningMessage(respondant));							
+								pu.postScoresToPartner(respondant, pu.getScreeningMessage(respondant));
+								log.debug("Posted results to: {}", respondant.getScorePostMethod());
 							}
 						}
 						respondantService.save(respondant);
 					} catch (Exception e) {
-						log.warn("Failed to prescreen respondant {}", respondant.getId(), e);
+						log.warn("Failed to prescreen respondant {} {}", respondant.getId(), e);
 					}
 				});
 			}	

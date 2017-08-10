@@ -376,6 +376,21 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		return message;
 	}
 
+	@Override
+	public void changeCandidateStatus(Respondant respondant, String category) {
+		JSONObject message = new JSONObject();
+		try {
+			message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
+			message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
+			message.put("category_id", category);
+			
+			String method = JAZZ_SERVICE+"/categories2applicants";
+			postScoresToPartner(respondant, message);
+		} catch (Exception e) {
+			log.error("Failed to change respondant {} category to {}", respondant.getId(), category, e);
+		}
+	}
+	
 	// Special calls to Jazz HR to get data for applicant
 
 	public String jazzGet(String getTarget, Account account) {

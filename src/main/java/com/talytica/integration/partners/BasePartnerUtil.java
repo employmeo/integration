@@ -374,12 +374,24 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	}
 
 	@Override
+	public void changeCandidateStatus(Respondant respondant, String status) {
+		log.warn("No method for changing ATS status for respondant {} ", respondant.getId());
+	}
+	
+	@Override
 	public void postScoresToPartner(Respondant respondant, JSONObject message) {
 
 		String postmethod = respondant.getScorePostMethod();
 		if (postmethod == null || postmethod.isEmpty()) {
 			return;
-		} else if (interceptOutbound) {
+		} 
+		postScoresToPartner(postmethod, message);
+	}
+
+	@Override
+	public void postScoresToPartner(String postmethod, JSONObject message) {
+
+		if (interceptOutbound) {
 			log.info("Intercepting Post to {}", postmethod);
 			postmethod = externalLinksService.getIntegrationEcho();
 		}
@@ -394,12 +406,9 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			Boolean success = (null == result || result.getStatus() >= 300) ? false : true;
 			String serviceResponse = result.readEntity(String.class);
 			if (success) {
-				log.info("Posted respondant {} scores to {}. Server response: {}", respondant.getId(), postmethod,
-						serviceResponse);
+				log.info("Posted message {} to {}. Server response: {}", message, postmethod, serviceResponse);
 			} else {
-				log.warn("Failed to post {} {}' scores to {}. Server response: {}",
-						respondant.getPerson().getFirstName(), respondant.getPerson().getLastName(), postmethod,
-						serviceResponse);
+				log.warn("Failed to post message {} to {}. Server response: {}", message, postmethod, serviceResponse);
 			}
 
 		} catch (Exception e) {

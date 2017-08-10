@@ -48,15 +48,14 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	private String ICIMS_API;
 	@Value("${com.talytica.urls.proxy}")
 	private String PROXY_URL;
-
+	@Value("${partners.icims.proxy:false}")
+	private boolean USE_PROXY;
+	
 	private static final String JOB_EXTRA_FIELDS = "?fields=jobtitle,assessmenttype,jobtype,joblocation,hiringmanager";
-	private static final String ASSESSMENT_COMPLETE_ID = "{'id':'D37002019001'}";
-	// private static final JSONObject ASSESSMENT_INCOMPLETE = new
-	// JSONObject("{'id':'D37002019002'}");
-	// private static final JSONObject ASSESSMENT_INPROGRESS = new
-	// JSONObject("{'id':'D37002019003'}");
-	// private static final JSONObject ASSESSMENT_SENT = new
-	// JSONObject("{'id':'D37002019004'}");
+	public static final String ASSESSMENT_COMPLETE_ID = "{'id':'D37002019001'}";
+	public static final String ASSESSMENT_IN_PROGRESS_ID = "{'id':'D37002019003'}";
+	public static final String ASSESSMENT_SENT_ID = "{'id':'D37002019004'}";
+	
 	private static final SimpleDateFormat ICIMS_SDF = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
 
 	@Setter
@@ -450,18 +449,20 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	private Client getClient() {
 		ClientConfig cc = new ClientConfig();
 		cc.property(ApacheClientProperties.PREEMPTIVE_BASIC_AUTHENTICATION, true);
-		cc.property(ClientProperties.PROXY_URI, PROXY_URL);
 
-		try {
-			URL proxyUrl = new URL(PROXY_URL);
-			String userInfo = proxyUrl.getUserInfo();
-			String pUser = userInfo.substring(0, userInfo.indexOf(':'));
-			String pPass = userInfo.substring(userInfo.indexOf(':') + 1);
-			cc.property(ClientProperties.PROXY_USERNAME, pUser);
-			cc.property(ClientProperties.PROXY_PASSWORD, pPass);
-		} catch (Exception e) {
-			log.info("No User & Pass for Proxy: {}", PROXY_URL);
-		}
+		if (USE_PROXY) {
+		cc.property(ClientProperties.PROXY_URI, PROXY_URL);
+			try {
+				URL proxyUrl = new URL(PROXY_URL);
+				String userInfo = proxyUrl.getUserInfo();
+				String pUser = userInfo.substring(0, userInfo.indexOf(':'));
+				String pPass = userInfo.substring(userInfo.indexOf(':') + 1);
+				cc.property(ClientProperties.PROXY_USERNAME, pUser);
+				cc.property(ClientProperties.PROXY_PASSWORD, pPass);
+			} catch (Exception e) {
+				log.info("No User & Pass for Proxy: {}", PROXY_URL);
+			}
+		}		
 		cc.property(ClientProperties.REQUEST_ENTITY_PROCESSING, "BUFFERED");
 		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 		cc.property("sslProtocol", "TLSv1.2");
@@ -501,8 +502,36 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 
 	@Override
 	public JSONObject getScreeningMessage(Respondant respondant) {
-		// TODO Auto-generated method stub
 		return getScoresMessage(respondant);
+	}
+
+	@Override
+	public void changeCandidateStatus(Respondant respondant, String status) {
+		
+		try {
+			JSONObject assessment = new JSONObject();
+			assessment.put("value", respondant.getAccountSurvey().getDisplayName());
+			JSONObject results = new JSONObject();
+			results.put("assessmentname", assessment);
+			results.put("assessmentstatus", new JSONObject(status));
+			results.put("assessmenturl", externalLinksService.getPortalLink(respondant));
+			JSONArray resultset = new JSONArray();
+			resultset.put(results);
+			JSONObject json = new JSONObject();
+			json.put("assessmentresults", resultset);		
+			postScoresToPartner(respondant, json);
+		} catch (Exception e) {
+			log.error("Failed to change respondant {} status to {}", respondant.getId(), status, e);
+		}
+	}
+	
+	@Override
+	public void postScoresToPartner(String method, JSONObject message) {
+		Response response = icimsPatch(method, message);
+		log.debug("Posted Scores to ICIMS: " + response.getStatus() + " " + response.getStatusInfo().getReasonPhrase());
+		if (response.hasEntity()) {
+			log.debug("Response Message: " + response.readEntity(String.class));
+		}	
 	}
 
 }
