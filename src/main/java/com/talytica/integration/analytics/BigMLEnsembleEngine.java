@@ -87,6 +87,7 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 
 		} catch (Exception e) {
 			log.error("Ensemble Prediction failed for {}, with exception {}", respondant.getId(), e);
+			return null;
 		}
 
 		log.info("Prediction of {} for respondant {} is {}", posConfig.getPredictionTarget().getLabel(), respondant.getId(), prediction.getScore());
