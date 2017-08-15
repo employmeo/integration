@@ -153,6 +153,7 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 		}
 		location = new Location();
 		location.setAccount(account);
+		location.setAccountId(account.getId());
 		location.setAtsId(locationLink);
 		location.setLocationName(locationName);
 
