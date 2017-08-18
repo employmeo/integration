@@ -12,6 +12,7 @@ import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.RespondantScorePK;
 import com.employmeo.data.model.Response;
+import com.employmeo.data.model.ScoringModelType;
 import com.employmeo.data.service.GraderService;
 import com.employmeo.data.service.PersonService;
 import com.talytica.common.service.EmailService;

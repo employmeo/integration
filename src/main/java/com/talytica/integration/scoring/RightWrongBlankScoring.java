@@ -15,6 +15,7 @@ import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.RespondantScorePK;
 import com.employmeo.data.model.Response;
+import com.employmeo.data.model.ScoringModelType;
 import com.employmeo.data.model.SurveyQuestion;
 import com.employmeo.data.service.CorefactorService;
 import com.employmeo.data.service.QuestionService;

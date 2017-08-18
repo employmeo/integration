@@ -14,15 +14,17 @@ import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.RespondantScorePK;
 import com.employmeo.data.model.Response;
+import com.employmeo.data.model.ScoringModelType;
 import com.employmeo.data.service.CorefactorService;
 import com.employmeo.data.service.QuestionService;
+import com.employmeo.data.service.RespondantService;
 import com.talytica.common.service.TextAnalyticsService;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class FreeTextScoring implements ScoringModelEngine {
+public class SentimentScoring implements ScoringModelEngine {
 	
 	@Autowired
 	private QuestionService questionService;
@@ -30,8 +32,11 @@ public class FreeTextScoring implements ScoringModelEngine {
 	private CorefactorService corefactorService;
 	@Autowired
 	private TextAnalyticsService textAnalyticsService;
+	@Autowired
+	RespondantService respondantService;
 	
-	private String modelName = ScoringModelType.TRAIT.getValue();
+	private String modelName = ScoringModelType.SENTIMENT.getValue();
+	private Boolean display = false;
 	private final int MIN_TEXT_LENGTH = 50;
 	
 	@Override
@@ -50,6 +55,7 @@ public class FreeTextScoring implements ScoringModelEngine {
 				responseTable.put(corefactor, responseSet);
 			}
 			responseSet.add(response.getResponseText());
+			if (this.display) respondantService.addNVPToRespondant(respondant, question.getQuestionText(), response.getResponseText(), false, display);
 		});
 	
 		for (Map.Entry<Corefactor, List<String>> pair : responseTable.entrySet()) {
@@ -85,6 +91,8 @@ public class FreeTextScoring implements ScoringModelEngine {
 	@Override
 	public void initialize(String modelName) {
 		this.modelName = modelName;
+		this.display = false;
+		if (modelName == ScoringModelType.SENTIMENT.getValue()) this.display = true;
 	}
 
 }
