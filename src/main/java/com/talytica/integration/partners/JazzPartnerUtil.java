@@ -10,8 +10,10 @@ import java.util.Map;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
@@ -379,13 +381,28 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Override
 	public void changeCandidateStatus(Respondant respondant, String category) {
 		JSONObject message = new JSONObject();
+		String method = JAZZ_SERVICE+"/categories2applicants";
+		
+		if (interceptOutbound) {
+			log.info("Intercepting Post to {}", method);
+			method = externalLinksService.getIntegrationEcho();
+		}
+		WebTarget target = ClientBuilder.newClient().target(method);
 		try {
 			message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
 			message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
 			message.put("category_id", category);
+			Response result = target.request(MediaType.APPLICATION_JSON)
+					.post(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
+
+			Boolean success = (null == result || result.getStatus() >= 300) ? false : true;
+			String serviceResponse = result.readEntity(String.class);
+			if (success) {
+				log.debug("Changed status with {}. Server response: {}", message, serviceResponse);
+			} else {
+				log.warn("Failed to change status {} to {}. Server response: {}", message, method, serviceResponse);
+			}		
 			
-			String method = JAZZ_SERVICE+"/categories2applicants";
-			postScoresToPartner(respondant, message);
 		} catch (Exception e) {
 			log.error("Failed to change respondant {} category to {}", respondant.getId(), category, e);
 		}

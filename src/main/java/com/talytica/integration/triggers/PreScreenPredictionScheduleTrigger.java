@@ -1,5 +1,6 @@
 package com.talytica.integration.triggers;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,8 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.employmeo.data.model.CustomWorkflow;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.service.RespondantService;
+import com.talytica.common.service.EmailService;
 import com.talytica.integration.objects.GradingResult;
 import com.talytica.integration.objects.PredictionResult;
 import com.talytica.integration.partners.PartnerUtil;
@@ -27,6 +30,8 @@ public class PreScreenPredictionScheduleTrigger {
 	private PredictionService predictionService;
 	@Autowired
 	private GradingService gradingService;
+	@Autowired
+	private EmailService emailService;
 	@Autowired
 	PartnerUtilityRegistry partnerUtilityRegistry;
 	
@@ -56,6 +61,30 @@ public class PreScreenPredictionScheduleTrigger {
 								PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 								pu.postScoresToPartner(respondant, pu.getScreeningMessage(respondant));
 								log.debug("Posted results to: {}", respondant.getScorePostMethod());
+							}
+							List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
+							log.debug("WORKFLOW: {} workflows found", workflows.size());
+							Collections.sort(workflows);
+							for (CustomWorkflow workflow : workflows) {
+								if ((workflow.getProfile() != null) && (!workflow.getProfile().equalsIgnoreCase(respondant.getProfileRecommendation()))) continue;
+								if (CustomWorkflow.TRIGGER_POINT_CREATION == workflow.getTriggerPoint()) {
+									switch (workflow.getType()) {
+										case CustomWorkflow.TYPE_ATSUPDATE:
+											PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+											pu.changeCandidateStatus(respondant, workflow.getAtsId());
+											log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
+											break;
+										case CustomWorkflow.TYPE_EMAIL:
+											emailService.sendEmailInvitation(respondant);
+											log.debug("WORKFLOW: Email to respondant {}", respondant.getId());
+											break;
+										default:
+											log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+											break;
+									}
+								} else {
+									log.debug("Different Trigger Point: {}", workflow.getTriggerPoint());
+								}
 							}
 						}
 						respondantService.save(respondant);
