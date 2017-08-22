@@ -49,6 +49,7 @@ public class PreScreenPredictionScheduleTrigger {
 			} else {
 				log.info("Scheduled trigger: Analyzing {} prescreen candidates", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
+					PartnerUtil pu = null;
 					try {
 						respondant.setRespondantStatus(Respondant.STATUS_CREATED);
 						List<PredictionResult> results = predictionService.runPreAssessmentPredictions(respondant);
@@ -58,7 +59,7 @@ public class PreScreenPredictionScheduleTrigger {
 							respondant.setProfileRecommendation(grade.getRecommendedProfile());
 							log.debug("Pre-screen completed for respondant {} with results: ", respondant.getId(), results);
 							if ((respondant.getPartner() != null) && (respondant.getScorePostMethod()!=null)) {
-								PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+								pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 								pu.postScoresToPartner(respondant, pu.getScreeningMessage(respondant));
 								log.debug("Posted results to: {}", respondant.getScorePostMethod());
 							}
@@ -70,13 +71,20 @@ public class PreScreenPredictionScheduleTrigger {
 								if (CustomWorkflow.TRIGGER_POINT_CREATION == workflow.getTriggerPoint()) {
 									switch (workflow.getType()) {
 										case CustomWorkflow.TYPE_ATSUPDATE:
-											PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+											if (respondant.getPartner() == null) break;
+											pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 											pu.changeCandidateStatus(respondant, workflow.getAtsId());
 											log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
 											break;
 										case CustomWorkflow.TYPE_EMAIL:
-											emailService.sendEmailInvitation(respondant);
-											log.debug("WORKFLOW: Email to respondant {}", respondant.getId());
+											if (respondant.getPartner() != null) {
+												pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+												pu.inviteCandidate(respondant);
+											} else {
+												emailService.sendEmailInvitation(respondant);												
+											}
+											log.debug("WORKFLOW: Sent email to respondant {}", respondant.getId());
+											respondant.setRespondantStatus(Respondant.STATUS_INVITED);
 											break;
 										default:
 											log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);

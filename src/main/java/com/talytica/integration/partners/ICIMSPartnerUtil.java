@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Scope("prototype")
-public class ICIMSPartnerUtil implements PartnerUtil {
+public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
 	@Value("${partners.icims.user}")
 	private String ICIMS_USER;
@@ -57,10 +57,6 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	public static final String ASSESSMENT_SENT_ID = "{'id':'D37002019004'}";
 	
 	private static final SimpleDateFormat ICIMS_SDF = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
-
-	@Setter
-	@Getter
-	private Partner partner = null;
 
 	@Autowired
 	AddressService addressService;
@@ -97,24 +93,6 @@ public class ICIMSPartnerUtil implements PartnerUtil {
 	
 
 	public ICIMSPartnerUtil() {
-	}
-
-	@Override
-	public String getPrefix() {
-		return partner.getPrefix();
-	}
-
-	@Override
-	public String addPrefix(String id) {
-		if (partner.getPrefix() == null) {
-			return id;
-		}
-		return partner.getPrefix() + id;
-	}
-
-	@Override
-	public String trimPrefix(String id) {
-		return id.substring(id.indexOf(getPrefix()) + getPrefix().length());
 	}
 
 	@Override

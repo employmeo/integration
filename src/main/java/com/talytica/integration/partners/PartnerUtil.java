@@ -19,6 +19,7 @@ public interface PartnerUtil {
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant);
 	public JSONObject getScoresMessage(Respondant respondant);
 	public JSONObject getScreeningMessage(Respondant respondant);
+	public void inviteCandidate(Respondant respondant);
 	public void changeCandidateStatus(Respondant respondant, String status);
 	public void postScoresToPartner(Respondant respondant, JSONObject message);
 	public void postScoresToPartner(String postmethod, JSONObject message);

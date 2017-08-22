@@ -43,6 +43,9 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 
 	@Value("${partners.jazz.api}")
 	private String JAZZ_SERVICE;
+	
+	@Value("@dropbox.jazz.com")
+	private String JAZZ_EMAIL_SUFFIX;
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -381,7 +384,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Override
 	public void changeCandidateStatus(Respondant respondant, String category) {
 		JSONObject message = new JSONObject();
-		String method = JAZZ_SERVICE+"/categories2applicants";
+		String method = JAZZ_SERVICE+"categories2applicants";
 		
 		if (interceptOutbound) {
 			log.info("Intercepting Post to {}", method);
@@ -407,6 +410,13 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			log.error("Failed to change respondant {} category to {}", respondant.getId(), category, e);
 		}
 	}
+	
+	@Override
+	public void inviteCandidate(Respondant respondant) {
+		String bcc = trimPrefix(respondant.getAtsId()) + JAZZ_EMAIL_SUFFIX;
+		emailService.sendEmailInvitation(respondant, bcc);
+	}
+	
 	
 	// Special calls to Jazz HR to get data for applicant
 

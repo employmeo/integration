@@ -31,7 +31,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Setter
 	@Getter
-	private Partner partner = null;
+	protected Partner partner = null;
 
 	@Autowired
 	ExternalLinksService externalLinksService;
@@ -415,6 +415,10 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			log.warn("failed posting scores to {}: ", postmethod);
 		}
 
+	}
+	
+	public void inviteCandidate(Respondant respondant) {
+		emailService.sendEmailInvitation(respondant);
 	}
 
 }
