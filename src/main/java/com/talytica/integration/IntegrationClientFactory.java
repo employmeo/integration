@@ -5,11 +5,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,8 +19,10 @@ import java.security.cert.X509Certificate;
 @Slf4j
 @Component
 public class IntegrationClientFactory {
-	private static final String defaultUserName = "test";
-	private static final String defaultUserPassword = "password";
+	@Value("${com.talytica.integrationserver.user:test}")
+	private String userName;
+	@Value("${com.talytica.integrationserver.user:password}")
+	private String userPassword;
 	
 	@Getter
 	@Value("${com.talytica.urls.integration}")
@@ -33,7 +30,7 @@ public class IntegrationClientFactory {
 	
 	
 	  public Client newInstance() {
-		  return newInstance(defaultUserName, defaultUserPassword);
+		  return newInstance(userName, userPassword);
 	}
 	  
 	  public Client newInstance(String providedUserName, String providedPassword) {

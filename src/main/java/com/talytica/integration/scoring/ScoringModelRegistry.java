@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import com.employmeo.data.model.ScoringModelType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
@@ -41,7 +42,9 @@ public class ScoringModelRegistry {
 		                   .put(ScoringModelType.VIDEO, AudioScoring.class)
 		                   .put(ScoringModelType.TRAIT, BlendedTypeScoring.class)
 		                   .put(ScoringModelType.HEXACO, BlendedTypeScoring.class)
-		                   .put(ScoringModelType.FREETEXT, FreeTextScoring.class)
+		                   .put(ScoringModelType.SENTIMENT, SentimentScoring.class)
+		                   .put(ScoringModelType.CUSTOM, NVPScoring.class)
+		                   .put(ScoringModelType.CUSTOMHIDDEN, NVPScoring.class)		                   
 		                   .put(ScoringModelType.KNOCKOUT, KnockoutScoring.class)
 		                   .put(ScoringModelType.DECEPTION, KnockoutScoring.class)
 		                   .put(ScoringModelType.MERCER, MercerScoring.class)
