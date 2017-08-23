@@ -413,7 +413,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	
 	@Override
 	public void inviteCandidate(Respondant respondant) {
-		String bcc = trimPrefix(respondant.getAtsId()) + JAZZ_EMAIL_SUFFIX;
+		String bcc = trimPrefix(respondant.getPerson().getAtsId()) + JAZZ_EMAIL_SUFFIX;
 		emailService.sendEmailInvitation(respondant, bcc);
 	}
 	

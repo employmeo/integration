@@ -12,7 +12,7 @@
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
 	<description>Talytica Integration Application</description>
-	<version>0.0.24</version>
+	<version>0.0.24-HOTFIX</version>
 	<packaging>jar</packaging>
 
 	<properties>
