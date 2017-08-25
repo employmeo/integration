@@ -301,10 +301,10 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 				applicant.put("applicant_profile", respondant.getProfileRecommendation());
 				applicant.put("applicant_composite_score", respondant.getCompositeScore());
 				applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
-				applicant.put("applicant_profile_a", respondant.getProfileA());
-				applicant.put("applicant_profile_b", respondant.getProfileB());
-				applicant.put("applicant_profile_c", respondant.getProfileC());
-				applicant.put("applicant_profile_d", respondant.getProfileD());
+				//applicant.put("applicant_profile_a", respondant.getProfileA());
+				//applicant.put("applicant_profile_b", respondant.getProfileB());
+				//applicant.put("applicant_profile_c", respondant.getProfileC());
+				//applicant.put("applicant_profile_d", respondant.getProfileD());
 				applicant.put("label_profile_a", customProfile.getName(ProfileDefaults.PROFILE_A));
 				applicant.put("label_profile_b", customProfile.getName(ProfileDefaults.PROFILE_B));
 				applicant.put("label_profile_c", customProfile.getName(ProfileDefaults.PROFILE_C));
