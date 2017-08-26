@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@Deprecated
 public class AssessmentAnalysisScheduledTrigger {
 	@Autowired
 	private RespondantService respondantService;
@@ -27,7 +28,7 @@ public class AssessmentAnalysisScheduledTrigger {
 	@Value(value = "${jobs.graderscoring.enabled:false}")
 	private Boolean graderFulfilledScoringJobEnabled;
 
-	@Scheduled(initialDelayString = "${jobs.submissionanalysis.trigger.init.seconds:60}000", fixedDelayString = "${jobs.submissionanalysis.trigger.delay.seconds:60}000")
+	//@Scheduled(initialDelayString = "${jobs.submissionanalysis.trigger.init.seconds:60}000", fixedDelayString = "${jobs.submissionanalysis.trigger.delay.seconds:60}000")
 	public void triggerEligibleRespondantSubmissionAnalysis() {
 		if (respondantSubmissionAnalysisJobEnabled) {
 
@@ -47,7 +48,7 @@ public class AssessmentAnalysisScheduledTrigger {
 		}
 	}
 
-	@Scheduled(initialDelayString = "${jobs.graderscoring.trigger.init.seconds:90}000", fixedDelayString = "${jobs.graderscoring.trigger.delay.seconds:900}000")
+	//@Scheduled(initialDelayString = "${jobs.graderscoring.trigger.init.seconds:90}000", fixedDelayString = "${jobs.graderscoring.trigger.delay.seconds:900}000")
 	public void triggerGraderFulfilledScoring() {
 		if (graderFulfilledScoringJobEnabled) {
 

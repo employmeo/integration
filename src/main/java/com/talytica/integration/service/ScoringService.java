@@ -13,6 +13,7 @@ import com.employmeo.data.service.*;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
 
+import jersey.repackaged.com.google.common.collect.Sets;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,15 +36,39 @@ public class ScoringService {
 	private CorefactorService corefactorService;
 
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
+		Boolean incomplete = scoreAssessmentResponses(respondant);
+		if (incomplete) {
+			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);
+		} else {
+			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		}
+		if (respondant.getRespondantScores().size() > 0) {
+			respondantScoreRepository.save(respondant.getRespondantScores());
+			log.debug("Saved {} Scores for respondant {}", respondant.getRespondantScores().size(), respondant.getId());
+		}
+
+		return respondantService.save(respondant);
+	}
+	
+	public Respondant scoreGraders(@NonNull Respondant respondant) {
+		Set<RespondantScore> gradedScores = computeGraders(respondant);
+		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
+		return respondantService.save(respondant);
+	}
+	
+	
+	public Boolean scoreAssessmentResponses(@NonNull Respondant respondant) {
 		log.debug("Scoring assessment for respondant {}", respondant.getId());
 		Set<Response> responses = cleanseResponses(respondantService.getResponses(respondant.getRespondantUuid()));
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		HashMap<Corefactor, List<RespondantScore>> parents = new HashMap<Corefactor, List<RespondantScore>>();
+		Set<RespondantScore> allScores = Sets.newHashSet();
 		
 		if ((responses == null) || (responses.size() == 0))
 		{
 			log.debug("No responses found for respondant {}", respondant.getId());
-			return respondant; // return nothing
+			return null; // return nothing to signify that no "scores" have come back.
 		}
 
 		// This loop associates each response with a scoring model
@@ -70,11 +95,11 @@ public class ScoringService {
 			}
 			ScoringModelEngine scoringModelEngine = result.get();			
 			List<RespondantScore> scores = scoringModelEngine.scoreResponses(respondant, pair.getValue());
-			respondant.getRespondantScores().addAll(scores);
+			allScores.addAll(scores);
 		}
 
 		// Loop identifies "parent" factors - rolling up factors with a parent id to their parents
-		for (RespondantScore rs : respondant.getRespondantScores()) {
+		for (RespondantScore rs : allScores) {
 			Corefactor cf = corefactorService.findCorefactorById(rs.getId().getCorefactorId());
 			if (cf.getId() == RANKER_CFID) { // Graders + Audio add "ranker corefactors" to signify incomplete scoring
 				gradesNeeded = rs;
@@ -94,7 +119,6 @@ public class ScoringService {
 		}
 
 
-
 		// Loop creates and average of children scores for each parent
 		for (Map.Entry<Corefactor, List<RespondantScore>> pair : parents.entrySet()) {
 			RespondantScore score = new RespondantScore();
@@ -104,53 +128,20 @@ public class ScoringService {
 				total += rs.getValue();
 			}
 			score.setValue(total/pair.getValue().size());
-			respondant.getRespondantScores().add(score);
+			allScores.add(score);
 		}
 		
+		Boolean outstandingGrades = Boolean.FALSE;
 		if (null != gradesNeeded) {
-			respondant.getRespondantScores().remove(gradesNeeded);
-			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);
-		} else {
-			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+			respondant.getRespondantScores().remove(gradesNeeded);			
+			outstandingGrades = Boolean.TRUE;
 		}
-
-		// Section below saves all scores to the DB.
-		if (respondant.getRespondantScores().size() > 0) {
-			respondantScoreRepository.save(respondant.getRespondantScores());
-			log.debug("Saved {} Scores for respondant {}", respondant.getRespondantScores().size(), respondant.getId());
-		}
-
-		return respondantService.save(respondant);
+		respondant.getRespondantScores().addAll(allScores);
+		return outstandingGrades;
 	}
 
 	
-	private Set<Response> cleanseResponses(Set<Response> responses) {
-		Set<Response> returnSet = new HashSet<Response>();
-		Set<Response> duplicates = new HashSet<Response>();
-		for (Response response : responses) {
-			Optional<Response> conflict = findResponse(response.getQuestionId(),returnSet);
-			if(conflict.isPresent()) {
-				Response orig = conflict.get();
-				log.debug("Duplicate found: {} vs {}",response,orig);
-				if (response.getLastModDate().after(orig.getLastModDate())) {
-					returnSet.remove(orig);
-					duplicates.add(orig);
-					returnSet.add(response);
-				} else {
-					duplicates.add(response);					
-				}
-			} else {
-				returnSet.add(response);
-			}	
-		}
-		return returnSet;
-	}
-	
-	private Optional<Response> findResponse(Long questionId, Set<Response> responses) {
-		return responses.stream().filter(response -> questionId.equals(response.getQuestionId())).findFirst();
-	}
-
-	public Respondant scoreGraders(@NonNull Respondant respondant) {
+	public Set<RespondantScore> computeGraders(@NonNull Respondant respondant) {
 		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
 		List<Grade> grades = new ArrayList<Grade>();
 
@@ -190,9 +181,35 @@ public class ScoringService {
 			if (scores != null)	gradedScores.addAll(scores);
 		}
 
-		// then update respondant status to Scored		
-		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-		if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
-		return respondantService.save(respondant);
+		// then update respondant status to Scored	
+		return gradedScores;
 	}
+
+	
+	private Set<Response> cleanseResponses(Set<Response> responses) {
+		Set<Response> returnSet = new HashSet<Response>();
+		Set<Response> duplicates = new HashSet<Response>();
+		for (Response response : responses) {
+			Optional<Response> conflict = findResponse(response.getQuestionId(),returnSet);
+			if(conflict.isPresent()) {
+				Response orig = conflict.get();
+				log.debug("Duplicate found: {} vs {}",response,orig);
+				if (response.getLastModDate().after(orig.getLastModDate())) {
+					returnSet.remove(orig);
+					duplicates.add(orig);
+					returnSet.add(response);
+				} else {
+					duplicates.add(response);					
+				}
+			} else {
+				returnSet.add(response);
+			}	
+		}
+		return returnSet;
+	}
+	
+	private Optional<Response> findResponse(Long questionId, Set<Response> responses) {
+		return responses.stream().filter(response -> questionId.equals(response.getQuestionId())).findFirst();
+	}
+
 }
