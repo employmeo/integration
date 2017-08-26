@@ -43,7 +43,16 @@ public class RespondantPipelineTriggers {
 			} else {
 				log.info("Scheduled trigger: Analyzing {} prescreen candidates", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {	
+					if (respondant.getErrorStatus()) {
+						log.warn("Skipping prescreening for problem respondant: {}", respondant.getId());
+						return;
+					}
+					try {
 						pipelineService.preScreen(respondant);
+					} catch (Exception e) {
+						log.error("Failed to process prescreening for respondant {}", respondant.getId(), e);
+						respondantService.markError(respondant);
+					}											
 				});
 			}	
 		}
@@ -58,11 +67,16 @@ public class RespondantPipelineTriggers {
 			} else {
 				log.info("Scheduled trigger: Analyzing {} survey submissions", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
+					if (respondant.getErrorStatus()) {
+						log.warn("Skipping scoring for problem respondant: {}", respondant.getId());
+						return;
+					}
 					try {
 						pipelineService.scoreAssessment(respondant);
 					} catch (Exception e) {
-						log.warn("Failed to process submission for respondant {}", respondant.getId(), e);
-					}
+						log.error("Failed to process submission for respondant {}", respondant.getId(), e);
+						respondantService.markError(respondant);
+					}			
 				});
 			}	
 		}
@@ -77,12 +91,16 @@ public class RespondantPipelineTriggers {
 			} else {
 				log.info("Scheduled trigger: Grading {} eligible respondants", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
+					if (respondant.getErrorStatus()) {
+						log.warn("Skipping grades for problem respondant: {}", respondant.getId());
+						return;
+					}
 					try {
-						log.debug("Assessing grader fulfillment for respondant: {}", respondant.getId());
+						log.debug("Grading for respondant: {}", respondant.getId());
 						pipelineService.computeGrades(respondant);
 					} catch (Exception e) {
-						log.warn("Failed to process respondant while promoting from ungraded to scored: {}",
-								respondant.getId(), e);
+						log.error("Failed to grade respondant: {}", respondant.getId(), e);
+						respondantService.markError(respondant);
 					}
 				});
 			}
@@ -98,12 +116,17 @@ public class RespondantPipelineTriggers {
 			} else {
 				log.info("Scheduled trigger: Predicting {} eligible respondants", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
+					if (respondant.getErrorStatus()) {
+						log.warn("Skipping prediction for problem respondant: {}", respondant.getId());
+						return;
+					}
 					try {
 						log.debug("Predicting for respondant: {}", respondant.getId());
 						pipelineService.predictRespondant(respondant);
 					} catch (Exception e) {
 						log.warn("Failed to process respondant while promoting from scored to predicted: {}",
 								respondant.getId(), e);
+						respondantService.markError(respondant);
 					}
 				});
 			}

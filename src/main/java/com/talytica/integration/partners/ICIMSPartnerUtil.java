@@ -447,8 +447,12 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 		cc.property("sslProtocol", "TLSv1.2");
 		cc.connectorProvider(new ApacheConnectorProvider());
 		Client client = ClientBuilder.newClient(cc);
-
-		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(ICIMS_USER, ICIMS_PASS);
+		String user = this.partner.getApiLogin();
+		String pass = this.partner.getApiPass();
+		if ((user == null) || user.isEmpty()) user = ICIMS_USER;
+		if ((pass == null) || pass.isEmpty()) pass = ICIMS_PASS;
+		
+		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(user, pass);
 		client.register(feature);
 
 		return client;

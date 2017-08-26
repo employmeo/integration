@@ -104,7 +104,7 @@ public class PipelineService {
 	
 	public void scoreAssessment(@NonNull Respondant respondant) {	
 		log.debug("Respondant {} has status = {} - not scored yet.", respondant.getId(), respondant.getRespondantStatus());
-
+		Boolean stageTwo = (respondant.getRespondantStatus() >= Respondant.STATUS_ADVANCED);
 		if (respondant.getType() == Respondant.TYPE_SAMPLE) {
 			log.debug("Respondant Id#{} is a sample - will not score", respondant.getId());
 			respondant.setRespondantStatus(Respondant.STATUS_PREDICTED); //skip the rest of the pipeline
@@ -113,8 +113,10 @@ public class PipelineService {
 			Boolean incomplete = scoringService.scoreAssessmentResponses(respondant);
 			if (incomplete) {
 				respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);
+				if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVUNGRADED);
 			} else {
 				respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+				if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);
 			}
 			respondantService.save(respondant);
 			log.debug("{} Respondant scores saved for respondant {}", respondant.getRespondantScores().size(), respondant);				
@@ -122,15 +124,17 @@ public class PipelineService {
 	}
 
 	public void computeGrades(@NonNull Respondant respondant) {
+		Boolean stageTwo = (respondant.getRespondantStatus() >= Respondant.STATUS_ADVANCED);
 		log.debug("Respondant {} has status = {} - ready to grade.", respondant.getId(), respondant.getRespondantStatus());
 		Set<RespondantScore> gradedScores = scoringService.computeGraders(respondant);
 		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+		if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);
 		respondant.getRespondantScores().addAll(gradedScores);
 		respondantService.save(respondant);
 	}
 
 	public void predictRespondant(@NonNull Respondant respondant) {
-
+		Boolean stageTwo = (respondant.getRespondantStatus() >= Respondant.STATUS_ADVANCED);
 		log.debug("Respondant {} has status = {} - not predicted yet.", respondant.getId(), respondant.getRespondantStatus());
 		if (respondant.getType() == Respondant.TYPE_BENCHMARK) {
 			log.debug("Respondant Id#{} is a benchmark - will not predict", respondant.getId());
@@ -138,8 +142,9 @@ public class PipelineService {
 			respondantService.save(respondant);
 			return; //skip the rest of the pipeline
 		}
-			
-		if (respondant.getPosition().getPositionPredictionConfigurations().size() >= 0) {
+		
+		// Todo - deal with stage two predictions later (if we ever need them).	
+		if ((!stageTwo) && (respondant.getPosition().getPositionPredictionConfigurations().size() >= 0)) {
 			try {
 				// Stage 1
 				List<PredictionResult> predictions = predictionService.runPostAssessmentPredictions(respondant);
@@ -163,7 +168,7 @@ public class PipelineService {
 			Respondant savedRespondant = respondantService.save(respondant);
 			sendNotifications(savedRespondant);
 		}
-			log.debug("Assessment analysis for respondant {} complete", respondant.getId());
+		log.debug("Assessment analysis for respondant {} complete", respondant.getId());
 	}
 	
 

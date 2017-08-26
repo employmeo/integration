@@ -78,6 +78,10 @@ public class HireNoticeResource {
 		case "invited":
 			newStatus = Respondant.STATUS_INVITED;
 			break;
+		case "advanced":
+			newStatus = Respondant.STATUS_ADVANCED;
+			respondant.setSecondStageSurveyId(account.getSecondAsid());
+			break;
 		case "notoffered":
 			newStatus = Respondant.STATUS_REJECTED;
 			break;
