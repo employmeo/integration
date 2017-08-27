@@ -213,7 +213,7 @@ public class JazzPolling {
 					new TypeReference<List<JazzJobApplicant>>() {
 					});
 		} catch(Exception e) {
-			log.warn("Failed to deserialize getHires api response to a collection, will try as single object next.", e.getMessage());
+			log.warn("Failed to deserialize api response to a collection, will try as single object next.", e.getMessage());
 			
 			JazzJobApplicant singleApplicant = mapper.readValue(applicantsServiceResponse, JazzJobApplicant.class);
 			partnerApplicants.add(singleApplicant);
@@ -342,6 +342,7 @@ public class JazzPolling {
 			HashMap<String,Set<CustomWorkflow>> flowSets = Maps.newHashMap();
 			for (Position position : account.getPositions()) {
 				for (CustomWorkflow flow : position.getCustomWorkflows()) {
+					log.debug("Considering workflow: {}", flow);
 					if ((!flow.getActive()) || (!CustomWorkflow.TYPE_STATUSPOLLING.equalsIgnoreCase(flow.getType()))) continue;
 					log.info("Adding polling position: {}, ID: {}, to {}", position.getPositionName(),flow.getAtsId(),flow.getText());
 					Set<CustomWorkflow> flows = Sets.newHashSet();
@@ -350,6 +351,7 @@ public class JazzPolling {
 					flows.add(flow);
 				}
 			}
+			// for each status type, create a config with all ids.
 			for (Map.Entry<String,Set<CustomWorkflow>> pair : flowSets.entrySet()) {
 				JazzApplicantPollConfiguration config = new JazzApplicantPollConfiguration();
 				config.setAccount(account);
@@ -358,12 +360,20 @@ public class JazzPolling {
 				for (CustomWorkflow flow : pair.getValue()) {
 					config.getWorkFlowIds().add(flow.getAtsId());
 				}
+				log.info("Account {} using ids {} to {}", account.getAccountName(),config.getWorkFlowIds(),config.getStatus());
 				config.setSendEmail(Boolean.FALSE);
 				config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
 				config.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));
 			}
+			// always (?) add a hired config for the account
+			JazzApplicantPollConfiguration hiredConfig = new JazzApplicantPollConfiguration();
+			hiredConfig.setAccount(account);
+			hiredConfig.setSendEmail(Boolean.FALSE);
+			hiredConfig.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
+			hiredConfig.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));
+			hiredConfig.setStatus("hired");
+			configs.add(hiredConfig);
 		}
-
 		return configs;
 	}
 

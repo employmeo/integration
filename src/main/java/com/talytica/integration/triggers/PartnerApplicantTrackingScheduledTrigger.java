@@ -29,9 +29,9 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	 */
 	@Scheduled(initialDelayString = "${jobs.frequent.trigger.init.seconds:1800}000", fixedDelayString = "${jobs.frequent.trigger.delay.seconds:10800}000")
 	public void frequentPolling() {
-		Set<JazzApplicantPollConfiguration> configs = jazzPolling.getFrequentPollingConfigs();
 		if (jazzPartnerTrackingJobEnabled) {
 			log.info("Scheduled Frequent Polling Launched");
+			Set<JazzApplicantPollConfiguration> configs = jazzPolling.getFrequentPollingConfigs();
 			for (JazzApplicantPollConfiguration config : configs) {
 				jazzPolling.pollJazzApplicants(config);
 			}
@@ -46,12 +46,15 @@ public class PartnerApplicantTrackingScheduledTrigger {
 	 */
 	@Scheduled(initialDelayString = "${jobs.daily.trigger.init.seconds:3600}000", fixedDelayString = "${jobs.daily.trigger.delay.seconds:86400}000")
 	public void dailyPolling() {
-		Set<JazzApplicantPollConfiguration> configs = jazzPolling.getDailyPollingConfigs();
 		if (jazzPartnerTrackingJobEnabled) {
 			log.info("Scheduled Daily Jazz Polling Launched");
+			Set<JazzApplicantPollConfiguration> configs = jazzPolling.getDailyPollingConfigs();
 			for (JazzApplicantPollConfiguration config : configs) {
-				if ("hired".equalsIgnoreCase(config.getStatus())) jazzPolling.pollJazzHires(config);
-				if ("invited".equalsIgnoreCase(config.getStatus())) jazzPolling.pollJazzApplicantsByStatus(config);				
+				if ("hired".equalsIgnoreCase(config.getStatus())) {
+					jazzPolling.pollJazzHires(config);
+				} else {
+					jazzPolling.pollJazzApplicantsByStatus(config);		
+				}
 			} 
 		} else {
 			log.info("Jazz Daily polling disabled.");				
