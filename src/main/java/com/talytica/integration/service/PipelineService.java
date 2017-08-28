@@ -16,6 +16,7 @@ import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.RespondantService;
+import com.google.common.collect.Lists;
 import com.talytica.common.service.EmailService;
 import com.talytica.integration.objects.GradingResult;
 import com.talytica.integration.objects.PredictionResult;
@@ -114,23 +115,21 @@ public class PipelineService {
 			return; //skip the rest of the pipeline
 		}
 		
+		List<PredictionResult> predictions;
 		// Todo - deal with stage two predictions later (if we ever need them).	
 		if ((!stageTwo) && (respondant.getPosition().getPositionPredictionConfigurations().size() >= 0)) {
-			// Stage 1
-			List<PredictionResult> predictions = predictionService.runPostAssessmentPredictions(respondant);
-			// Stage 2
-			GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);
-
-			// Assimilate results, Update respondant lifecycle, and persist state
-			respondant.setProfileRecommendation(gradingResult.getRecommendedProfile());
-			respondant.setCompositeScore(gradingResult.getCompositeScore());
-			respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
+			predictions = predictionService.runPostAssessmentPredictions(respondant);
 		} else {
 			// No predictions configured for this respondant... skip change status and break
 			log.debug("Skipping prediction portion for respondant {}", respondant.getId());
-			respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
+			predictions = Lists.newArrayList();
 		}
-		
+		GradingResult gradingResult = gradingService.gradeRespondantByPredictions(respondant, predictions);
+		// Assimilate results, Update respondant lifecycle, and persist state
+		respondant.setProfileRecommendation(gradingResult.getRecommendedProfile());
+		respondant.setCompositeScore(gradingResult.getCompositeScore());		
+		respondant.setRespondantStatus(Respondant.STATUS_PREDICTED);
+		if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVREPREDICTED);
 		Respondant savedRespondant = respondantService.save(respondant);
 		sendNotifications(savedRespondant);
 		log.debug("Assessment analysis for respondant {} complete", respondant.getId());
@@ -145,7 +144,7 @@ public class PipelineService {
 			JSONObject message = pu.getScoresMessage(respondant);
 			pu.postScoresToPartner(respondant, message);
 		}
-
+		
 		if ((respondant.getEmailRecipient() != null) && (!respondant.getEmailRecipient().isEmpty())) {
 			emailService.sendResults(respondant);
 		}

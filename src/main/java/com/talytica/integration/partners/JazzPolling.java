@@ -364,6 +364,7 @@ public class JazzPolling {
 				config.setSendEmail(Boolean.FALSE);
 				config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
 				config.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));
+				configs.add(config);
 			}
 			// always (?) add a hired config for the account
 			JazzApplicantPollConfiguration hiredConfig = new JazzApplicantPollConfiguration();

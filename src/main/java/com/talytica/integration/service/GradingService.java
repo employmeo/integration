@@ -57,12 +57,6 @@ public class GradingService {
 				total += coeff * (score.getValue()-cf.getLowValue());
 				baseline += coeff * (cf.getHighValue()-cf.getLowValue());
 			}
-			/* -- Removed old code for scoring the average
-			Double averageScore = scores.stream()
-					.mapToDouble(score -> (null != score.getValue()) ? score.getValue() * 9 : 0.0D)
-					.average()
-					.orElse(0.0D);
-					*/
 			if (baseline > 0) compositeScore = new BigDecimal(100d*total/baseline).setScale(2, RoundingMode.HALF_UP).doubleValue();
 		} else {
 			// compute grade composite score as average of the percentiles * 100

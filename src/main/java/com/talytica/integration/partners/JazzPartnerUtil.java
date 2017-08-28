@@ -440,7 +440,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			serviceResponse = target.request(MediaType.APPLICATION_JSON).get(String.class);
 			log.trace("Service {} yielded response : {}", getTarget, serviceResponse);
 		} catch (Exception e) {
-			log.warn("Failed to grab service {}. Exception: {}", getTarget, e);
+			log.warn("Failed to grab service {}. Exception: {}", getTarget, e.getMessage(), e);
 		}
 		return serviceResponse;
 	}
