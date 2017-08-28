@@ -17,6 +17,7 @@ import com.employmeo.data.repository.PartnerRepository;
 import com.employmeo.data.service.RespondantService;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
+import com.talytica.integration.service.WorkflowService;
 
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,8 @@ public class HireNoticeResource {
 	PartnerRepository partnerRepository;
 	@Autowired
 	RespondantService respondantService;
+	@Autowired
+	WorkflowService workflowService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
@@ -80,7 +83,7 @@ public class HireNoticeResource {
 			break;
 		case "advanced":
 			newStatus = Respondant.STATUS_ADVANCED;
-			respondant.setSecondStageSurveyId(account.getSecondAsid());
+			
 			break;
 		case "notoffered":
 			newStatus = Respondant.STATUS_REJECTED;
@@ -106,6 +109,10 @@ public class HireNoticeResource {
 		}
 		if ((newStatus != null) && (newStatus > respondant.getRespondantStatus())) {
 			respondant.setRespondantStatus(newStatus);
+			if (newStatus == Respondant.STATUS_ADVANCED) {
+				respondant.setSecondStageSurveyId(account.getSecondAsid());
+				workflowService.executeAdvanceWorkflows(respondant);
+			}
 			respondantService.save(respondant);
 		} else if ((newStatus == null) || (newStatus < respondant.getRespondantStatus())){
 			log.debug("Did not update respondant {} from status {} to {}",respondant.getId(),respondant.getRespondantStatus(),newStatus);

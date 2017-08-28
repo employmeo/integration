@@ -13,6 +13,7 @@ import com.employmeo.data.service.*;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
 
+import jersey.repackaged.com.google.common.collect.Lists;
 import jersey.repackaged.com.google.common.collect.Sets;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,10 @@ public class ScoringService {
 	private RespondantScoreRepository respondantScoreRepository;
 	@Autowired
 	private CorefactorService corefactorService;
+	@Autowired
+	private AccountSurveyService accountSurveyService;
 
+	@Deprecated
 	public Respondant scoreAssessment(@NonNull Respondant respondant) {
 		Boolean incomplete = scoreAssessmentResponses(respondant);
 		if (incomplete) {
@@ -50,6 +54,7 @@ public class ScoringService {
 		return respondantService.save(respondant);
 	}
 	
+	@Deprecated
 	public Respondant scoreGraders(@NonNull Respondant respondant) {
 		Set<RespondantScore> gradedScores = computeGraders(respondant);
 		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
@@ -59,11 +64,27 @@ public class ScoringService {
 	
 	
 	public Boolean scoreAssessmentResponses(@NonNull Respondant respondant) {
-		log.debug("Scoring assessment for respondant {}", respondant.getId());
-		Set<Response> responses = cleanseResponses(respondantService.getResponses(respondant.getRespondantUuid()));
+		log.debug("Scoring assessment for respondant {} with {} responses", respondant.getId(), respondant.getResponses().size());
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		HashMap<Corefactor, List<RespondantScore>> parents = new HashMap<Corefactor, List<RespondantScore>>();
 		Set<RespondantScore> allScores = Sets.newHashSet();
+		Set<Response> responses = cleanseResponses(respondantService.getResponses(respondant.getRespondantUuid()));
+		if (respondant.getRespondantStatus() == Respondant.STATUS_ADVCOMPLETED) {
+			// filter down responses to 2nd stage survey only.
+			AccountSurvey as = accountSurveyService.getAccountSurveyById(respondant.getSecondStageSurveyId());
+			Set<SurveyQuestion> questions = as.getSurvey().getSurveyQuestions();
+			Set<Response> secondStageResponses = Sets.newHashSet();
+			for (Response response : responses) {
+				for (SurveyQuestion sq : questions) {
+					if (sq.getQuestionId().equals(response.getQuestionId())) {
+						secondStageResponses.add(response); 
+						continue;
+					}
+				}
+			}
+			log.debug("Filtered respondant {} to {} second stage responses", respondant.getId(), secondStageResponses.size());
+			responses = secondStageResponses;
+		}
 		
 		if ((responses == null) || (responses.size() == 0))
 		{
@@ -142,7 +163,24 @@ public class ScoringService {
 
 	
 	public Set<RespondantScore> computeGraders(@NonNull Respondant respondant) {
-		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
+		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());	
+		if (respondant.getRespondantStatus() == Respondant.STATUS_ADVUNGRADED) {
+			// filter down responses to 2nd stage survey only.
+			AccountSurvey as = accountSurveyService.getAccountSurveyById(respondant.getSecondStageSurveyId());
+			Set<SurveyQuestion> questions = as.getSurvey().getSurveyQuestions();
+			List<Grader> secondStageGraders = Lists.newArrayList();
+			for (Grader grader : graders) {
+				for (SurveyQuestion sq : questions) {
+					if (sq.getQuestionId().equals(grader.getQuestionId())) {
+						secondStageGraders.add(grader); 
+						continue;
+					}
+				}
+			}
+			log.debug("Filtered respondant {} to {} second stage graders", respondant.getId(), secondStageGraders.size());
+			graders = secondStageGraders;
+		}	
+			
 		List<Grade> grades = new ArrayList<Grade>();
 
 		for (Grader grader : graders) {

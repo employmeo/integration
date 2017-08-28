@@ -1,6 +1,7 @@
 package com.talytica.integration.triggers;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Respondant;
+import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.service.RespondantService;
 import com.talytica.integration.service.PipelineService;
 
@@ -39,9 +41,9 @@ public class RespondantPipelineTriggers {
 			List<Respondant> eligibleRespondants = respondantService.getAllRespondantsByStatus(Respondant.STATUS_PRESCREEN);
 			
 			if (eligibleRespondants.isEmpty()) {
-				log.debug("Scheduled trigger: No eligible respondants to process for prescreen predictions.");
+				log.debug("Pipeline: No prescreen candidates.");
 			} else {
-				log.info("Scheduled trigger: Analyzing {} prescreen candidates", eligibleRespondants.size());
+				log.info("Pipeline: Analyzing {} prescreen candidates", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {	
 					if (respondant.getErrorStatus()) {
 						log.warn("Skipping prescreening for problem respondant: {}", respondant.getId());
@@ -63,9 +65,9 @@ public class RespondantPipelineTriggers {
 		if (respondantSubmissionAnalysisJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getAnalysisPendingRespondants();
 			if (eligibleRespondants.isEmpty()) {
-				log.debug("Scheduled trigger: No eligible respondants to process for submission analysis.");
+				log.debug("Pipeline: No submissions for analysis.");
 			} else {
-				log.info("Scheduled trigger: Analyzing {} survey submissions", eligibleRespondants.size());
+				log.info("Pipeline: Analyzing {} survey submissions", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					if (respondant.getErrorStatus()) {
 						log.warn("Skipping scoring for problem respondant: {}", respondant.getId());
@@ -87,9 +89,9 @@ public class RespondantPipelineTriggers {
 		if (graderFulfilledScoringJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getGraderBasedScoringPendingRespondants();
 			if (eligibleRespondants.isEmpty()) {
-				log.debug("Scheduled trigger: No eligible respondants to promote from grader fulfilled to scoring");
+				log.debug("Pipeline: No graders to process.");
 			} else {
-				log.info("Scheduled trigger: Grading {} eligible respondants", eligibleRespondants.size());
+				log.info("Pipeline: Grading {} eligible respondants", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					if (respondant.getErrorStatus()) {
 						log.warn("Skipping grades for problem respondant: {}", respondant.getId());
@@ -112,9 +114,9 @@ public class RespondantPipelineTriggers {
 		if (predictionScoringJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getPredictionPendingRespondants();
 			if (eligibleRespondants.isEmpty()) {
-				log.debug("Scheduled trigger: No eligible respondants to predict");
+				log.debug("Pipeline: No eligible respondants to predict");
 			} else {
-				log.info("Scheduled trigger: Predicting {} eligible respondants", eligibleRespondants.size());
+				log.info("Pipeline Predicting {} eligible respondants", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					if (respondant.getErrorStatus()) {
 						log.warn("Skipping prediction for problem respondant: {}", respondant.getId());

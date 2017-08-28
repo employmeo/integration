@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Respondant;
@@ -37,7 +36,14 @@ public class PreScreenPredictionScheduleTrigger {
 			} else {
 				log.info("Scheduled trigger: Analyzing {} prescreen candidates", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {	
+					
+					try {
+						log.debug("Prescreening respondant: {}", respondant.getId());
 						pipelineService.preScreen(respondant);
+					} catch (Exception e) {
+						log.error("Failed to grade respondant: {}", respondant.getId(), e);
+						respondantService.markError(respondant);
+					}			
 				});
 			}	
 		}
