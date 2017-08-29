@@ -18,6 +18,7 @@ public interface PartnerUtil {
 	public Respondant createRespondantFrom(JSONObject json, Account account);
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant);
 	public JSONObject getScoresMessage(Respondant respondant);
+	public String getScoreNotesFormat(Respondant respondant);
 	public JSONObject getScreeningMessage(Respondant respondant);
 	public void inviteCandidate(Respondant respondant);
 	public void changeCandidateStatus(Respondant respondant, String status);

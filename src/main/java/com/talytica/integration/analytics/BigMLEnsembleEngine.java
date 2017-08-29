@@ -1,8 +1,6 @@
 package com.talytica.integration.analytics;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -53,7 +51,8 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 		this.model = model;
 		log.debug("New Big ML ensemble model initialized for {} (ID: {})", model.getName(), model.getModelId());
 	}
-
+	
+	@SuppressWarnings(value = {"unchecked"})
 	@Override
 	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, List<NameValuePair> modelInputs) {
 		log.debug("Running predictions for {}", respondant.getId());
@@ -94,6 +93,7 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 		return prediction;
 	}
 
+	@SuppressWarnings(value = {"unchecked"})
 	private JSONObject prepInputData(JSONObject inputData) {
 		//call topic model!
 		log.debug("Topic Model: {}", model.getPrepName());	

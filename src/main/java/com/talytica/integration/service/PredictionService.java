@@ -93,8 +93,8 @@ public class PredictionService {
 
 
 	private void savePrediction(Respondant respondant,
-			PositionPredictionConfiguration predictionConfig,
-			PredictionResult predictionResult) {
+		PositionPredictionConfiguration predictionConfig,
+		PredictionResult predictionResult) {
 
 		Prediction prediction = new Prediction();
 		prediction.setRespondant(respondant);

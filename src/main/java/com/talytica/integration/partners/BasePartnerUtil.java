@@ -1,5 +1,8 @@
 package com.talytica.integration.partners;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.client.*;
@@ -15,6 +18,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
+import com.employmeo.data.repository.CorefactorRepository;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
@@ -62,6 +66,12 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Autowired
 	PredictionModelService predictionModelService;
+	
+	@Autowired
+	CorefactorRepository corefactorRepository;
+	
+	@Autowired
+	GraderService graderService;
 
 	@Value("${partners.default.intercept.outbound:true}")
 	Boolean interceptOutbound;
@@ -301,14 +311,6 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 				applicant.put("applicant_profile", respondant.getProfileRecommendation());
 				applicant.put("applicant_composite_score", respondant.getCompositeScore());
 				applicant.put("applicant_profile_label", customProfile.getName(respondant.getProfileRecommendation()));
-				applicant.put("applicant_profile_a", respondant.getProfileA());
-				applicant.put("applicant_profile_b", respondant.getProfileB());
-				applicant.put("applicant_profile_c", respondant.getProfileC());
-				applicant.put("applicant_profile_d", respondant.getProfileD());
-				applicant.put("label_profile_a", customProfile.getName(ProfileDefaults.PROFILE_A));
-				applicant.put("label_profile_b", customProfile.getName(ProfileDefaults.PROFILE_B));
-				applicant.put("label_profile_c", customProfile.getName(ProfileDefaults.PROFILE_C));
-				applicant.put("label_profile_d", customProfile.getName(ProfileDefaults.PROFILE_D));
 				JSONArray scoreset = new JSONArray();
 				for (RespondantScore score : scores) {
 					Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
@@ -332,6 +334,105 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	}
 
+	@Override
+	public String getScoreNotesFormat(Respondant respondant) {
+	
+		StringBuffer notes = new StringBuffer();
+
+		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
+		notes.append("Category: ");
+		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
+		notes.append(" (");
+		notes.append(respondant.getCompositeScore());
+		notes.append(")\n");
+		
+		if (respondant.getPredictions().size() > 0) {
+			notes.append("Summary Scores:\n");		
+			for (Prediction prediction : respondant.getPredictions()) {
+				PredictionTarget target = predictionModelService.getTargetById(prediction.getTargetId());
+				notes.append(target.getLabel());
+				notes.append(": ");
+				notes.append(String.format("%.2f", prediction.getPredictionScore()));
+				notes.append("\n");
+			}
+		}
+		
+		List<RespondantScore> scores = new ArrayList<RespondantScore>( respondant.getRespondantScores());		
+		scores.sort(new Comparator<RespondantScore>() {
+			public int compare (RespondantScore a, RespondantScore b) {
+				Corefactor corefactorA = corefactorRepository.findOne(a.getId().getCorefactorId());
+				Corefactor corefactorB = corefactorRepository.findOne(a.getId().getCorefactorId());
+				double aCoeff = 1d;
+				double bCoeff = 1d;
+				if (corefactorA.getDefaultCoefficient() != null) aCoeff = Math.abs(corefactorA.getDefaultCoefficient());
+				if (corefactorB.getDefaultCoefficient() != null) bCoeff = Math.abs(corefactorB.getDefaultCoefficient());
+				// first sort by coefficient - descending
+				if (aCoeff != bCoeff) return (int)(bCoeff - aCoeff);
+				// otherwise just sort by name
+				return corefactorA.getName().compareTo(corefactorB.getName());
+			}
+		});
+		notes.append("Summary Scores:\n");		
+		for (RespondantScore score : scores) {
+			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
+			notes.append(cf.getName());
+			notes.append(" : ");
+			notes.append(score.getValue().intValue());
+			notes.append("\n");
+		}
+
+		Set<RespondantNVP> customQuestions = respondantService.getDisplayNVPsForRespondant(respondant.getId());
+		if (!customQuestions.isEmpty()) {
+			notes.append("Candidate Questions:\n");
+			for (RespondantNVP nvp : customQuestions) {
+				notes.append(nvp.getName());
+				notes.append(" : ");
+				notes.append(nvp.getValue());
+				notes.append("\n");
+			}
+		}
+		
+		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
+		if (!graders.isEmpty()) {
+			StringBuffer references = new StringBuffer();
+			StringBuffer evaluators = new StringBuffer();
+			for (Grader grader : graders) {
+				switch (grader.getType()) {
+				case Grader.TYPE_PERSON:
+					references.append(grader.getPerson().getFirstName());
+					references.append(" ");
+					references.append(grader.getPerson().getLastName());
+					if ((null != grader.getRelationship()) && (!grader.getRelationship().isEmpty()))
+					  references.append(" ("+grader.getRelationship()+")");
+					references.append(" : ");
+					references.append(grader.getSummaryScore());
+					references.append("\n");
+					break;
+				case Grader.TYPE_SUMMARY_USER:
+				case Grader.TYPE_USER:
+				default:
+					evaluators.append(grader.getUser().getFirstName());
+					evaluators.append(" ");
+					evaluators.append(grader.getUser().getLastName());
+					evaluators.append(" : ");
+					evaluators.append(grader.getSummaryScore());
+					evaluators.append("\n");
+					break;
+				}
+			}
+			if (references.length() > 0) {
+				notes.append("References:\n");
+				notes.append(references);
+			}
+			if (evaluators.length() > 0) {
+				notes.append("Evaluated By:\n");
+				notes.append(evaluators);
+			}
+		}
+		
+		return notes.toString();
+	}
+	
 	@Override
 	public JSONObject getScreeningMessage(Respondant respondant) {
 		JSONObject message = new JSONObject();

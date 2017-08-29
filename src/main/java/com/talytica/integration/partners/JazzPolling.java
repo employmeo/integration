@@ -1,8 +1,12 @@
 package com.talytica.integration.partners;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.client.Client;
@@ -14,7 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 
+import com.employmeo.data.model.Account;
+import com.employmeo.data.model.CustomWorkflow;
 import com.employmeo.data.model.Partner;
+import com.employmeo.data.model.Position;
+import com.employmeo.data.service.AccountService;
 import com.employmeo.data.service.PartnerService;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,6 +30,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.talytica.integration.IntegrationClientFactory;
 import com.talytica.integration.objects.ATSAssessmentOrder;
@@ -44,6 +53,10 @@ public class JazzPolling {
 	
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
+	
+	@Autowired
+	private AccountService accountService;
+
 	
 	/**
 	 * Accepts a configuration object to pull applicants from Jazz and
@@ -200,7 +213,7 @@ public class JazzPolling {
 					new TypeReference<List<JazzJobApplicant>>() {
 					});
 		} catch(Exception e) {
-			log.warn("Failed to deserialize getHires api response to a collection, will try as single object next.", e.getMessage());
+			log.warn("Failed to deserialize api response to a collection, will try as single object next.", e.getMessage());
 			
 			JazzJobApplicant singleApplicant = mapper.readValue(applicantsServiceResponse, JazzJobApplicant.class);
 			partnerApplicants.add(singleApplicant);
@@ -294,5 +307,86 @@ public class JazzPolling {
 		}
 
 	}
+	
+	
+	
+	/***
+	 * Retrieve client configurations for Jazz Polling
+	 * 
+	 */
 
+	public Set<JazzApplicantPollConfiguration> getFrequentPollingConfigs() {
+		Set<Account> accounts = accountService.getAccountsForPartner("Jazz");
+		Set<JazzApplicantPollConfiguration> configs = Sets.newHashSet();
+		Range<Date> lookbackPeriod = getRangeInDaysFromToday(1);
+		final SimpleDateFormat JazzDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		for (Account account : accounts) {
+			JazzApplicantPollConfiguration config = new JazzApplicantPollConfiguration();
+			config.setAccount(account);
+			config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
+			config.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));
+			config.setSendEmail(Boolean.FALSE);
+			configs.add(config);
+		}
+		
+		return configs;
+	}
+
+	public Set<JazzApplicantPollConfiguration> getDailyPollingConfigs() {
+		Set<JazzApplicantPollConfiguration> configs = Sets.newHashSet();
+		Set<Account> accounts = accountService.getAccountsForPartner("Jazz");
+		final SimpleDateFormat JazzDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		Range<Date> lookbackPeriod = getRangeInDaysFromToday(90);
+		for (Account account : accounts) {
+			HashMap<String,Set<CustomWorkflow>> flowSets = Maps.newHashMap();
+			for (Position position : account.getPositions()) {
+				for (CustomWorkflow flow : position.getCustomWorkflows()) {
+					log.debug("Considering workflow: {}", flow);
+					if ((!flow.getActive()) || (!CustomWorkflow.TYPE_STATUSPOLLING.equalsIgnoreCase(flow.getType()))) continue;
+					log.info("Adding polling position: {}, ID: {}, to {}", position.getPositionName(),flow.getAtsId(),flow.getText());
+					Set<CustomWorkflow> flows = Sets.newHashSet();
+					if (!flowSets.containsKey(flow.getText())) flowSets.put(flow.getText(), flows);
+					flows = flowSets.get(flow.getText());
+					flows.add(flow);
+				}
+			}
+			// for each status type, create a config with all ids.
+			for (Map.Entry<String,Set<CustomWorkflow>> pair : flowSets.entrySet()) {
+				JazzApplicantPollConfiguration config = new JazzApplicantPollConfiguration();
+				config.setAccount(account);
+				config.setStatus(pair.getKey());
+				config.setWorkFlowIds(Lists.newArrayList());
+				for (CustomWorkflow flow : pair.getValue()) {
+					config.getWorkFlowIds().add(flow.getAtsId());
+				}
+				log.info("Account {} using ids {} to {}", account.getAccountName(),config.getWorkFlowIds(),config.getStatus());
+				config.setSendEmail(Boolean.FALSE);
+				config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
+				config.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));
+				configs.add(config);
+			}
+			// always (?) add a hired config for the account
+			JazzApplicantPollConfiguration hiredConfig = new JazzApplicantPollConfiguration();
+			hiredConfig.setAccount(account);
+			hiredConfig.setSendEmail(Boolean.FALSE);
+			hiredConfig.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
+			hiredConfig.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));
+			hiredConfig.setStatus("hired");
+			configs.add(hiredConfig);
+		}
+		return configs;
+	}
+
+	
+	private Range<Date> getRangeInDaysFromToday(int numDays) {
+		Calendar cal = Calendar.getInstance();
+		Date endDate = cal.getTime();
+
+		cal.add(Calendar.DAY_OF_MONTH, -numDays);
+		Date beginDate = cal.getTime();
+
+		Range<Date> window = new Range<Date>(beginDate, endDate);
+		return window;
+	}
 }
