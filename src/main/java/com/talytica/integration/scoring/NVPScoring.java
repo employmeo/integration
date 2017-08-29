@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Answer;
-import com.employmeo.data.model.Grade;
 import com.employmeo.data.model.Question;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;

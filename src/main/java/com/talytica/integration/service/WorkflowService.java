@@ -2,27 +2,16 @@ package com.talytica.integration.service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-
 import javax.transaction.Transactional;
-
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.CustomWorkflow;
-import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Respondant;
-import com.employmeo.data.model.RespondantScore;
-import com.employmeo.data.repository.RespondantScoreRepository;
-import com.employmeo.data.service.RespondantService;
 import com.talytica.common.service.EmailService;
-import com.talytica.integration.objects.GradingResult;
-import com.talytica.integration.objects.PredictionResult;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -31,20 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkflowService {
 
 	@Autowired
-	private RespondantService respondantService;
-	@Autowired
-	private ScoringService scoringService;
-	@Autowired
-	private GradingService gradingService;
-	@Autowired
-	private PredictionService predictionService;
-	@Autowired
 	private EmailService emailService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
-	@Autowired
-	private RespondantScoreRepository respondantScoreRepository;
-
 
 	public void executePreScreenWorkflows(Respondant respondant) {
 		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();

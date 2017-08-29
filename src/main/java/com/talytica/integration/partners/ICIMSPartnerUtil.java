@@ -2,10 +2,7 @@ package com.talytica.integration.partners;
 
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.client.*;
@@ -28,11 +25,8 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.ExternalLinksService;
-
 import com.talytica.common.service.AddressService;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -289,72 +283,9 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject json = new JSONObject();
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		List<RespondantScore> scores = new ArrayList<RespondantScore>( respondant.getRespondantScores());
-		
-		scores.sort(new Comparator<RespondantScore>() {
-			public int compare (RespondantScore a, RespondantScore b) {
-				Corefactor corefactorA = corefactorRepository.findOne(a.getId().getCorefactorId());
-				Corefactor corefactorB = corefactorRepository.findOne(a.getId().getCorefactorId());
-				double aCoeff = 1d;
-				double bCoeff = 1d;
-				if (corefactorA.getDefaultCoefficient() != null) aCoeff = Math.abs(corefactorA.getDefaultCoefficient());
-				if (corefactorB.getDefaultCoefficient() != null) bCoeff = Math.abs(corefactorB.getDefaultCoefficient());
-				// first sort by coefficient - descending
-				if (aCoeff != bCoeff) return (int)(bCoeff - aCoeff);
-				// otherwise just sort by name
-				return corefactorA.getName().compareTo(corefactorB.getName());
-			}
-		});
-		StringBuffer notes = new StringBuffer();
-		notes.append("Summary Scores:\n");
-		
-		for (RespondantScore score : scores) {
-			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
-			notes.append(cf.getName());
-			notes.append(" : ");
-			notes.append(score.getValue().intValue());
-			notes.append("\n");
-		}
 
-		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId());
-		if (!graders.isEmpty()) {
-			StringBuffer references = new StringBuffer();
-			StringBuffer evaluators = new StringBuffer();
-			for (Grader grader : graders) {
-				switch (grader.getType()) {
-				case Grader.TYPE_PERSON:
-					references.append(grader.getPerson().getFirstName());
-					references.append(" ");
-					references.append(grader.getPerson().getLastName());
-					if ((null != grader.getRelationship()) && (!grader.getRelationship().isEmpty()))
-					  references.append(" ("+grader.getRelationship()+")");
-					references.append(" : ");
-					references.append(grader.getSummaryScore());
-					references.append("\n");
-					break;
-				case Grader.TYPE_SUMMARY_USER:
-				case Grader.TYPE_USER:
-				default:
-					evaluators.append(grader.getUser().getFirstName());
-					evaluators.append(" ");
-					evaluators.append(grader.getUser().getLastName());
-					evaluators.append(" : ");
-					evaluators.append(grader.getSummaryScore());
-					evaluators.append("\n");
-					break;
-				}
-			}
-			if (references.length() > 0) {
-				notes.append("References:\n");
-				notes.append(references);
-			};
-			if (evaluators.length() > 0) {
-				notes.append("Evaluated By:\n");
-				notes.append(evaluators);
-			};
-		}
-		
-		
+		String notes = getScoreNotesFormat(respondant);
+			
 		try {
 			JSONObject assessment = new JSONObject();
 			assessment.put("value", respondant.getAccountSurvey().getDisplayName());
@@ -364,7 +295,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 			results.put("assessmentdate", ICIMS_SDF.format(new Date(respondant.getFinishTime().getTime())));
 			results.put("assessmentscore", respondant.getCompositeScore());
 			results.put("assessmentresult", customProfile.getName(respondant.getProfileRecommendation()));
-			results.put("assessmentnotes", notes.toString());
+			results.put("assessmentnotes", notes);
 			results.put("assessmentstatus", new JSONObject(ASSESSMENT_COMPLETE_ID));
 			results.put("assessmenturl", externalLinksService.getPortalLink(respondant));
 

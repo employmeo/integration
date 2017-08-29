@@ -1,6 +1,5 @@
 package com.talytica.integration.service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -10,7 +9,6 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.employmeo.data.model.CustomWorkflow;
 import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;

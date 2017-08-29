@@ -32,7 +32,6 @@ import com.employmeo.data.model.Prediction;
 import com.employmeo.data.model.PredictionTarget;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
-import com.employmeo.data.model.RespondantScore;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -331,7 +330,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
 			message.put("user_id", "usr_anonymous");
 			message.put("security", "0");
-
+/*
 			StringBuffer notes = new StringBuffer();
 			CustomProfile customProfile = respondant.getAccount().getCustomProfile();
 			notes.append("Assessment Result: ");
@@ -346,6 +345,10 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				notes.append("\n");
 			}
 			message.put("contents", notes.toString());
+*/
+			String link = "Link: " + externalLinksService.getPortalLink(respondant) + " \n";
+			String notes = getScoreNotesFormat(respondant);
+			message.put("contents", link + notes);
 		} catch (Exception e) {
 			log.error("Failed to build response: {}", e.getMessage());
 		}

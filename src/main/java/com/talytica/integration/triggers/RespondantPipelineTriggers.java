@@ -1,7 +1,6 @@
 package com.talytica.integration.triggers;
 
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,7 +8,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Respondant;
-import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.service.RespondantService;
 import com.talytica.integration.service.PipelineService;
 
