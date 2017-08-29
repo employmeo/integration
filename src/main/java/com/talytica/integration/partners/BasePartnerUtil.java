@@ -206,10 +206,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
 		Person person = new Person();
-		Respondant respondant = new Respondant();
+		JSONObject applicant = json.optJSONObject("applicant");
+		Respondant respondant = getRespondantFrom(applicant, account);
+		if (respondant != null) return respondant;
+		
+		respondant = new Respondant();
 		respondant.setAccountId(account.getId());
 
-		JSONObject applicant = json.optJSONObject("applicant");
 		String appAtsId = applicant.optString("applicant_ats_id");
 		respondant.setAtsId(this.getPrefix() + appAtsId);
 		person.setAtsId(this.getPrefix() + appAtsId);
@@ -217,27 +220,31 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		person.setFirstName(applicant.optString("fname"));
 		person.setLastName(applicant.optString("lname"));
 		JSONObject personAddress = applicant.optJSONObject("address");
+		if (personAddress != null) {
 		addressService.validate(personAddress);
-		person.setAddress(personAddress.optString("formatted_address"));
-		person.setLatitude(personAddress.optDouble("lat"));
-		person.setLongitude(personAddress.optDouble("lng"));
-
+			person.setAddress(personAddress.optString("formatted_address"));
+			person.setLatitude(personAddress.optDouble("lat"));
+			person.setLongitude(personAddress.optDouble("lng"));
+		}
+		
 		Location location = this.getLocationFrom(json.optJSONObject("location"), account);
 		Position position = this.getPositionFrom(json.optJSONObject("position"), account);
 		AccountSurvey aSurvey = this.getSurveyFrom(json.optJSONObject("assessment"), account);
 
 		JSONObject delivery = json.optJSONObject("delivery");
-		// get the redirect method, score posting and email handling for results
-		if (delivery.has("scores_email_address")) {
-			respondant.setEmailRecipient(delivery.optString("scores_email_address"));
+		if (delivery != null) {
+			// get the redirect method, score posting and email handling for results
+			if (delivery.has("scores_email_address")) {
+				respondant.setEmailRecipient(delivery.optString("scores_email_address"));
+			}
+			if (delivery.has("scores_redirect_url")) {
+				respondant.setRedirectUrl(delivery.optString("scores_redirect_url"));
+			}
+			if (delivery.has("scores_post_url")) {
+				respondant.setScorePostMethod(delivery.optString("scores_post_url"));
+			}
 		}
-		if (delivery.has("scores_redirect_url")) {
-			respondant.setRedirectUrl(delivery.optString("scores_redirect_url"));
-		}
-		if (delivery.has("scores_post_url")) {
-			respondant.setScorePostMethod(delivery.optString("scores_post_url"));
-		}
-
+		
 		respondant.setAccountId(account.getId());
 		respondant.setAccount(account);
 		respondant.setAccountSurveyId(aSurvey.getId());
@@ -522,4 +529,16 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		emailService.sendEmailInvitation(respondant);
 	}
 
+	public JSONArray formatSurveyList(Set<AccountSurvey> surveys) {
+		JSONArray response = new JSONArray();
+		for (AccountSurvey as : surveys) {
+			if (as.getType() != AccountSurvey.TYPE_APPLICANT) continue;
+			JSONObject survey = new JSONObject();
+			survey.put("assessment_name", as.getDisplayName());
+			survey.put("assessment_asid", as.getId());
+			response.put(survey);
+		}
+
+		return response;
+	}
 }

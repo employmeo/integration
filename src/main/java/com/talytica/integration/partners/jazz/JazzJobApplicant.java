@@ -1,4 +1,4 @@
-package com.talytica.integration.objects;
+package com.talytica.integration.partners.jazz;
 
 import lombok.Data;
 import lombok.ToString;

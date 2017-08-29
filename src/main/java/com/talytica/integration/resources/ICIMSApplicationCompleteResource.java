@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.PartnerRepository;
+import com.employmeo.data.service.PartnerService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
@@ -31,7 +31,7 @@ public class ICIMSApplicationCompleteResource {
 	@Context
 	private SecurityContext sc;
 	@Autowired
-	PartnerRepository partnerRepository;
+	PartnerService partnerService;
 	@Autowired
 	ExternalLinksService externalLinksService;
 	@Autowired
@@ -45,8 +45,13 @@ public class ICIMSApplicationCompleteResource {
 	public Response doPost( String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
 		log.debug("ICIMS Application Complete with: {} ", json);
-//		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName()); ** allowing anonymous posts from ICIMS
-		Partner partner = partnerRepository.findByPartnerName("ICIMS");
+		Partner partner = null;
+		if (sc.getUserPrincipal() != null) {
+			partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
+		} else {
+			partner = partnerService.getPartnerByLogin("icims"); // allowing anonymous posts from ICIMS
+		}
+
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = pu.getAccountFrom(json);

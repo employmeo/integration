@@ -1,5 +1,8 @@
 package com.talytica.integration.partners;
 
+import java.util.Set;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.employmeo.data.model.*;
@@ -24,4 +27,5 @@ public interface PartnerUtil {
 	public void changeCandidateStatus(Respondant respondant, String status);
 	public void postScoresToPartner(Respondant respondant, JSONObject message);
 	public void postScoresToPartner(String postmethod, JSONObject message);
+	public JSONArray formatSurveyList(Set<AccountSurvey> surveys);
 }

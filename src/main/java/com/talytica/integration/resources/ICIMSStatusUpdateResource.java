@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.PartnerRepository;
+import com.employmeo.data.service.PartnerService;
 import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.partners.PartnerUtil;
@@ -27,8 +27,10 @@ import io.swagger.annotations.Api;
 @Api( value="/icimsstatusupdate", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
 public class ICIMSStatusUpdateResource {
 
+	@Context
+	private SecurityContext sc;
 	@Autowired
-	PartnerRepository partnerRepository;
+	PartnerService partnerService;
 	@Autowired
 	EmailService emailService;
 	@Autowired
@@ -43,7 +45,12 @@ public class ICIMSStatusUpdateResource {
 	public Response doPost( String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
 		log.debug("ICIMS Status Update requested: {}", json);
-		Partner partner = partnerRepository.findByPartnerName("ICIMS");
+		Partner partner = null;
+		if (sc.getUserPrincipal() != null) {
+			partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
+		} else {
+			partner = partnerService.getPartnerByLogin("icims"); // allowing anonymous posts from ICIMS
+		}
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = pu.getAccountFrom(json);

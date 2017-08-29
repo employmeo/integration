@@ -2,6 +2,9 @@ package com.talytica.integration.objects;
 
 import java.util.Date;
 
+import com.talytica.integration.partners.jazz.JazzHire;
+import com.talytica.integration.partners.jazz.JazzJobApplicant;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
