@@ -34,16 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
-	@Value("${partners.icims.user}")
-	private String ICIMS_USER;
-	@Value("${partners.icims.password}")
-	private String ICIMS_PASS;
 	@Value("${partners.icims.api}")
 	private String ICIMS_API;
-	@Value("${com.talytica.urls.proxy}")
-	private String PROXY_URL;
-	@Value("${partners.icims.proxy:false}")
-	private boolean USE_PROXY;
 	
 	private static final String JOB_EXTRA_FIELDS = "?fields=jobtitle,assessmenttype,jobtype,joblocation,hiringmanager";
 	public static final String ASSESSMENT_COMPLETE_ID = "{'id':'D37002019001'}";
@@ -355,34 +347,18 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	}
 
 	// Specific methods for talking to ICIMS
-
-	private Client getClient() {
+	@Override
+	public Client getPartnerClient() {
 		ClientConfig cc = new ClientConfig();
 		cc.property(ApacheClientProperties.PREEMPTIVE_BASIC_AUTHENTICATION, true);
-
-		if (USE_PROXY) {
-		cc.property(ClientProperties.PROXY_URI, PROXY_URL);
-			try {
-				URL proxyUrl = new URL(PROXY_URL);
-				String userInfo = proxyUrl.getUserInfo();
-				String pUser = userInfo.substring(0, userInfo.indexOf(':'));
-				String pPass = userInfo.substring(userInfo.indexOf(':') + 1);
-				cc.property(ClientProperties.PROXY_USERNAME, pUser);
-				cc.property(ClientProperties.PROXY_PASSWORD, pPass);
-			} catch (Exception e) {
-				log.info("No User & Pass for Proxy: {}", PROXY_URL);
-			}
-		}		
+		
 		cc.property(ClientProperties.REQUEST_ENTITY_PROCESSING, "BUFFERED");
 		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 		cc.property("sslProtocol", "TLSv1.2");
 		cc.connectorProvider(new ApacheConnectorProvider());
 		Client client = ClientBuilder.newClient(cc);
 		String user = this.partner.getApiLogin();
-		String pass = this.partner.getApiPass();
-		if ((user == null) || user.isEmpty()) user = ICIMS_USER;
-		if ((pass == null) || pass.isEmpty()) pass = ICIMS_PASS;
-		
+		String pass = this.partner.getApiPass();	
 		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(user, pass);
 		client.register(feature);
 
@@ -390,7 +366,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	}
 
 	private String icimsGet(String getTarget) {
-		Client client = getClient();
+		Client client = getPartnerClient();
 		Response response = client.target(getTarget).request(MediaType.APPLICATION_JSON).get();
 
 		String result = response.readEntity(String.class);
@@ -409,7 +385,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	// }
 
 	private Response icimsPatch(String postTarget, JSONObject json) {
-		Response response = getClient().target(postTarget).request(MediaType.APPLICATION_JSON).method("PATCH",
+		Response response = getPartnerClient().target(postTarget).request(MediaType.APPLICATION_JSON).method("PATCH",
 				Entity.entity(json.toString(), MediaType.APPLICATION_JSON));
 		return response;
 	}

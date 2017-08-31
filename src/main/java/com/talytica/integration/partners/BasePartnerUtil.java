@@ -22,6 +22,7 @@ import com.employmeo.data.repository.CorefactorRepository;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
+import com.talytica.integration.IntegrationClientFactory;
 import com.talytica.common.service.AddressService;
 
 import lombok.Getter;
@@ -73,9 +74,14 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	@Autowired
 	GraderService graderService;
 
+	@Autowired
+	IntegrationClientFactory integrationClientFactory;
+	
 	@Value("${partners.default.intercept.outbound:true}")
 	Boolean interceptOutbound;
 
+	
+	
 	public BasePartnerUtil() {
 	}
 
@@ -498,13 +504,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public void postScoresToPartner(String postmethod, JSONObject message) {
-
+		Client client = getPartnerClient();
 		if (interceptOutbound) {
 			log.info("Intercepting Post to {}", postmethod);
 			postmethod = externalLinksService.getIntegrationEcho();
+			client = integrationClientFactory.newInstance();
 		}
 
-		Client client = ClientBuilder.newClient();
 		WebTarget target = client.target(postmethod);
 		Response result = null;
 		try {
@@ -525,10 +531,17 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	}
 	
+	@Override
+	public Client getPartnerClient() {
+		return ClientBuilder.newClient();
+	}
+	
+	@Override
 	public void inviteCandidate(Respondant respondant) {
 		emailService.sendEmailInvitation(respondant);
 	}
-
+	
+	@Override
 	public JSONArray formatSurveyList(Set<AccountSurvey> surveys) {
 		JSONArray response = new JSONArray();
 		for (AccountSurvey as : surveys) {
