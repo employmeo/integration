@@ -36,11 +36,11 @@ public class PartnerUtilityRegistry {
 			ghUtil.setPartner(lookupPartner);
 			util = ghUtil;
 			break;
-		case "SMARTRECRUITERS":
-			SmartRecruitersPartnerUtil srUtil = applicationContext.getBean(SmartRecruitersPartnerUtil.class);
-			srUtil.setPartner(lookupPartner);
-			util = srUtil;
-			break;
+//		case "SMARTRECRUITERS":
+//			SmartRecruitersPartnerUtil srUtil = applicationContext.getBean(SmartRecruitersPartnerUtil.class);
+//			srUtil.setPartner(lookupPartner);
+//			util = srUtil;
+//			break;
 		default:
 			DefaultPartnerUtil defaultUtil = applicationContext.getBean(DefaultPartnerUtil.class);
 			defaultUtil.setPartner(lookupPartner);
