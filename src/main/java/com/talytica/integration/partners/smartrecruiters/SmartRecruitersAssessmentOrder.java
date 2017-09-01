@@ -19,15 +19,15 @@ public class SmartRecruitersAssessmentOrder {
 	private String status;
 	private Date createDate;
 	private Date lasUpdateDate;
-	private OrderRequestor requestor;
-	private OrderCandidate candidate;
-	private OrderJob job;
-	private OrderCompany company;
-	private SmartRecruitersOffer offer;
+	public OrderRequestor requestor;
+	public OrderCandidate candidate;
+	public OrderJob job;
+	public OrderCompany company;
+	public SmartRecruitersOffer offer;
 
 	@Data
 	@ToString
-	private class OrderRequestor {
+	public class OrderRequestor {
 		String firstName;
 		String lastName;
 		String email;
@@ -36,7 +36,7 @@ public class SmartRecruitersAssessmentOrder {
 	
 	@Data
 	@ToString
-	private class OrderCandidate {
+	public class OrderCandidate {
 		private String id;
 		private String firstName;
 		private String lastName;
@@ -47,7 +47,7 @@ public class SmartRecruitersAssessmentOrder {
 	
 	@Data
 	@ToString
-	private class OrderJob {
+	public class OrderJob {
 		String id;
 		String name;
 		JobLabel industry;
@@ -56,7 +56,7 @@ public class SmartRecruitersAssessmentOrder {
 		OrderLocation location;
 
 		@Data
-		private class JobLabel {
+		public class JobLabel {
 			String id;
 			String label;
 		}
@@ -66,7 +66,7 @@ public class SmartRecruitersAssessmentOrder {
 
 	@Data
 	@ToString
-	private class OrderLocation {
+	public class OrderLocation {
 		String country;
 		String region;
 		String city;
@@ -78,7 +78,7 @@ public class SmartRecruitersAssessmentOrder {
 	
 	@Data
 	@ToString
-	private class OrderCompany {
+	public class OrderCompany {
 		String id; // account ats id
 		String name; // account name
 	}

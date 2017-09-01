@@ -17,6 +17,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.apache.connector.ApacheClientProperties;
+import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,6 +43,7 @@ import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.Survey;
 import com.talytica.integration.partners.smartrecruiters.SmartRecruitersAssessmentNotification;
 import com.talytica.integration.partners.smartrecruiters.SmartRecruitersAssessmentOrder;
+import com.talytica.integration.partners.smartrecruiters.SmartRecruitersOffer;
 import com.talytica.integration.partners.smartrecruiters.SmartRecruitersResults;
 import com.talytica.integration.partners.smartrecruiters.SmartRecruitersStatusUpdate;
 
@@ -47,6 +54,13 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public class SmartRecruitersPartnerUtil extends BasePartnerUtil {
 
+	@Value("${partners.smartrecruiters.api:https://api.smartrecruiters.com/v1/}")
+	String API;
+
+	@Value("${partners.smartrecruiters.apitoken:28b2c4a41719f5158c26fcbf2a6f4d317c284bf30e01234bdcde131bd30ae37b}")
+	String API_KEY;
+	
+	
 	public SmartRecruitersPartnerUtil() {
 	}
 
@@ -55,6 +69,13 @@ public class SmartRecruitersPartnerUtil extends BasePartnerUtil {
 	}
 	
 	public SmartRecruitersAssessmentOrder fetchIndividualOrder(SmartRecruitersAssessmentNotification notification) {
+		Client client = getPartnerClient();
+		String service = API + "assessments/" + notification.getAssmentOrderId();
+
+		Response response = client.target(service).request().header("X-SmartToken", API_KEY).get();
+		Boolean success = (null == response || response.getStatus() >= 300) ? false : true;
+		if (success) return response.readEntity(SmartRecruitersAssessmentOrder.class);
+		log.error("failed to retrieve order {}: {}",response.getStatusInfo().getReasonPhrase(), response.readEntity(String.class));
 		return null;
 	}
 
@@ -66,15 +87,21 @@ public class SmartRecruitersPartnerUtil extends BasePartnerUtil {
 
 	@Override
 	public void postScoresToPartner(Respondant respondant, JSONObject message) {
+			
 		SmartRecruitersResults scores = new SmartRecruitersResults();
 				
 	}
-	
+
 	public String submitOffer(Survey survey) {
+		Client client = getPartnerClient();
+		String service = API + "offers";
+		SmartRecruitersOffer offer = new SmartRecruitersOffer();
+		offer.setCatalogId(survey.getId().toString());
+		offer.setName(survey.getName());
+		offer.setDescription(survey.getDescription());
+		Response response = client.target(service).request().header("X-SmartToken", API_KEY).post(Entity.entity(offer, MediaType.APPLICATION_JSON));
+		
 		return null;
 	}
 	
-	public Client getClient() {
-		return null;
-	}
 }
