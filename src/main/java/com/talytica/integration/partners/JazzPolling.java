@@ -35,9 +35,9 @@ import com.google.common.collect.Sets;
 import com.talytica.integration.IntegrationClientFactory;
 import com.talytica.integration.objects.ATSAssessmentOrder;
 import com.talytica.integration.objects.ATSStatusUpdate;
-import com.talytica.integration.objects.JazzApplicantPollConfiguration;
-import com.talytica.integration.objects.JazzHire;
-import com.talytica.integration.objects.JazzJobApplicant;
+import com.talytica.integration.partners.jazz.JazzApplicantPollConfiguration;
+import com.talytica.integration.partners.jazz.JazzHire;
+import com.talytica.integration.partners.jazz.JazzJobApplicant;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.talytica.integration.objects.JazzApplicantPollConfiguration;
 import com.talytica.integration.partners.JazzPolling;
+import com.talytica.integration.partners.jazz.JazzApplicantPollConfiguration;
 
 import lombok.extern.slf4j.Slf4j;
 

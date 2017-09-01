@@ -20,22 +20,35 @@ public class PartnerUtilityRegistry {
 		log.trace("Request for partner utility for {}", lookupPartner.getPartnerName());
 		PartnerUtil util = null;
 
-		if ("ICIMS".equalsIgnoreCase(lookupPartner.getPartnerName())) {
+		switch (lookupPartner.getPartnerName().toUpperCase()) {
+		case "ICIMS":
 			ICIMSPartnerUtil icimsUtil = applicationContext.getBean(ICIMSPartnerUtil.class);
 			icimsUtil.setPartner(lookupPartner);
 			util = icimsUtil;
-			log.trace("Returning ICIMSPartnerUtil for partner {}", lookupPartner.getPartnerName());
-		} else if ("JAZZ".equalsIgnoreCase(lookupPartner.getPartnerName())) { 
+		break;
+		case "JAZZ":
 			JazzPartnerUtil jazzUtil = applicationContext.getBean(JazzPartnerUtil.class);
 			jazzUtil.setPartner(lookupPartner);
 			util = jazzUtil;
-			log.trace("Returning JazzPartnerUtil for partner {}", lookupPartner.getPartnerName());
-		} else {
+			break;
+		case "GREENHOUSE":
+			GreenhousePartnerUtil ghUtil = applicationContext.getBean(GreenhousePartnerUtil.class);
+			ghUtil.setPartner(lookupPartner);
+			util = ghUtil;
+			break;
+//		case "SMARTRECRUITERS":
+//			SmartRecruitersPartnerUtil srUtil = applicationContext.getBean(SmartRecruitersPartnerUtil.class);
+//			srUtil.setPartner(lookupPartner);
+//			util = srUtil;
+//			break;
+		default:
 			DefaultPartnerUtil defaultUtil = applicationContext.getBean(DefaultPartnerUtil.class);
 			defaultUtil.setPartner(lookupPartner);
 			util = defaultUtil;
-			log.trace("Returning DefaultPartnerUtil for partner {}", lookupPartner.getPartnerName());
+			break;
 		}
+
+		log.trace("Returning {} for partner {}", util.getClass(), lookupPartner.getPartnerName());
 
 		return util;
 	}

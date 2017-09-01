@@ -43,7 +43,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	@Value("${partners.jazz.api}")
 	private String JAZZ_SERVICE;
 	
-	@Value("@dropbox.jazz.com")
+	@Value("@dropbox.jazz.co")
 	private String JAZZ_EMAIL_SUFFIX;
 
 	private static final SimpleDateFormat JAZZ_SDF = new SimpleDateFormat("yyyy-MM-dd");

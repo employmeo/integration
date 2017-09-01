@@ -13,8 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.PartnerRepository;
 import com.employmeo.data.service.AccountService;
+import com.employmeo.data.service.PartnerService;
 import com.talytica.integration.objects.*;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
@@ -36,7 +36,7 @@ public class AccountResource {
 	@Context
 	private SecurityContext sc;
 	@Autowired
-	private PartnerRepository partnerRepository;
+	private PartnerService partnerService;
 	@Autowired
 	private AccountService accountService;
 	@Autowired
@@ -53,7 +53,7 @@ public class AccountResource {
 	@Path("/{atsId}/locations")
 	public Response getLocations(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) throws JSONException {
 		log.debug("Get Locations called with: {}" , atsId);
-		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = accountService.getAccountByAtsId(pu.addPrefix(atsId));
 
@@ -87,7 +87,7 @@ public class AccountResource {
 	@Path("/{atsId}/positions")
 	public Response getPositions(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) {
 		log.debug("Get Positions called with: {}" , atsId);
-		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = accountService.getAccountByAtsId(pu.addPrefix(atsId));
 
@@ -118,7 +118,7 @@ public class AccountResource {
 	@Path("/{atsId}/asssessments")
 	public Response getAssessments(@ApiParam (value = "Account ID")  @PathParam("atsId") String atsId) throws JSONException {
 		log.debug("Get Assessments called with: {}" , atsId);
-		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = accountService.getAccountByAtsId(pu.addPrefix(atsId));
 

@@ -16,7 +16,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONException;
@@ -31,8 +30,6 @@ public class EchoResource {
 
 	@Context
 	private UriInfo uriInfo;
-	@Context
-	private Response resp;
 
 	private static final Logger log = LoggerFactory.getLogger(EchoResource.class);
 

@@ -4,6 +4,9 @@ import java.security.MessageDigest;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class IntegrationPasswordEncoder implements PasswordEncoder {
 
 	@Override
@@ -27,8 +30,10 @@ public class IntegrationPasswordEncoder implements PasswordEncoder {
 
 	@Override
 	public boolean matches(CharSequence rawPass, String encodedPass) {
-		
+	
 		//return (encodedPass.equals(encode(rawPass)));
+		if (null == encodedPass) return true; // so somebody like greenhouse can use just APIkey
+
 		return (encodedPass.equals(rawPass));//temporary - no encoding
 	}
 	

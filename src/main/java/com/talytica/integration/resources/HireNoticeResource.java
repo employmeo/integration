@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.PartnerRepository;
+import com.employmeo.data.service.PartnerService;
 import com.employmeo.data.service.RespondantService;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
@@ -34,7 +34,7 @@ public class HireNoticeResource {
 	@Context
 	private SecurityContext sc;
 	@Autowired
-	PartnerRepository partnerRepository;
+	PartnerService partnerService;
 	@Autowired
 	RespondantService respondantService;
 	@Autowired
@@ -47,7 +47,7 @@ public class HireNoticeResource {
 	public Response doPost( String body) throws JSONException  {
 		JSONObject json = new JSONObject(body);
 		log.debug("processing with:" + json.toString());
-		Partner partner = partnerRepository.findByLogin(sc.getUserPrincipal().getName());
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = null;
