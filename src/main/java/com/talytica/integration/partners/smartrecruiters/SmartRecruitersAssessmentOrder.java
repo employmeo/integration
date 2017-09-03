@@ -28,7 +28,7 @@ public class SmartRecruitersAssessmentOrder {
 	public OrderCandidate candidate;
 	public OrderJob job;
 	public OrderCompany company;
-	public SmartRecruitersOffer offer;
+	public OrderOffer offer;
 
 	@Data
 	@ToString
@@ -94,6 +94,14 @@ public class SmartRecruitersAssessmentOrder {
 		String name; // account name
 	}
 	
+	@Data
+	@ToString
+	@NoArgsConstructor
+	public static class OrderOffer {
+		String catalogId; // survey id
+		String name; // account name
+	}
+
 	public JSONObject toJson() {
 		
 		JSONObject json = new JSONObject();
@@ -129,7 +137,6 @@ public class SmartRecruitersAssessmentOrder {
 		json.put("applicant", applicant);
 		json.put("position", position);
 		json.put("location", location);
-
 		json.put("delivery", delivery);
 		return json;
 	}
