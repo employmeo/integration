@@ -17,7 +17,7 @@ import com.talytica.integration.service.IntegrationPartnerDetailsService;
 @EnableWebSecurity
 public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 
-		@Value("${com.talytica.integration.openpages:/health, /integration/icims**}")
+		@Value("${com.talytica.integration.openpages:/health}")
 		String[] openPages;
 		
 	    @Autowired

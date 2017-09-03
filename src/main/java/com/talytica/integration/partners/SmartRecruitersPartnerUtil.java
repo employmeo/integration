@@ -91,17 +91,4 @@ public class SmartRecruitersPartnerUtil extends BasePartnerUtil {
 		SmartRecruitersResults scores = new SmartRecruitersResults();
 				
 	}
-
-	public String submitOffer(Survey survey) {
-		Client client = getPartnerClient();
-		String service = API + "offers";
-		SmartRecruitersOffer offer = new SmartRecruitersOffer();
-		offer.setCatalogId(survey.getId().toString());
-		offer.setName(survey.getName());
-		offer.setDescription(survey.getDescription());
-		Response response = client.target(service).request().header("X-SmartToken", API_KEY).post(Entity.entity(offer, MediaType.APPLICATION_JSON));
-		
-		return null;
-	}
-	
 }

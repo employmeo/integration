@@ -69,17 +69,23 @@ public class SmartRecruitersResource {
 	   })
 	@Path("/notify")
 	public Response postNotification(@ApiParam (value = "Order Notification", type="SmartRecruitersAsssessmentNotification")  @RequestBody SmartRecruitersAssessmentNotification notification) throws JSONException {
-		log.info("Received Notification From SR: {}", notification);
+		log.debug("Received Notification From SR: {}", notification);
 		Partner partner = partnerService.getPartnerByLogin("smartrecruiters"); // Anonymous posting
 		SmartRecruitersPartnerUtil pu = (SmartRecruitersPartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
-		
+
 		SmartRecruitersAssessmentOrder order = pu.fetchIndividualOrder(notification);
-		log.info("Order associated is: {}", order);
-		//Account account = accountService.getAccountByAtsId(pu.addPrefix(order.getCompany().getId()));
-		//if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
-		//Respondant respondant = pu.createRespondantFrom(order.toJson(), account);		
-		//JSONObject output = pu.prepOrderResponse(order.toJson(), respondant); // sends email
+		log.debug("Retrieved SR Order: {}", order.getId());
 		
+		Account account = accountService.getAccountByAtsId(pu.addPrefix(order.getCompany().getId()));
+		log.debug("Looked for {} and found {}", pu.addPrefix(order.getCompany().getId()), account);
+		
+		if (account == null) throw new WebApplicationException(ACCOUNT_NOT_FOUND);
+		log.debug("Associated account to SR Order: {}", account.getAccountName());
+		
+		Respondant respondant = pu.createRespondantFrom(order.toJson(), account);		
+		JSONObject output = pu.prepOrderResponse(order.toJson(), respondant); // sends email
+		log.debug("Created response for SR Order: {}", output);
+
 		//pu.changeCandidateStatus(respondant, output.getString("message")); // using post scores method maybe use change Status
 		
 		return Response.status(Response.Status.OK).build();

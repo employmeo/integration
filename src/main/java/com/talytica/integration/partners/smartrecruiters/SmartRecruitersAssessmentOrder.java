@@ -9,16 +9,18 @@ import com.employmeo.data.model.Location;
 import com.employmeo.data.model.Position;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Data
 @ToString
+@NoArgsConstructor
 public class SmartRecruitersAssessmentOrder {
 
 	private String id; // order ID - resp ats id?
 	private String status;
 	private Date createDate;
-	private Date lasUpdateDate;
+	private Date lastUpdateDate;
 	public OrderRequestor requestor;
 	public OrderCandidate candidate;
 	public OrderJob job;
@@ -27,7 +29,8 @@ public class SmartRecruitersAssessmentOrder {
 
 	@Data
 	@ToString
-	public class OrderRequestor {
+	@NoArgsConstructor
+	public static class OrderRequestor {
 		String firstName;
 		String lastName;
 		String email;
@@ -36,7 +39,8 @@ public class SmartRecruitersAssessmentOrder {
 	
 	@Data
 	@ToString
-	public class OrderCandidate {
+	@NoArgsConstructor
+	public static class OrderCandidate {
 		private String id;
 		private String firstName;
 		private String lastName;
@@ -47,7 +51,8 @@ public class SmartRecruitersAssessmentOrder {
 	
 	@Data
 	@ToString
-	public class OrderJob {
+	@NoArgsConstructor
+	public static  class OrderJob {
 		String id;
 		String name;
 		JobLabel industry;
@@ -56,7 +61,8 @@ public class SmartRecruitersAssessmentOrder {
 		OrderLocation location;
 
 		@Data
-		public class JobLabel {
+		@NoArgsConstructor
+		public static class JobLabel {
 			String id;
 			String label;
 		}
@@ -66,7 +72,8 @@ public class SmartRecruitersAssessmentOrder {
 
 	@Data
 	@ToString
-	public class OrderLocation {
+	@NoArgsConstructor
+	public static class OrderLocation {
 		String country;
 		String region;
 		String city;
@@ -78,7 +85,8 @@ public class SmartRecruitersAssessmentOrder {
 	
 	@Data
 	@ToString
-	public class OrderCompany {
+	@NoArgsConstructor
+	public static class OrderCompany {
 		String id; // account ats id
 		String name; // account name
 	}
