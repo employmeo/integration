@@ -65,7 +65,7 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 		JSONObject output = new JSONObject();
 		try {
 			// Assemble the response object to notify that action is complete
-			output.put("partner_interview_id", respondant.getId());
+			output.put("partner_interview_id", respondant.getRespondantUuid());
 		} catch (JSONException jse) {
 			log.error("JSON Exception: {}", jse.getMessage());
 		}
