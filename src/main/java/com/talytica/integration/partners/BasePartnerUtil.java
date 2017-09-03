@@ -121,7 +121,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	@Override
 	public Location getLocationFrom(JSONObject jLocation, Account account) {
 		Location location = null;
-
+		log.debug("get location for {}",jLocation);
 		if (jLocation != null) {
 			if (jLocation.has("location_id")) {
 				return accountService.getLocationById(jLocation.optLong("location_id"));
@@ -137,7 +137,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 				// otherwise create a new location from address
 				location = new Location();
 				JSONObject address = jLocation.optJSONObject("address");
-				addressService.validate(address);
+				if (null != address) addressService.validate(address);
 				location.setAtsId(partner.getPrefix() + jLocation.optString("location_ats_id"));
 				if (jLocation.has("location_name")) {
 					location.setLocationName(jLocation.optString("location_name"));
@@ -164,7 +164,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 					location.setLongitude(address.optDouble("lng"));
 				}
 				location.setAccount(account);
-
+				location.setAccountId(account.getId());
 				return accountService.save(location);
 			}
 		}
@@ -211,7 +211,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public Respondant createRespondantFrom(JSONObject json, Account account) {
-		Person person = new Person();
+		Person person = null;
 		JSONObject applicant = json.optJSONObject("applicant");
 		Respondant respondant = getRespondantFrom(applicant, account);
 		if (respondant != null) return respondant;
@@ -221,18 +221,24 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 
 		String appAtsId = applicant.optString("applicant_ats_id");
 		respondant.setAtsId(this.getPrefix() + appAtsId);
-		person.setAtsId(this.getPrefix() + appAtsId);
-		person.setEmail(applicant.optString("email"));
-		person.setFirstName(applicant.optString("fname"));
-		person.setLastName(applicant.optString("lname"));
-		JSONObject personAddress = applicant.optJSONObject("address");
-		if (personAddress != null) {
-		addressService.validate(personAddress);
-			person.setAddress(personAddress.optString("formatted_address"));
-			person.setLatitude(personAddress.optDouble("lat"));
-			person.setLongitude(personAddress.optDouble("lng"));
-		}
 		
+		if (applicant.has("person_ats_id")) person = personService.getPersonByAtsId(applicant.optString("person_ats_id"));
+		
+		if (null == person) {
+			person = new Person();
+			person.setAtsId(this.getPrefix() + appAtsId);
+			if (applicant.has("person_ats_id")) person.setAtsId(this.getPrefix() + applicant.optString("person_ats_id"));
+			person.setEmail(applicant.optString("email"));
+			person.setFirstName(applicant.optString("fname"));
+			person.setLastName(applicant.optString("lname"));
+			JSONObject personAddress = applicant.optJSONObject("address");
+			if (personAddress != null) {
+			addressService.validate(personAddress);
+				person.setAddress(personAddress.optString("formatted_address"));
+				person.setLatitude(personAddress.optDouble("lat"));
+				person.setLongitude(personAddress.optDouble("lng"));
+			}
+		}
 		Location location = this.getLocationFrom(json.optJSONObject("location"), account);
 		Position position = this.getPositionFrom(json.optJSONObject("position"), account);
 		AccountSurvey aSurvey = this.getSurveyFrom(json.optJSONObject("assessment"), account);

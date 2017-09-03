@@ -17,6 +17,7 @@ import com.employmeo.data.service.AccountService;
 import com.employmeo.data.service.AccountSurveyService;
 import com.employmeo.data.service.PartnerService;
 import com.employmeo.data.service.RespondantService;
+import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.objects.*;
 import com.talytica.integration.partners.PartnerUtil;
@@ -52,11 +53,8 @@ public class SmartRecruitersResource {
 	@Autowired
 	private AccountService accountService;
 	@Autowired
-	private RespondantService respondantService;
-	@Autowired
-	private ExternalLinksService externalLinksService;
-	@Autowired
-	private PartnerUtilityRegistry partnerUtilityRegistry;	
+	private PartnerUtilityRegistry partnerUtilityRegistry;
+
 	
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -77,17 +75,14 @@ public class SmartRecruitersResource {
 		log.debug("Retrieved SR Order: {}", order.getId());
 		
 		Account account = accountService.getAccountByAtsId(pu.addPrefix(order.getCompany().getId()));
-		log.debug("Looked for {} and found {}", pu.addPrefix(order.getCompany().getId()), account);
-		
 		if (account == null) throw new WebApplicationException(ACCOUNT_NOT_FOUND);
 		log.debug("Associated account to SR Order: {}", account.getAccountName());
 		
-		Respondant respondant = pu.createRespondantFrom(order.toJson(), account);		
-		JSONObject output = pu.prepOrderResponse(order.toJson(), respondant); // sends email
-		log.debug("Created response for SR Order: {}", output);
+		Respondant respondant = pu.createRespondantFrom(order.toJson(), account);	
 
-		//pu.changeCandidateStatus(respondant, output.getString("message")); // using post scores method maybe use change Status
-		
+		log.debug("created a respondant: {}", respondant.getRespondantUuid());
+		pu.inviteCandidate(respondant); // sends email
+				
 		return Response.status(Response.Status.OK).build();
 	}
 		

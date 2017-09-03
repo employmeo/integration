@@ -10,7 +10,8 @@ public class SmartRecruitersStatusUpdate {
 	private String message; // assessment asid
 	private String assessmentURL;
 	private String messageToCandidate;
-	private UpdateAuthor author;
+	private UpdateAuthor author = new UpdateAuthor();
+
 	
 	@Data
 	@ToString
