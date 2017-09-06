@@ -41,6 +41,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	public static final String ASSESSMENT_COMPLETE_ID = "{'id':'D37002019001'}";
 	public static final String ASSESSMENT_IN_PROGRESS_ID = "{'id':'D37002019003'}";
 	public static final String ASSESSMENT_SENT_ID = "{'id':'D37002019004'}";
+	public static final Integer NOTES_MAX_LENGTH = 192;
 	
 	private static final SimpleDateFormat ICIMS_SDF = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
 
@@ -278,8 +279,8 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 		JSONObject json = new JSONObject();
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
 
-		String notes = getScoreNotesFormat(respondant);
-			
+		String notes = getScoreNotesFormat(respondant).substring(0,NOTES_MAX_LENGTH);
+		
 		try {
 			JSONObject assessment = new JSONObject();
 			assessment.put("value", respondant.getAccountSurvey().getDisplayName());
