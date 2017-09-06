@@ -98,8 +98,10 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public Location getLocationFrom(JSONObject job, Account account) {
-		String locationLink = job.optJSONObject("joblocation").optString("address");
-		String locationName = job.optJSONObject("joblocation").optString("value");
+		JSONObject jlocation = job.optJSONObject("joblocation");
+		if (jlocation == null) return accountService.getLocationById(account.getDefaultLocationId());
+		String locationLink = jlocation.optString("address");
+		String locationName = jlocation.optString("value");
 
 		Location location = locationRepository.findByAccountIdAndAtsId(account.getId(), locationLink);
 
