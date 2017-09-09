@@ -1,6 +1,5 @@
 package com.talytica.integration.partners;
 
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;

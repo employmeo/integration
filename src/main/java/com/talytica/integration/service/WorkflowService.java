@@ -60,6 +60,55 @@ public class WorkflowService {
 		}	
 	}
 
+	
+	public void executeInvitedWorkflows(Respondant respondant) {
+		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
+		log.debug("WORKFLOW: {} workflows found", workflows.size());
+		Collections.sort(workflows);
+		for (CustomWorkflow workflow : workflows) {
+			if ((null != workflow.getProfile()) && (!workflow.getProfile().equalsIgnoreCase(respondant.getProfileRecommendation()))) continue;
+			if (!workflow.getActive()) continue;
+			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_INVITATIONSENT == workflow.getTriggerPoint())) {
+				switch (workflow.getType()) {
+					case CustomWorkflow.TYPE_ATSUPDATE:
+						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+						pu.changeCandidateStatus(respondant, workflow.getAtsId());
+						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
+						break;
+					default:
+						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						break;
+				}
+			} else {
+				log.debug("Different Trigger Point: {}", workflow.getTriggerPoint());
+			}
+		}	
+	}
+	
+	public void executeSubmittedWorkflows(Respondant respondant) {
+		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
+		log.debug("WORKFLOW: {} workflows found", workflows.size());
+		Collections.sort(workflows);
+		for (CustomWorkflow workflow : workflows) {
+			if ((null != workflow.getProfile()) && (!workflow.getProfile().equalsIgnoreCase(respondant.getProfileRecommendation()))) continue;
+			if (!workflow.getActive()) continue;
+			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_ASSESSMENT == workflow.getTriggerPoint())) {
+				switch (workflow.getType()) {
+					case CustomWorkflow.TYPE_ATSUPDATE:
+						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+						pu.changeCandidateStatus(respondant, workflow.getAtsId());
+						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
+						break;
+					default:
+						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						break;
+				}
+			} else {
+				log.debug("Different Trigger Point: {}", workflow.getTriggerPoint());
+			}
+		}	
+	}
+	
 	public void executeAdvanceWorkflows(Respondant respondant) {
 		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
 		log.debug("WORKFLOW: {} workflows found", workflows.size());
