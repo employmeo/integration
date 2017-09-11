@@ -1,5 +1,7 @@
 package com.talytica.integration.resources;
 
+import java.util.UUID;
+
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
@@ -78,18 +80,18 @@ public class GreenhouseResource {
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Gets list of assessments for logged in account", response = GreenhouseStatusResponse.class)
+	@ApiOperation(value = "Checks Status of Respondant", response = GreenhouseStatusResponse.class)
 	   @ApiResponses(value = {
 		  @ApiResponse(code = 200, message = "Request Processed"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
 	@Path("/status")
-	public GreenhouseStatusResponse getStatus(@ApiParam (value = "Candiate ID")  @QueryParam("partner_interview_id") Long respondantId) throws JSONException {
+	public GreenhouseStatusResponse getStatus(@ApiParam (value = "Candiate ID")  @QueryParam("partner_interview_id") UUID respondantUuid) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
 		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
 
-		Respondant respondant = respondantService.getRespondantById(respondantId);
+		Respondant respondant = respondantService.getRespondant(respondantUuid);
 		if (respondant == null)throw new WebApplicationException(RESPONDANT_NOT_FOUND);
 
 		if (account.getId() != respondant.getAccountId()) {

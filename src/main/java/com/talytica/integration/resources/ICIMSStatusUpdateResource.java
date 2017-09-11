@@ -17,6 +17,7 @@ import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
+import com.talytica.integration.service.WorkflowService;
 
 import io.swagger.annotations.Api;
 
@@ -35,6 +36,8 @@ public class ICIMSStatusUpdateResource {
 	EmailService emailService;
 	@Autowired
 	ExternalLinksService externalLinksService;
+	@Autowired
+	WorkflowService workflowService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
@@ -67,7 +70,8 @@ public class ICIMSStatusUpdateResource {
 		Respondant applicant = pu.createRespondantFrom(json, account);
 
 		if (applicant.getRespondantStatus() < Respondant.STATUS_COMPLETED) {
-			emailService.sendEmailInvitation(applicant);
+			pu.inviteCandidate(applicant);
+			workflowService.executeInvitedWorkflows(applicant);
 		}
 		
 		//URI link = null;

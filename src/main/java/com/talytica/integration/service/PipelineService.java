@@ -89,6 +89,7 @@ public class PipelineService {
 			respondantService.save(respondant);
 			log.debug("{} Scores saved for respondant {}", respondant.getRespondantScores().size(), respondant.getId());				
 		}
+		workflowService.executeSubmittedWorkflows(respondant);
 	}
 
 	public void computeGrades(@NonNull Respondant respondant) throws Exception {
