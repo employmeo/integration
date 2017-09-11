@@ -2,10 +2,6 @@ package com.talytica.integration.partners.greenhouse;
 
 import org.json.JSONObject;
 
-import com.employmeo.data.model.AccountSurvey;
-import com.employmeo.data.model.Location;
-import com.employmeo.data.model.Position;
-
 import lombok.Data;
 import lombok.ToString;
 

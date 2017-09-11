@@ -1,8 +1,9 @@
 package com.talytica.integration.partners;
 
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.client.*;
@@ -37,10 +38,13 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	@Value("${partners.icims.api}")
 	private String ICIMS_API;
 	
+	private static final String SCORE_POST_LOCATION = "/fields/assessmentresults";
+	
 	private static final String JOB_EXTRA_FIELDS = "?fields=jobtitle,assessmenttype,jobtype,joblocation,hiringmanager";
 	public static final String ASSESSMENT_COMPLETE_ID = "{'id':'D37002019001'}";
 	public static final String ASSESSMENT_IN_PROGRESS_ID = "{'id':'D37002019003'}";
 	public static final String ASSESSMENT_SENT_ID = "{'id':'D37002019004'}";
+	public static final Integer NOTES_MAX_LENGTH = 192;
 	
 	private static final SimpleDateFormat ICIMS_SDF = new SimpleDateFormat("yyyy-MM-dd hh:mm a");
 
@@ -98,8 +102,10 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public Location getLocationFrom(JSONObject job, Account account) {
-		String locationLink = job.optJSONObject("joblocation").optString("address");
-		String locationName = job.optJSONObject("joblocation").optString("value");
+		JSONObject jlocation = job.optJSONObject("joblocation");
+		if (jlocation == null) return accountService.getLocationById(account.getDefaultLocationId());
+		String locationLink = jlocation.optString("address");
+		String locationName = jlocation.optString("value");
 
 		Location location = locationRepository.findByAccountIdAndAtsId(account.getId(), locationLink);
 
@@ -248,7 +254,8 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 		if (json.has("returnUrl")) {
 			respondant.setRedirectUrl(json.optString("returnUrl"));
 		}
-		respondant.setScorePostMethod(workflowLink);
+//		respondant.setScorePostMethod(workflowLink);
+		respondant.setScorePostMethod(workflowLink + SCORE_POST_LOCATION);
 		respondant.setAccount(account);
 		respondant.setAccountId(account.getId());
 		respondant.setPosition(position);
@@ -273,16 +280,14 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
-		JSONObject json = new JSONObject();
+		JSONObject results = new JSONObject();
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-
-		String notes = getScoreNotesFormat(respondant);
-			
+		String notes = getScoreNotesFormat(respondant).substring(0,NOTES_MAX_LENGTH);
+		
 		try {
 			JSONObject assessment = new JSONObject();
 			assessment.put("value", respondant.getAccountSurvey().getDisplayName());
 
-			JSONObject results = new JSONObject();
 			results.put("assessmentname", assessment);
 			results.put("assessmentdate", ICIMS_SDF.format(new Date(respondant.getFinishTime().getTime())));
 			results.put("assessmentscore", respondant.getCompositeScore());
@@ -291,23 +296,31 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 			results.put("assessmentstatus", new JSONObject(ASSESSMENT_COMPLETE_ID));
 			results.put("assessmenturl", externalLinksService.getPortalLink(respondant));
 
-			JSONArray resultset = new JSONArray();
-			resultset.put(results);
-
-			json.put("assessmentresults", resultset);
 		} catch (Exception e) {
 			log.error("Error building scores message: {}", e.getMessage());
 		}
-		return json;
+		return results;
 	}
 
 	@Override
 	public void postScoresToPartner(Respondant respondant, JSONObject message) {
-		String method = respondant.getAtsId();
-		Response response = icimsPatch(method, message);
-		log.debug("Posted Scores to ICIMS: " + response.getStatus() + " " + response.getStatusInfo().getReasonPhrase());
-		if (response.hasEntity()) {
-			log.debug("Response Message: " + response.readEntity(String.class));
+		String method = respondant.getScorePostMethod();
+		String originalMethod = respondant.getAtsId() + SCORE_POST_LOCATION;
+		if (method.equalsIgnoreCase(originalMethod)) {
+			Response response = icimsPost(method,message);
+			if (response.getStatus() >= 300) {
+				log.error("Problem posting respondant {} to ICMS: {}", respondant.getId(),response.readEntity(String.class));
+			} else {					
+				String newMethod = response.getHeaderString("location");
+				respondant.setScorePostMethod(newMethod);
+				respondantService.save(respondant);
+			}
+		} else {
+			Response response = icimsPatch(method, message);
+			log.debug("Posted Scores to ICIMS: " + response.getStatus() + " " + response.getStatusInfo().getReasonPhrase());
+			if (response.hasEntity()) {
+				log.debug("Response Message: {} ",response.readEntity(String.class));
+			}			
 		}
 	}
 
@@ -377,12 +390,11 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 		return result;
 	}
 
-	// private Response icimsPost(String postTarget, JSONObject json) {
-	// Response response =
-	// prepTarget(postTarget).request(MediaType.APPLICATION_JSON)
-	// .post(Entity.entity(json.toString(), MediaType.APPLICATION_JSON));
-	// return response;
-	// }
+	private Response icimsPost(String postTarget, JSONObject json) {
+		Response response = getPartnerClient().target(postTarget).request(MediaType.APPLICATION_JSON)
+				.post(Entity.entity(json.toString(), MediaType.APPLICATION_JSON));
+		return response;
+	}
 
 	private Response icimsPatch(String postTarget, JSONObject json) {
 		Response response = getPartnerClient().target(postTarget).request(MediaType.APPLICATION_JSON).method("PATCH",
@@ -403,13 +415,10 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 			assessment.put("value", respondant.getAccountSurvey().getDisplayName());
 			JSONObject results = new JSONObject();
 			results.put("assessmentname", assessment);
+			results.put("assessmentdate", ICIMS_SDF.format(new Date()));
 			results.put("assessmentstatus", new JSONObject(status));
-			results.put("assessmenturl", externalLinksService.getPortalLink(respondant));
-			JSONArray resultset = new JSONArray();
-			resultset.put(results);
-			JSONObject json = new JSONObject();
-			json.put("assessmentresults", resultset);		
-			postScoresToPartner(respondant, json);
+			results.put("assessmenturl", externalLinksService.getPortalLink(respondant));	
+			postScoresToPartner(respondant, results);
 		} catch (Exception e) {
 			log.error("Failed to change respondant {} status to {}", respondant.getId(), status, e);
 		}
