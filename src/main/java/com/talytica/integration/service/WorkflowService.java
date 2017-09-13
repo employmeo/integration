@@ -71,6 +71,7 @@ public class WorkflowService {
 			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_INVITATIONSENT == workflow.getTriggerPoint())) {
 				switch (workflow.getType()) {
 					case CustomWorkflow.TYPE_ATSUPDATE:
+						if (respondant.getPartner() == null) break;
 						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 						pu.changeCandidateStatus(respondant, workflow.getAtsId());
 						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
@@ -95,6 +96,7 @@ public class WorkflowService {
 			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_ASSESSMENT == workflow.getTriggerPoint())) {
 				switch (workflow.getType()) {
 					case CustomWorkflow.TYPE_ATSUPDATE:
+						if (respondant.getPartner() == null) break;
 						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 						pu.changeCandidateStatus(respondant, workflow.getAtsId());
 						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
