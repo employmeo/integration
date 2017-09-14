@@ -46,6 +46,7 @@ public class NVPScoring implements ScoringModelEngine {
 	}
 	
 	private String textByAnswer(Response response) {
+		if ((response.getResponseText() != null) && (!response.getResponseText().isEmpty())) return response.getResponseText();
 		Question question = questionService.getQuestionById(response.getQuestionId());
 		Set<Answer> answers = question.getAnswers();
 		for (Answer answer : answers) {
