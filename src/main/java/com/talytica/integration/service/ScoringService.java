@@ -184,8 +184,9 @@ public class ScoringService {
 		List<Grade> grades = new ArrayList<Grade>();
 
 		for (Grader grader : graders) {
+			if (grader.getStatus() == Grader.STATUS_IGNORED) continue;
 		    grades.addAll(graderService.getGradesByGraderId(grader.getId()));
-		    log.debug("Respondant {} has grader {} with {} total grades", respondant.getId(), grader.getId(), grades.size());
+		    log.debug("Respondant {} has grader {} with {} cumulative total grades", respondant.getId(), grader.getId(), grades.size());
 		}
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		
