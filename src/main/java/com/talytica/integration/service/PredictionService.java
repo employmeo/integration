@@ -36,40 +36,39 @@ public class PredictionService {
 	@Autowired
 	private RespondantService respondantService;
 
-	public List<PredictionResult> runPostAssessmentPredictions(@NonNull Respondant respondant) {
+	public List<PredictionResult> runPostAssessmentPredictions(@NonNull Respondant respondant) throws Exception {
 		List<PredictionResult> predictions = Lists.newArrayList();
 		List<NameValuePair> corefactorScores = getModelInputsFromCorefactorScores(respondant);
 		// also add nvps? 
 		corefactorScores.addAll(getModelInputsFromNvps(respondant));
 		
 		Set<PositionPredictionConfiguration> positionPredictionConfigs = respondant.getPosition().getPositionPredictionConfigurations();
-		positionPredictionConfigs.forEach(predictionConfig -> {
+		for (PositionPredictionConfiguration predictionConfig : positionPredictionConfigs) {
 				if (predictionConfig.getTriggerPoint() == PositionPredictionConfiguration.TRIGGER_POINT_ASSESSMENT) {
 					PredictionResult predictionResult = predictForTarget(respondant, corefactorScores, predictionConfig);
 					if (null != predictionResult) predictions.add(predictionResult);
 				}
-		});
+		}
 
 		return predictions;
 	}
 
-	public List<PredictionResult> runPreAssessmentPredictions(@NonNull Respondant respondant) {
+	public List<PredictionResult> runPreAssessmentPredictions(@NonNull Respondant respondant) throws Exception {
 		List<PredictionResult> predictions = Lists.newArrayList();
 		List<NameValuePair> modelInputs = getModelInputsFromNvps(respondant);
 
 		Set<PositionPredictionConfiguration> positionPredictionConfigs = respondant.getPosition().getPositionPredictionConfigurations();
-		positionPredictionConfigs.forEach(predictionConfig -> {
+		for (PositionPredictionConfiguration predictionConfig : positionPredictionConfigs) {
 			if (predictionConfig.getTriggerPoint() == PositionPredictionConfiguration.TRIGGER_POINT_CREATION) {
 				PredictionResult predictionResult = predictForTarget(respondant, modelInputs, predictionConfig);
 				if (predictionResult != null) predictions.add(predictionResult);
 			}
-		});
-
+		}
 		return predictions;
 	}
 
 	private PredictionResult predictForTarget(Respondant respondant, List<NameValuePair> modelInputs,
-			PositionPredictionConfiguration predictionConfig) {
+			PositionPredictionConfiguration predictionConfig) throws Exception {
 		PredictionTarget predictionTarget = predictionConfig.getPredictionTarget();
 		PredictionModel predictionModel = predictionConfig.getPredictionModel();
 		PredictionModelEngine predictionEngine = getPredictionModelEngine(predictionModel);

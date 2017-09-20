@@ -15,7 +15,7 @@ public interface PredictionModelEngine {
 	 * @param respondant
 	 * @return
 	 */
-	public abstract PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, List<NameValuePair> inputs);
+	public abstract PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, List<NameValuePair> inputs) throws Exception;
 	public abstract String getModelName();
 	public abstract Long getModelId();
 	public abstract String getModelType();
