@@ -17,6 +17,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.apache.connector.ApacheClientProperties;
+import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -71,5 +77,23 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 		}
 		
 		return output;
+	}
+	
+	
+	@Override
+	public Client getPartnerClient() {
+		ClientConfig cc = new ClientConfig();
+//		cc.property(ApacheClientProperties.PREEMPTIVE_BASIC_AUTHENTICATION, true);	
+//		cc.property(ClientProperties.REQUEST_ENTITY_PROCESSING, "BUFFERED");
+//		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
+//		cc.property("sslProtocol", "TLSv1.2");
+//		cc.connectorProvider(new ApacheConnectorProvider());
+		Client client = ClientBuilder.newClient(cc);
+		String user = this.partner.getApiKey();
+//		String pass = this.partner.getApiPass();	
+		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(user,"");
+		client.register(feature);
+
+		return client;
 	}
 }
