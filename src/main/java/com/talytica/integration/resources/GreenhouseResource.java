@@ -1,5 +1,7 @@
 package com.talytica.integration.resources;
 
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import javax.ws.rs.*;
@@ -10,22 +12,25 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.service.AccountService;
-import com.employmeo.data.service.AccountSurveyService;
 import com.employmeo.data.service.PartnerService;
 import com.employmeo.data.service.RespondantService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.objects.*;
+import com.talytica.integration.partners.GreenhousePartnerUtil;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
+import com.talytica.integration.partners.greenhouse.GreenhouseApplication;
 import com.talytica.integration.partners.greenhouse.GreenhouseAssessmentOrder;
 import com.talytica.integration.partners.greenhouse.GreenhouseErrorNotice;
+import com.talytica.integration.partners.greenhouse.GreenhousePolling;
 import com.talytica.integration.partners.greenhouse.GreenhouseStatusResponse;
+import com.talytica.integration.partners.greenhouse.GreenhouseWebHook;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +61,8 @@ public class GreenhouseResource {
 	private ExternalLinksService externalLinksService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
+	@Autowired
+	private GreenhousePolling greenhousePolling;
 
 	
 	@GET
@@ -143,5 +150,81 @@ public class GreenhouseResource {
 		log.error("Greenhouse reported error: {}",notice);
 		return Response.status(Response.Status.OK).build();
 	}
+	
+	
+	@POST
+	@Path("/pullapplicants")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@ApiOperation(value = "calls greenhouse polling", response=GreenhouseApplication.class, responseContainer="list")
+	   @ApiResponses(value = {
+	     @ApiResponse(code = 201, message = "Success"),
+	   })
+	public List<GreenhouseApplication> pollGreenhouse(
+			@ApiParam(name="accountId") @FormParam("accountId") Long accountId,
+			@ApiParam(name="positionId") @FormParam("positionId") Long positionId,
+			@ApiParam(name="Start Date") @FormParam("start") Date startDate,
+			@ApiParam(name="End Date") @FormParam("end") Date endDate) {
+
+		Account account = accountService.getAccountById(accountId);
+		Position position = accountService.getPositionById(positionId);
+		Range<Date> dates = new Range<Date>(startDate,endDate);
+		List<GreenhouseApplication> apps = greenhousePolling.getGreenhousePastCandidates(account, position, dates);
+		
+		for (GreenhouseApplication app : apps) {
+			log.info("full app: {}", getApplication(app.getId())); 
+		}
+		
+		return apps;
+	}	
+	
+	
+	@POST
+	@Path("/webhook")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "calls greenhouse polling")
+	   @ApiResponses(value = {
+	     @ApiResponse(code = 201, message = "Success")
+	   })
+	public void webhook(@ApiParam(value="GreenHouse WebHook", type="GreenhouseWebhook") @RequestBody GreenhouseWebHook webhook) {
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
+		Account account = accountService.getByPartnerId(partner.getId());
+		GreenhousePartnerUtil pu = (GreenhousePartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
+
+		switch (webhook.getAction()) {
+		case "ping":
+			log.debug("Ping posted: {} ", webhook.getAction(), webhook.getPayload());
+			break;
+		case "new_candidate_application":
+			log.debug("New Candidate {}",webhook.getPayload().getApplication().getId());
+			GreenhouseApplication app = pu.getApplicationDetail(webhook.getPayload().getApplication().getId());
+			pu.createPrescreenCandidate(app, account);
+			break;
+		case "candidate_stage_change":
+			log.debug("Candidate {} stage change to {}",webhook.getPayload().getApplication().getId(),webhook.getPayload().getApplication().getCurrent_stage().getName());
+			break;
+		default:
+			log.debug("Unprocessed {} webhook posted with payload: {} ", webhook.getAction(), webhook.getPayload());
+			break;
+		}
+		return;
+	}	
+
+	@GET
+	@Path("/application/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "calls greenhouse polling")
+	   @ApiResponses(value = {
+	     @ApiResponse(code = 201, message = "Success")
+	   })
+	public GreenhouseApplication getApplication(@ApiParam(value="GreenHouse WebHook", type="GreenhouseWebhook") @PathParam("id") Long id) {
+//		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
+		Partner partner = partnerService.getPartnerByLogin("greenhouse-sample-api-key");	
+		//Account account = accountService.getByPartnerId(partner.getId());
+		GreenhousePartnerUtil pu = (GreenhousePartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
+		GreenhouseApplication app = pu.getApplicationDetail(id);
+		
+		return app;
+	}	
+
 	
 }

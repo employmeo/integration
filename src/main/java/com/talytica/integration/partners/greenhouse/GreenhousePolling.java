@@ -39,7 +39,7 @@ public class GreenhousePolling {
 	 * Place "ats-orders" to the integration server using integrationClient
 	 * @param Configuration - contains Account, Position, date range
 	 */
-	public void getGreenhousePastCandidates(Account account, Position position, Range<Date> dates) {
+	public List<GreenhouseApplication> getGreenhousePastCandidates(Account account, Position position, Range<Date> dates) {
 		Partner greenhouse = partnerService.getPartnerById(account.getAtsPartnerId());
 		GreenhousePartnerUtil pu = (GreenhousePartnerUtil) partnerUtilityRegistry.getUtilFor(greenhouse);
 		List<GreenhouseApplication> applicants = Lists.newArrayList();
@@ -65,7 +65,7 @@ public class GreenhousePolling {
 		client.close();
 
 		log.debug("Retrieved {} new applicants", applicants.size());
-		for (GreenhouseApplication app : applicants) log.debug("Applicant: {}", app);
+		return applicants;
 	}
 	
 }

@@ -5,15 +5,18 @@ import java.util.List;
 
 import org.json.JSONObject;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.Data;
 import lombok.ToString;
 
 @Data
 @ToString
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GreenhouseApplication {
 	private Long id;
 	private Long candidate_id;
+	private GreenhouseCandidate candidate;
 	private Boolean prospect;
 	private Date applied_at;
 	private Date rejected_at;
@@ -30,38 +33,44 @@ public class GreenhouseApplication {
 	
 	@Data
 	@ToString
-	public class GHSource {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GHSource {
 		private Long id;
 		private String public_name;
 	}
 	@Data
 	@ToString
-	public class GHUser{
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GHUser{
 		private Long id;
 		private String name;
 		private String employee_id;
 	}
 	@Data
 	@ToString
-	public class GHReason {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GHReason {
 		private Long id;
 		private String name;
 	}
 	@Data
 	@ToString
-	public class GHJob {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GHJob {
 		private Long id;
 		private String name;
 	}
 	@Data
 	@ToString
-	public class GHStage {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GHStage {
 		private Long id;
 		private String name;
 	}
 	@Data
 	@ToString
-	public class GHAnswer {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class GHAnswer {
 		private String question;
 		private String answer;
 	}
