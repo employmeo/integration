@@ -34,9 +34,9 @@ import org.json.JSONObject;
 @Component
 @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 @Produces(MediaType.APPLICATION_JSON)
-@Path("/1/audio")
-@Api( value="/1/audio", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_FORM_URLENCODED)
-public class AudioTestResource {
+@Path("/1/test")
+@Api( value="/1/test", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_FORM_URLENCODED)
+public class TestResource {
 	
 	@Autowired
 	private SpeechToTextService speechToTextService;

@@ -16,6 +16,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -393,7 +397,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			log.info("Intercepting Post to {}", method);
 			method = externalLinksService.getIntegrationEcho();
 		}
-		WebTarget target = ClientBuilder.newClient().target(method);
+		WebTarget target = getPartnerClient().target(method);
 		try {
 			message.put("apikey", trimPrefix(respondant.getAccount().getAtsId()));
 			message.put("applicant_id", trimPrefix(respondant.getPerson().getAtsId()));
@@ -420,6 +424,14 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		emailService.sendEmailInvitation(respondant, bcc);
 	}
 	
+	@Override
+	public Client getPartnerClient() {
+		ClientConfig cc = new ClientConfig();
+		cc.property(ClientProperties.CONNECT_TIMEOUT, 15000);//15 seconds
+		cc.property(ClientProperties.READ_TIMEOUT, 15000);//15 seconds
+		Client client = ClientBuilder.newClient(cc);
+		return client;
+	}
 	
 	// Special calls to Jazz HR to get data for applicant
 
@@ -429,7 +441,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	}
 
 	public String jazzGet(String getTarget, String apiKey, Map<String, String> params) {
-		Client client = ClientBuilder.newClient();
+		Client client = getPartnerClient();
 		WebTarget target = client.target(JAZZ_SERVICE + getTarget).queryParam("apikey", apiKey);
 
 		if (null != params) {

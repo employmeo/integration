@@ -268,7 +268,7 @@ public class JazzPolling {
 	}
 
 	private void postStatusUpdates(List<ATSStatusUpdate> updates, Partner jazz) {
-		log.debug("Updating Statuses...");
+		log.debug("Updating {} Statuses...", updates.size());
 
 		Client client = integrationClientFactory.newInstance(jazz.getLogin(), jazz.getPassword());
 		String serverHost = integrationClientFactory.getServer();
@@ -278,7 +278,7 @@ public class JazzPolling {
 		int counter = 0;
 		int saved = 0;
 		for (ATSStatusUpdate update : updates) {
-			log.info("Attempting update #{}", ++counter);
+			log.info("#{}. Attempting to update respondant: {}", ++counter, update.getApplicant().getApplicant_id());
 
 			WebTarget target = client.target(targetPath);
 			try {
@@ -344,7 +344,7 @@ public class JazzPolling {
 				for (CustomWorkflow flow : position.getCustomWorkflows()) {
 					log.debug("Considering workflow: {}", flow);
 					if ((!flow.getActive()) || (!CustomWorkflow.TYPE_STATUSPOLLING.equalsIgnoreCase(flow.getType()))) continue;
-					log.info("Adding polling position: {}, ID: {}, to {}", position.getPositionName(),flow.getAtsId(),flow.getText());
+					log.debug("Adding polling position: {}, ID: {}, to {}", position.getPositionName(),flow.getAtsId(),flow.getText());
 					Set<CustomWorkflow> flows = Sets.newHashSet();
 					if (!flowSets.containsKey(flow.getText())) flowSets.put(flow.getText(), flows);
 					flows = flowSets.get(flow.getText());
@@ -360,7 +360,7 @@ public class JazzPolling {
 				for (CustomWorkflow flow : pair.getValue()) {
 					config.getWorkFlowIds().add(flow.getAtsId());
 				}
-				log.info("Account {} using ids {} to {}", account.getAccountName(),config.getWorkFlowIds(),config.getStatus());
+				log.debug("Account {} using ids {} to {}", account.getAccountName(),config.getWorkFlowIds(),config.getStatus());
 				config.setSendEmail(Boolean.FALSE);
 				config.setLookbackBeginDate(JazzDateFormat.format(lookbackPeriod.getLowerBound()));
 				config.setLookbackEndDate(JazzDateFormat.format(lookbackPeriod.getUpperBound()));

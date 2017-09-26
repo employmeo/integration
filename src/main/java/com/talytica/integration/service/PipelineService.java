@@ -139,6 +139,7 @@ public class PipelineService {
 		if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVREPREDICTED);
 		Respondant savedRespondant = respondantService.save(respondant);
 		sendNotifications(savedRespondant);
+		if (stageTwo) workflowService.executeAdvPredictionWorkflows(savedRespondant);
 		log.debug("Assessment analysis for respondant {} complete", respondant.getId());
 	}
 	

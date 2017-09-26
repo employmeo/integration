@@ -220,14 +220,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		respondant.setAccountId(account.getId());
 
 		String appAtsId = applicant.optString("applicant_ats_id");
-		respondant.setAtsId(this.getPrefix() + appAtsId);
-		
+		if (appAtsId != null) respondant.setAtsId(this.addPrefix(appAtsId));		
 		if (applicant.has("person_ats_id")) person = personService.getPersonByAtsId(applicant.optString("person_ats_id"));
 		
 		if (null == person) {
 			person = new Person();
 			person.setAtsId(this.getPrefix() + appAtsId);
-			if (applicant.has("person_ats_id")) person.setAtsId(this.getPrefix() + applicant.optString("person_ats_id"));
+			if (applicant.has("person_ats_id")) person.setAtsId(this.addPrefix(applicant.optString("person_ats_id")));
 			person.setEmail(applicant.optString("email"));
 			person.setFirstName(applicant.optString("fname"));
 			person.setLastName(applicant.optString("lname"));
