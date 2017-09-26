@@ -4,11 +4,16 @@ import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+
 import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +32,11 @@ import lombok.extern.slf4j.Slf4j;
 @Scope("prototype")
 public class GreenhousePartnerUtil extends BasePartnerUtil {
 
+	@Value("https://harvest.greenhouse.io/v1/")
+	private String HARVEST_API;
+	
+	private final String REJECT_STATUS = "reject";
+		
 	public GreenhousePartnerUtil() {
 	}
 
@@ -58,18 +68,51 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 		return output;
 	}
 	
+	@Override
+	public void changeCandidateStatus(Respondant respondant, String status) {
+		String appId = trimPrefix(respondant.getAtsId());
+		GreenhouseApplication response;
+		JSONObject move = new JSONObject();
+		if (REJECT_STATUS.equalsIgnoreCase(status)) {
+			response = getPartnerClient().target(HARVEST_API+"applications/"+appId+ "/reject")
+				.request().header("On-Behalf-Of:", partner.getApiLogin())
+				.post(Entity.entity(move.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
+		} else {
+			move.put("from_stage", Integer.valueOf(status));
+			response = getPartnerClient().target(HARVEST_API+"applications/"+appId+"/move")
+				.request().header("On-Behalf-Of:", partner.getApiLogin())
+				.post(Entity.entity(move.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
+		}
+		log.debug("Respondant {} Change resulted in: {}",respondant.getId(),response);
+	}
+	
+	@Override
+	public void postScoresToPartner(String method, JSONObject message) {
+		GreenhouseApplication response = getPartnerClient().target(method).request()
+				.header("On-Behalf-Of:", partner.getApiLogin())
+			.method("PATCH", Entity.entity(message.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
+		log.debug("post scores resulted in: {}", response);		
+	}
+	
+	
+	@Override
+	public JSONObject getScoresMessage(Respondant respondant) {
+		JSONObject message = new JSONObject();
+		JSONObject customFields = new JSONObject();
+		
+		customFields.put("Talytica_Scores", getScoreNotesFormat(respondant));
+		customFields.put("Talytica_Link", externalLinksService.getPortalLink(respondant));
+		message.put("custom_fields", customFields);
+		return message;		
+	}
+	
 	
 	@Override
 	public Client getPartnerClient() {
 		ClientConfig cc = new ClientConfig();
-//		cc.property(ApacheClientProperties.PREEMPTIVE_BASIC_AUTHENTICATION, true);	
-//		cc.property(ClientProperties.REQUEST_ENTITY_PROCESSING, "BUFFERED");
-//		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
-//		cc.property("sslProtocol", "TLSv1.2");
-//		cc.connectorProvider(new ApacheConnectorProvider());
+		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 		Client client = ClientBuilder.newClient(cc);
-		String user = this.partner.getApiKey();
-//		String pass = this.partner.getApiPass();	
+		String user = this.partner.getApiKey();	
 		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(user,"");
 		client.register(feature);
 
@@ -78,7 +121,7 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 
 	public GreenhouseApplication getApplicationDetail(Long id) {
 		Client client = getPartnerClient();
-		GreenhouseApplication appl = client.target("https://harvest.greenhouse.io/v1/applications/"+id)
+		GreenhouseApplication appl = client.target(HARVEST_API+"applications/"+id)
 				.request().get(GreenhouseApplication.class);
 
 		return appl;
@@ -86,7 +129,7 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 	
 	public GreenhouseCandidate getCandidateDetail(Long id) {
 		Client client = getPartnerClient();
-		GreenhouseCandidate candidate = client.target("https://harvest.greenhouse.io/v1/candidates/"+id)
+		GreenhouseCandidate candidate = client.target(HARVEST_API+"candidates/"+id)
 				.request().get(GreenhouseCandidate.class);
 
 		return candidate;
@@ -106,6 +149,7 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 
 		return createRespondantFrom(app, account, respondant);
 	}
+	
 	public Respondant createPriorDataCandidate(GreenhouseApplication app, Account account) {
 		Respondant respondant = getRespondant(app);
 		if (respondant != null) return respondant;
@@ -128,7 +172,6 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 	
 	public Respondant createRespondantFrom(GreenhouseApplication app, Account account, Respondant respondant) {
 
-		
 		Long candidateId = app.getCandidate_id(); // person ATS ID
 		Person person = personService.getPersonByAtsId(addPrefix(candidateId.toString()));
 		if (person == null) {
@@ -151,6 +194,8 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 		respondant.setAccountId(account.getId());
 		respondant.setAccountSurveyId(account.getDefaultAsId()); // lets see if this is ok...
 		respondant.setLocationId(account.getDefaultLocationId());
+		String scorePostMethod = HARVEST_API + "applications/" + app.getId();
+		respondant.setScorePostMethod(scorePostMethod);
 		String jobId = null;
 		if (!app.getJobs().isEmpty()) jobId = addPrefix(app.getJobs().get(0).getId().toString());
 		Position position = accountService.getPositionByAtsId(account.getId(), jobId);
@@ -176,4 +221,6 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 		
 		return savedRespondant;
 	}
+	
+	
 }

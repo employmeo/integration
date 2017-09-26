@@ -197,13 +197,16 @@ public class GreenhouseResource {
 		case "new_candidate_application":
 			log.debug("New Candidate {}",webhook.getPayload().getApplication().getId());
 			GreenhouseApplication app = pu.getApplicationDetail(webhook.getPayload().getApplication().getId());
-			pu.createPrescreenCandidate(app, account);
+			Respondant newResp = pu.createPrescreenCandidate(app, account);
+			log.debug("Created respondant: {}", newResp.getId());
 			break;
 		case "candidate_stage_change":
 			log.debug("Candidate {} stage change to {}",webhook.getPayload().getApplication().getId(),webhook.getPayload().getApplication().getCurrent_stage().getName());
+			Respondant respondant = pu.getRespondant(webhook.getPayload().getApplication());			
+			log.warn("Found respondant: {}, but didn't process", respondant.getId());
 			break;
 		default:
-			log.debug("Unprocessed {} webhook posted with payload: {} ", webhook.getAction(), webhook.getPayload());
+			log.warn("Unprocessed {} webhook posted with payload: {} ", webhook.getAction(), webhook.getPayload());
 			break;
 		}
 		return;
