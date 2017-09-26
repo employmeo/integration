@@ -39,7 +39,7 @@ public class AssessmentPipelineService {
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
-	public void initiateAssessmentAnalysis(@NonNull Respondant respondant) {
+	public void initiateAssessmentAnalysis(@NonNull Respondant respondant) throws Exception {
 		log.debug("Assessment analysis requested for respondant {}", respondant.getId());
 
 		if (respondant.getRespondantStatus() < Respondant.STATUS_SCORED) {			

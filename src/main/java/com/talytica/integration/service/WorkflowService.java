@@ -71,6 +71,7 @@ public class WorkflowService {
 			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_INVITATIONSENT == workflow.getTriggerPoint())) {
 				switch (workflow.getType()) {
 					case CustomWorkflow.TYPE_ATSUPDATE:
+						if (respondant.getPartner() == null) break;
 						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 						pu.changeCandidateStatus(respondant, workflow.getAtsId());
 						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
@@ -95,6 +96,7 @@ public class WorkflowService {
 			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_ASSESSMENT == workflow.getTriggerPoint())) {
 				switch (workflow.getType()) {
 					case CustomWorkflow.TYPE_ATSUPDATE:
+						if (respondant.getPartner() == null) break;
 						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
 						pu.changeCandidateStatus(respondant, workflow.getAtsId());
 						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
@@ -108,7 +110,26 @@ public class WorkflowService {
 			}
 		}	
 	}
-	
+
+	public void executePredictionWorkflows(Respondant respondant) {
+		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
+		log.debug("WORKFLOW: {} workflows found", workflows.size());
+		Collections.sort(workflows);
+		for (CustomWorkflow workflow : workflows) {
+			if ((null != workflow.getProfile()) && (!workflow.getProfile().equalsIgnoreCase(respondant.getProfileRecommendation()))) continue;
+			if (!workflow.getActive()) continue;
+			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_PREDICTION == workflow.getTriggerPoint())) {
+				switch (workflow.getType()) {
+					default:
+						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						break;
+				}
+			} else {
+				log.debug("Different Trigger Point: {}", workflow.getTriggerPoint());
+			}
+		}	
+	}
+		
 	public void executeAdvanceWorkflows(Respondant respondant) {
 		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
 		log.debug("WORKFLOW: {} workflows found", workflows.size());
@@ -139,4 +160,28 @@ public class WorkflowService {
 		}	
 	}
 
+	public void executeAdvPredictionWorkflows(Respondant respondant) {
+		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
+		log.debug("WORKFLOW: {} workflows found", workflows.size());
+		Collections.sort(workflows);
+		for (CustomWorkflow workflow : workflows) {
+			if ((null != workflow.getProfile()) && (!workflow.getProfile().equalsIgnoreCase(respondant.getProfileRecommendation()))) continue;
+			if (!workflow.getActive()) continue;
+			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_ADVPREDICTION == workflow.getTriggerPoint())) {
+				switch (workflow.getType()) {
+					case CustomWorkflow.TYPE_NOTIFY:
+						respondant.setEmailRecipient(workflow.getText());
+						emailService.sendResults(respondant);												
+						log.debug("WORKFLOW: Sent notification email to {}", respondant.getEmailRecipient());
+						break;
+					default:
+						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						break;
+				}
+			} else {
+				log.debug("Different Trigger Point: {}", workflow.getTriggerPoint());
+			}
+		}	
+	}
+	
 }

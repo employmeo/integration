@@ -54,8 +54,10 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 	
 	@SuppressWarnings(value = {"unchecked"})
 	@Override
-	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, List<NameValuePair> modelInputs) {
-		log.debug("Running predictions for {}", respondant.getId());
+	public PredictionResult runPredictions( Respondant respondant, 
+											PositionPredictionConfiguration posConfig,
+											List<NameValuePair> modelInputs) throws Exception {
+		log.debug("Running prediction for {}", respondant.getId());
 		
 		PredictionResult prediction = new PredictionResult();
 		JSONObject args = null;
@@ -86,7 +88,7 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 
 		} catch (Exception e) {
 			log.error("Ensemble Prediction failed for {}, with exception {}", respondant.getId(), e);
-			return null;
+			throw e;  // not gonna catch this exception. let it bomb - and then allow it to be logged as failed
 		}
 
 		log.info("Prediction of {} for respondant {} is {}", posConfig.getPredictionTarget().getLabel(), respondant.getId(), prediction.getScore());
@@ -94,7 +96,7 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 	}
 
 	@SuppressWarnings(value = {"unchecked"})
-	private JSONObject prepInputData(JSONObject inputData) {
+	private JSONObject prepInputData(JSONObject inputData) throws Exception {
 		//call topic model!
 		log.debug("Topic Model: {}", model.getPrepName());	
 		try {
@@ -131,7 +133,8 @@ public class BigMLEnsembleEngine implements PredictionModelEngine {
 				executed = Boolean.TRUE;
 			}
 		} catch (Exception e){
-			log.warn("Topic Model Failure with exception {}", e);
+			log.warn("Topic Model Failure with exception {}", e.getMessage());
+			throw e;
 		}
 		return inputData;
 	}

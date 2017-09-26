@@ -14,7 +14,7 @@ import lombok.NonNull;
 @EqualsAndHashCode
 public class ATSStatusUpdate {
 	
-	private ATSApplicant applicant;
+	public ATSApplicant applicant;
 	private ATSAccount account;
 	
 	public ATSStatusUpdate(@NonNull JazzJobApplicant applicant, @NonNull String accountAtsId, String status, Date date) {
@@ -35,7 +35,7 @@ public class ATSStatusUpdate {
 	
 	@Data
 	@AllArgsConstructor
-	class ATSApplicant {
+	public class ATSApplicant {
 		private String id;
 		private String applicant_id;
 		private String job_id;

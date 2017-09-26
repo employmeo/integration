@@ -49,9 +49,10 @@ public class SimpleLinearRegressionEngine implements PredictionModelEngine {
 	}
 
 	@Override
-	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig,
-			List<NameValuePair> inputs) {
-		log.debug("Running predictions for {}", respondant.getId());
+	public PredictionResult runPredictions( Respondant respondant,
+											PositionPredictionConfiguration posConfig,
+											List<NameValuePair> inputs) throws Exception {
+		log.debug("Running prediction for {}", respondant.getId());
 
 		PredictionResult prediction = new PredictionResult();
 		Double targetOutcomeScore = evaluate(inputs);	

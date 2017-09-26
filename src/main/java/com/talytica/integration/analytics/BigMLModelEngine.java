@@ -45,7 +45,9 @@ public class BigMLModelEngine implements PredictionModelEngine {
 
 	@SuppressWarnings(value = {"unchecked"})
 	@Override
-	public PredictionResult runPredictions(Respondant respondant, PositionPredictionConfiguration posConfig, List<NameValuePair> modelInputs) {
+	public PredictionResult runPredictions( Respondant respondant, 
+											PositionPredictionConfiguration posConfig,
+											List<NameValuePair> modelInputs) throws Exception {
 		log.debug("Running predictions for {}", respondant.getId());
 		
 		PredictionResult prediction = new PredictionResult();

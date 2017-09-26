@@ -94,14 +94,22 @@ public class PipelineService {
 
 	public void computeGrades(@NonNull Respondant respondant) throws Exception {
 		Boolean stageTwo = (respondant.getRespondantStatus() >= Respondant.STATUS_ADVANCED);
-		log.debug("Respondant {} has status = {} - ready to grade.", respondant.getId(), respondant.getRespondantStatus());
-		Set<RespondantScore> gradedScores = scoringService.computeGraders(respondant);
-		if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
-		respondant.getRespondantScores().addAll(gradedScores);
-		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-		if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);
+		
+		// New Logic to bounce over to 12 / 32 if not meeting minimum threshold
+		if (respondantService.isGraderMinMet(respondant)) {			
+			log.debug("Respondant {} has status = {} - ready to grade.", respondant.getId(), respondant.getRespondantStatus());
+			Set<RespondantScore> gradedScores = scoringService.computeGraders(respondant);
+			if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
+			respondant.getRespondantScores().addAll(gradedScores);
+			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
+			if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);
+			log.debug("{} Grades to be saved for respondant {}", gradedScores.size(), respondant.getId());
+		} else {
+			log.debug("Respondant {} does not meet minimum of {} graders", respondant.getId(), respondant.getAccountSurvey().getMinGraders());
+			respondant.setRespondantStatus(Respondant.STATUS_INSUFFICIENT_GRADERS);
+			if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_INSUFFICIENT_ADVGRADERS);
+		}
 		respondantService.save(respondant);
-		log.debug("{} Grades saved for respondant {}", gradedScores.size(), respondant.getId());
 	}
 
 	public void predictRespondant(@NonNull Respondant respondant) throws Exception {
@@ -131,6 +139,7 @@ public class PipelineService {
 		if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVREPREDICTED);
 		Respondant savedRespondant = respondantService.save(respondant);
 		sendNotifications(savedRespondant);
+		if (stageTwo) workflowService.executeAdvPredictionWorkflows(savedRespondant);
 		log.debug("Assessment analysis for respondant {} complete", respondant.getId());
 	}
 	
