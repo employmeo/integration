@@ -143,7 +143,10 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 			person = personService.save(newPerson);
 		}
 		
+		respondant.setPerson(person);
+		respondant.setPersonId(person.getId());
 		respondant.setAtsId(addPrefix(app.getId().toString()));
+		
 		respondant.setAccount(account);
 		respondant.setAccountId(account.getId());
 		respondant.setAccountSurveyId(account.getDefaultAsId()); // lets see if this is ok...
