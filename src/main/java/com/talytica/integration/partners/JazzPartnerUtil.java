@@ -16,10 +16,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
-import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
-import org.glassfish.jersey.client.HttpUrlConnectorProvider;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -102,8 +100,17 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			Person person = personService.getPersonByAtsId(addPrefix(applicant.optString("applicant_id")));
 			Position position = accountService.getPositionByAtsId(account.getId(),
 					addPrefix(applicant.optString("job_id")));
-			if ((null != person) & (null != position)) {
+			// most cases we'll find the person & position by internal lookup / combo...
+			if ((null != person) && (null != position)) {
 				respondant = respondantService.getRespondantByPersonAndPosition(person, position);
+			}	
+			//but sometimes jazz combines applicants after the fact, so if we found person, but not respondant...
+			if ((null != person) && (null == respondant)) {
+				String appjobservice = "applicants2jobs/applicant_id/" +
+						applicant.optString("applicant_id")
+						+ "/job_id/" + applicant.optString("job_id");
+				JSONObject application = new JSONObject(jazzGet(appjobservice, account));
+				respondant = respondantService.getRespondantByAtsId(addPrefix(application.optString("id")));
 			}
 		}
 
@@ -426,11 +433,7 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 	
 	@Override
 	public Client getPartnerClient() {
-		ClientConfig cc = new ClientConfig();
-		cc.property(ClientProperties.CONNECT_TIMEOUT, 15000);//15 seconds
-		cc.property(ClientProperties.READ_TIMEOUT, 15000);//15 seconds
-		Client client = ClientBuilder.newClient(cc);
-		return client;
+		return ClientBuilder.newClient();
 	}
 	
 	// Special calls to Jazz HR to get data for applicant
@@ -440,6 +443,18 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 		return jazzGet(getTarget, apiKey, null);
 	}
 
+	public String jazzPoll(String getTarget, String apiKey) {
+		Client client = getPartnerClient();
+		client.property(ClientProperties.CONNECT_TIMEOUT, 90000);//90 seconds
+		client.property(ClientProperties.READ_TIMEOUT, 90000);//90 seconds
+		Response response = client.target(JAZZ_SERVICE + getTarget)
+				.queryParam("apikey", apiKey)
+				.request(MediaType.APPLICATION_JSON).get();
+		log.debug("Jazz responded with: {}",response.getStatusInfo().getReasonPhrase());
+		return response.readEntity(String.class);
+	}
+
+	
 	public String jazzGet(String getTarget, String apiKey, Map<String, String> params) {
 		Client client = getPartnerClient();
 		WebTarget target = client.target(JAZZ_SERVICE + getTarget).queryParam("apikey", apiKey);

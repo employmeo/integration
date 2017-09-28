@@ -49,8 +49,11 @@ public class ATSOrderResource {
 		if (null == account) return Response.status(Response.Status.BAD_REQUEST)
 				.entity("{ message: 'Unable to match account'}").build();
 		Respondant respondant = pu.createRespondantFrom(json, account);
-		if (null == respondant) return Response.status(Response.Status.BAD_REQUEST)
-				.entity("{ message: 'Unable to process order'}").build();
+		if (null == respondant) {
+			log.warn("Failed to process {}'s Order: {}", partner.getPartnerName(), json);
+			return Response.status(Response.Status.BAD_REQUEST).entity("{ message: 'Unable to process order'}").build();
+		}
+				
 		JSONObject output = pu.prepOrderResponse(json, respondant);
 
 		log.debug("ATS Request for Assessment Complete: " + respondant.getAtsId());

@@ -56,7 +56,6 @@ public class JazzPolling {
 	
 	@Autowired
 	private AccountService accountService;
-
 	
 	/**
 	 * Accepts a configuration object to pull applicants from Jazz and
@@ -135,7 +134,7 @@ public class JazzPolling {
 		while (limit) {
 			int counter = 0;
 			try {
-				String applicantsServiceResponse = pu.jazzGet(applicantsServiceEndpoint+"page/"+page, accountApiKey, null);		
+				String applicantsServiceResponse = pu.jazzPoll(applicantsServiceEndpoint+"page/"+page, accountApiKey);		
 				if (null != applicantsServiceResponse) {
 					List<JazzHire> allhires = Lists.newArrayList();
 					try {
@@ -159,7 +158,7 @@ public class JazzPolling {
 					}
 				}
 			} catch (Exception e) {
-				log.warn("Failed to retrieve/process applicants from Jazz API service", e.getMessage());
+				log.error("Failed to get hires from Jazz: {}", e.getMessage(),e);
 			}
 			if (counter < 99) limit = false;
 			page++;
@@ -237,7 +236,8 @@ public class JazzPolling {
 		int ordered = 0;
 		for (ATSAssessmentOrder order : orders) {
 			String applicantName = "'" + order.getFirst_name() + " " + order.getLast_name() + "'";
-			log.info("Placing order #{} for {}", ++counter, applicantName);
+			counter++;
+			log.debug("Placing order #{} for {}", counter, applicantName);
 
 			WebTarget target = client.target(targetPath);
 			try {
@@ -250,10 +250,10 @@ public class JazzPolling {
 					log.debug("Posted ATS order to integration server for applicant {}", applicantName);
 					ordered++;
 				} else {
-					log.warn("Failed to post ATS order successfully for {}. Server response: {}", applicantName, serviceResponse);
+					log.warn("#{}. ATS order failed for {}. Server response: {}", applicantName, serviceResponse);
 				}
 			} catch(Exception e) {
-				log.warn("Failed to post ATS order to integration server: {}", order, e );
+				log.error("#{}. ATS order {} Failed with reason: {}", order, e.getMessage(),e );
 			}
 		}
 		log.info("Placed {} of {} ATS order requests complete.", ordered, orders.size());
@@ -278,7 +278,8 @@ public class JazzPolling {
 		int counter = 0;
 		int saved = 0;
 		for (ATSStatusUpdate update : updates) {
-			log.info("#{}. Attempting to update respondant: {}", ++counter, update.getApplicant().getApplicant_id());
+			counter++;
+			log.debug("#{}. Attempting to update respondant: {}", counter, update.getApplicant().getApplicant_id());
 
 			WebTarget target = client.target(targetPath);
 			try {
@@ -291,10 +292,10 @@ public class JazzPolling {
 					log.debug("Posted status update {} succeeded", counter);
 					saved++;
 				} else {
-					log.warn("Status not updated. Server response: {}", serviceResponse);
+					log.warn("#{}. Jazz Candidate {} did not update update: {}", counter, update.getApplicant().getApplicant_id(), serviceResponse);
 				}
 			} catch(Exception e) {
-				log.warn("Failed to post ATS status update to integration server: {}", update, e );
+				log.error("#{}. Jazz Candidate {} failed update: {}", counter, update.getApplicant().getApplicant_id(), e.getMessage(),e);
 			}
 		}
 		log.info("Updated {} of {} ATS requests complete.", saved, updates.size());
@@ -307,8 +308,6 @@ public class JazzPolling {
 		}
 
 	}
-	
-	
 	
 	/***
 	 * Retrieve client configurations for Jazz Polling
