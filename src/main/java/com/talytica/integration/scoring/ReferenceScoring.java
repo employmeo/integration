@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.Grader;
 import com.employmeo.data.model.Person;
+import com.employmeo.data.model.ReferenceCheckConfig;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.RespondantScorePK;
@@ -37,6 +38,8 @@ public class ReferenceScoring implements ScoringModelEngine {
 	public List<RespondantScore> scoreResponses(Respondant respondant, List<Response> responses) {
 		Double referenceSent = 0d;
 		List<RespondantScore> scores = new ArrayList<RespondantScore>();
+		
+		ReferenceCheckConfig rcConfig = respondant.getAccountSurvey().getRcConfig();
 
 		for (Response response : responses) {
 			String email = response.getResponseText();
@@ -69,8 +72,12 @@ public class ReferenceScoring implements ScoringModelEngine {
 			grader.setResponse(response);
 			grader.setResponseId(response.getId());
 			grader.setQuestionId(response.getQuestionId());
+			if (rcConfig != null) {
+				grader.setRcConfig(rcConfig);
+				grader.setRcConfigId(rcConfig.getId());
+			}
 			Grader savedGrader = graderService.save(grader);
-
+			
 			emailService.sendReferenceRequest(savedGrader);
 			referenceSent++;
 		}
