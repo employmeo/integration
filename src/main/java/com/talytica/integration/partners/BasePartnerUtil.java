@@ -525,7 +525,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			Boolean success = (null == result || result.getStatus() >= 300) ? false : true;
 			String serviceResponse = result.readEntity(String.class);
 			if (success) {
-				log.info("Posted message {} to {}. Server response: {}", message, postmethod, serviceResponse);
+				log.debug("Posted message {} to {}. Server response: {}", message, postmethod, serviceResponse);
 			} else {
 				log.warn("Failed to post message {} to {}. Server response: {}", message, postmethod, serviceResponse);
 			}

@@ -105,7 +105,7 @@ public class PipelineService {
 			if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);
 			log.debug("{} Grades to be saved for respondant {}", gradedScores.size(), respondant.getId());
 		} else {
-			log.debug("Respondant {} does not meet minimum of {} graders", respondant.getId(), respondant.getAccountSurvey().getMinGraders());
+			log.debug("Respondant {} does not meet minimum graders for config {}", respondant.getId(), respondant.getAccountSurvey().getRcConfig());
 			respondant.setRespondantStatus(Respondant.STATUS_INSUFFICIENT_GRADERS);
 			if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_INSUFFICIENT_ADVGRADERS);
 		}
