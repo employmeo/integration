@@ -133,32 +133,32 @@ public class JazzPolling {
 		Set<JazzHire> hirenotices = Sets.newHashSet();
 		while (limit) {
 			int counter = 0;
+			List<JazzHire> allhires = Lists.newArrayList();
 			try {
 				String applicantsServiceResponse = pu.jazzPoll(applicantsServiceEndpoint+"page/"+page, accountApiKey);		
-				if (null != applicantsServiceResponse) {
-					List<JazzHire> allhires = Lists.newArrayList();
+				if ((null != applicantsServiceResponse) && (!applicantsServiceResponse.isEmpty())) {
 					try {
 						allhires = mapper.readValue(
 								applicantsServiceResponse,
 								new TypeReference<List<JazzHire>>() {
 								});
 					} catch(Exception e) {
-						log.warn("Failed to deserialize fetchApplicants api response to a collection, will try as single object next.", e);
+						log.warn("Failed to deserialize response to a collection: {}", applicantsServiceResponse, e);
 						JazzHire singleHire = mapper.readValue(applicantsServiceResponse, JazzHire.class);
 						allhires.add(singleHire);
-					}
-					for (JazzHire hire : allhires) {
-						if (window.contains(hire.getHired_date())) {
-							counter++;
-							hirenotices.add(hire);
-						} else {
-							log.debug("ignored everyone prior to: {}", hire.getHired_date());
-							break;
-						}
 					}
 				}
 			} catch (Exception e) {
 				log.error("Failed to get hires from Jazz: {}", e.getMessage(),e);
+			}
+			for (JazzHire hire : allhires) {
+				if (window.contains(hire.getHired_date())) {
+					counter++;
+					hirenotices.add(hire);
+				} else {
+					log.debug("ignored everyone prior to: {}", hire.getHired_date());
+					break;
+				}
 			}
 			if (counter < 99) limit = false;
 			page++;
