@@ -402,7 +402,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
 			notes.append(cf.getName());
 			notes.append(" : ");
-			notes.append(String.format("%d", score.getValue()));
+			notes.append(String.format("%02d", score.getValue()));
 			//notes.append(score.getValue().intValue());
 			notes.append("\n");
 		}
