@@ -363,6 +363,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		notes.append(" (");
 		notes.append(respondant.getCompositeScore());
 		notes.append(")\n");
+
+		List<String> warnings = respondantService.getWarningMessages(respondant);
+		for (String warning : warnings) {
+			notes.append("WARNING: ");
+			notes.append(warning);
+			notes.append("\n");
+		}
 		
 		if (respondant.getPredictions().size() > 0) {
 			notes.append("Summary Scores:\n");		
@@ -395,7 +402,8 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
 			notes.append(cf.getName());
 			notes.append(" : ");
-			notes.append(score.getValue().intValue());
+			notes.append(String.format("%d", score.getValue()));
+			//notes.append(score.getValue().intValue());
 			notes.append("\n");
 		}
 
