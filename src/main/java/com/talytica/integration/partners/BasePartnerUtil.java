@@ -356,20 +356,20 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	public String getScoreNotesFormat(Respondant respondant) {
 	
 		StringBuffer notes = new StringBuffer();
-
-		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		notes.append("Category: ");
-		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
-		notes.append(" (");
-		notes.append(respondant.getCompositeScore());
-		notes.append(")\n");
-
+		
 		List<String> warnings = respondantService.getWarningMessages(respondant);
 		for (String warning : warnings) {
 			notes.append("WARNING: ");
 			notes.append(warning);
 			notes.append("\n");
 		}
+		
+		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
+		notes.append("Category: ");
+		notes.append(customProfile.getName(respondant.getProfileRecommendation()));
+		notes.append(" (");
+		notes.append(respondant.getCompositeScore());
+		notes.append(")\n");
 		
 		if (respondant.getPredictions().size() > 0) {
 			notes.append("Summary Scores:\n");		
@@ -402,8 +402,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
 			notes.append(cf.getName());
 			notes.append(" : ");
-			notes.append(String.format("%02d", score.getValue()));
-			//notes.append(score.getValue().intValue());
+			
+//			this is awful but, for now, always format as two digit leading zero
+//			if ((int) score.getValue().doubleValue() == score.getValue()) {
+				notes.append(String.format("%02d",(int) score.getValue().doubleValue()));
+//			} else {
+//				notes.append(String.format("%.1f",score.getValue()));
+//			}
 			notes.append("\n");
 		}
 
