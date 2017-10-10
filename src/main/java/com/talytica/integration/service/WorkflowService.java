@@ -120,6 +120,10 @@ public class WorkflowService {
 			if (!workflow.getActive()) continue;
 			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_PREDICTION == workflow.getTriggerPoint())) {
 				switch (workflow.getType()) {
+					case CustomWorkflow.TYPE_NOTIFY:
+						respondant.setEmailRecipient(workflow.getText());
+						emailService.sendResults(respondant);												
+						log.debug("WORKFLOW: Sent notification email to {}", respondant.getEmailRecipient());
 					default:
 						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
 						break;
