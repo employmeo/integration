@@ -153,11 +153,11 @@ public class ScoringService {
 		}
 		
 		Boolean outstandingGrades = Boolean.FALSE;
+		respondant.getRespondantScores().addAll(allScores);
 		if (null != gradesNeeded) {
 			respondant.getRespondantScores().remove(gradesNeeded);			
 			outstandingGrades = Boolean.TRUE;
 		}
-		respondant.getRespondantScores().addAll(allScores);
 		return outstandingGrades;
 	}
 
