@@ -64,7 +64,7 @@ public class ScoringService {
 	
 	
 	public Boolean scoreAssessmentResponses(@NonNull Respondant respondant) {
-		log.debug("Scoring assessment for respondant {} with {} responses", respondant.getId(), respondant.getResponses().size());
+		log.debug("Scoring assessment for respondant {}", respondant.getId());
 		HashMap<String, List<Response>> responseTable = new HashMap<String, List<Response>>();
 		HashMap<Corefactor, List<RespondantScore>> parents = new HashMap<Corefactor, List<RespondantScore>>();
 		Set<RespondantScore> allScores = Sets.newHashSet();
@@ -153,11 +153,11 @@ public class ScoringService {
 		}
 		
 		Boolean outstandingGrades = Boolean.FALSE;
+		respondant.getRespondantScores().addAll(allScores);
 		if (null != gradesNeeded) {
 			respondant.getRespondantScores().remove(gradesNeeded);			
 			outstandingGrades = Boolean.TRUE;
 		}
-		respondant.getRespondantScores().addAll(allScores);
 		return outstandingGrades;
 	}
 
