@@ -282,7 +282,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject results = new JSONObject();
 		CustomProfile customProfile = respondant.getAccount().getCustomProfile();
-		String notes = getScoreNotesFormat(respondant).substring(0,NOTES_MAX_LENGTH);
+		String notes = getScoreNotesFormat(respondant); //.substring(0,NOTES_MAX_LENGTH); - Removed for USACS - Future setup instruction...
 		
 		try {
 			JSONObject assessment = new JSONObject();
