@@ -10,6 +10,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.*;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.talytica.integration.objects.BearerLoginFilter;
 import com.talytica.integration.service.IntegrationPartnerDetailsService;
 
 @Configuration
@@ -35,13 +38,14 @@ public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 	    		.authorizeRequests()
 	    		  .antMatchers(openPages).permitAll()
 	    		  .anyRequest().authenticated()
-	    		.and()
+		    	.and()
 	    		  .sessionManagement()
 	    		  .sessionCreationPolicy(SessionCreationPolicy.NEVER)
 		    	.and()
 		    	  .httpBasic()
 	    		.and()
 	    		  .csrf().disable();
+//		    	  .addFilterBefore(new BearerLoginFilter(),UsernamePasswordAuthenticationFilter.class);		
 	    }
 	    
 		@Bean
