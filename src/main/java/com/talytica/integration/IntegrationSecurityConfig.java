@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,12 +13,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.talytica.integration.objects.BearerLoginFilter;
 import com.talytica.integration.service.IntegrationPartnerDetailsService;
 
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableWebSecurity
+@Order(2)
 public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 
 		@Value("${com.talytica.integration.openpages:/health}")
@@ -44,8 +45,9 @@ public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 		    	.and()
 		    	  .httpBasic()
 	    		.and()
-	    		  .csrf().disable();
-//		    	  .addFilterBefore(new BearerLoginFilter(),UsernamePasswordAuthenticationFilter.class);		
+	    		  .csrf().disable()
+	    		  .addFilterBefore(new BearerLoginFilter("/integration/1/workable/**",authenticationManager()),UsernamePasswordAuthenticationFilter.class);
+
 	    }
 	    
 		@Bean
