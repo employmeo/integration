@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/1/workable")
 @Api( value="/1/workable", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
-
 public class WorkableResource {
 
 	
@@ -64,6 +63,7 @@ public class WorkableResource {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = accountService.getByPartnerId(partner.getId());
+		log.debug("API called by {} for account {}",partner,account);
 		if (account == null) {
 			return ACCOUNT_NOT_FOUND;
 		}
@@ -85,6 +85,7 @@ public class WorkableResource {
 	public Response getPositions() throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
+		log.debug("API called by {} for account {}",partner,account);
 		if (account == null) {
 			return ACCOUNT_NOT_FOUND;
 		}
@@ -111,6 +112,7 @@ public class WorkableResource {
 	public WorkableStatusResponse getStatus(@ApiParam (value = "Candiate ID")  @QueryParam("Assessment Id") Long respondantId) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
+		log.debug("API called by {} for account {}",partner,account);
 		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
 
 		Respondant respondant = respondantService.getRespondantById(respondantId);

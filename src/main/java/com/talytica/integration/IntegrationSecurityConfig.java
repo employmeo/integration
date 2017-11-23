@@ -46,8 +46,7 @@ public class IntegrationSecurityConfig extends WebSecurityConfigurerAdapter {
 		    	  .httpBasic()
 	    		.and()
 	    		  .csrf().disable()
-	    		  .addFilterBefore(new BearerLoginFilter("/integration/1/workable/**",authenticationManager()),UsernamePasswordAuthenticationFilter.class);
-
+	    		  .addFilterBefore(new BearerLoginFilter(authenticationManager()),UsernamePasswordAuthenticationFilter.class);
 	    }
 	    
 		@Bean
