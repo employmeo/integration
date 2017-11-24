@@ -27,11 +27,12 @@ public class GreenhouseStatusResponse {
 			List<String> predictions = Lists.newArrayList();
 			for (Prediction prediction : respondant.getPredictions()) {
 				StringBuffer pred = new StringBuffer();
-				pred.append(String.format("%.0d%", 100*prediction.getPredictionScore()));
-				pred.append(" chance that ");
+				pred.append(String.format("%.1f", 100*prediction.getPredictionScore()));
+				pred.append("% chance that ");
 				pred.append(respondant.getPerson().getFirstName());
 				pred.append(" ");
 				pred.append(prediction.getPositionPredictionConfig().getPredictionTarget().getLabel());
+				pred.append(".");
 				predictions.add(pred.toString());
 			}
 			setMetadata(new Metadata(category,predictions));

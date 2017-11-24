@@ -15,11 +15,11 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.service.AccountService;
 import com.employmeo.data.service.PartnerService;
 import com.employmeo.data.service.RespondantService;
+import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
 import com.talytica.integration.partners.workable.WorkableAssessmentOrder;
-import com.talytica.integration.partners.workable.WorkableStatusResponse;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +47,8 @@ public class WorkableResource {
 	private RespondantService respondantService;
 	@Autowired
 	private ExternalLinksService externalLinksService;
+	@Autowired
+	EmailService emailService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
@@ -76,7 +78,7 @@ public class WorkableResource {
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Gets list of assessments for logged in account")
+	@ApiOperation(value = "Gets list of jobs for logged in account")
 	   @ApiResponses(value = {
 		  @ApiResponse(code = 200, message = "Request Processed"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
@@ -108,8 +110,34 @@ public class WorkableResource {
 		  @ApiResponse(code = 200, message = "Request Processed"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
-	@Path("/assessments/id")
-	public WorkableStatusResponse getStatus(@ApiParam (value = "Candiate ID")  @QueryParam("Assessment Id") Long respondantId) throws JSONException {
+	@Path("/assessments/{id}")
+	public Response getStatus(@ApiParam (value = "Candiate ID")  @PathParam("id") Long respondantId) throws JSONException {
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
+		Account account = accountService.getByPartnerId(partner.getId());
+		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
+		log.debug("API called by {} for account {}",partner,account);
+		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
+
+		Respondant respondant = respondantService.getRespondantById(respondantId);
+		if (respondant == null)throw new WebApplicationException(RESPONDANT_NOT_FOUND);
+
+		if (account.getId() != respondant.getAccountId()) {
+			log.warn("Account does not match Applicant");
+			throw new WebApplicationException(ACCOUNT_MATCH);
+		}
+		
+		return Response.status(Response.Status.OK).entity(pu.getScoresMessage(respondant).toString()).build();
+	}
+
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Gets Link to Respondant Score")
+	   @ApiResponses(value = {
+		  @ApiResponse(code = 200, message = "Request Processed"),
+		  @ApiResponse(code = 404, message = "Account Not Found")
+	   })
+	@Path("/assessments/{id}/shared-link")
+	public Response getLink(@ApiParam (value = "Candiate ID")  @PathParam("id") Long respondantId) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
 		log.debug("API called by {} for account {}",partner,account);
@@ -123,33 +151,9 @@ public class WorkableResource {
 			throw new WebApplicationException(ACCOUNT_MATCH);
 		}
 		
-		return new WorkableStatusResponse(respondant);
-	}
-
-	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Checks Status of Respondant", response = WorkableStatusResponse.class)
-	   @ApiResponses(value = {
-		  @ApiResponse(code = 200, message = "Request Processed"),
-		  @ApiResponse(code = 404, message = "Account Not Found")
-	   })
-	@Path("/assessments/{id}/shared-link")
-	public JSONObject getLink(@ApiParam (value = "Candiate ID")  @QueryParam("Assessment Id") Long respondantId) throws JSONException {
-		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
-		Account account = accountService.getByPartnerId(partner.getId());
-		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
-
-		Respondant respondant = respondantService.getRespondantById(respondantId);
-		if (respondant == null)throw new WebApplicationException(RESPONDANT_NOT_FOUND);
-
-		if (account.getId() != respondant.getAccountId()) {
-			log.warn("Account does not match Applicant");
-			throw new WebApplicationException(ACCOUNT_MATCH);
-		}
-		
 		JSONObject response = new JSONObject();
 		response.put("url", externalLinksService.getPortalLink(respondant));
-		return response;
+		return Response.status(Response.Status.OK).entity(response.toString()).build();
 	}
 	
 	@POST
@@ -157,7 +161,7 @@ public class WorkableResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "Order new assessment to be emailed to Greenhouse candidate")
 	   @ApiResponses(value = {
-		  @ApiResponse(code = 200, message = "Request Processed"),
+		  @ApiResponse(code = 201, message = "Created"),
 		  @ApiResponse(code = 401, message = "API key not accepted"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
@@ -166,11 +170,13 @@ public class WorkableResource {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
+		log.debug("API called by {} for account {}, with {}",partner,account,order);
 		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
 
 		Respondant respondant = pu.createRespondantFrom(order.toJson(), account);		
-		JSONObject output = pu.prepOrderResponse(order.toJson(), respondant);
-		
-		return Response.status(Response.Status.OK).entity(output.toString()).build();
+		emailService.sendEmailInvitation(respondant);
+		JSONObject response = new JSONObject();
+		response.put("assessment_id", respondant.getId().toString());
+		return Response.status(Response.Status.CREATED).entity(response.toString()).build();
 	}
 }

@@ -40,9 +40,19 @@ public class WorkableAssessmentOrder {
 		JSONObject assessment = new JSONObject();
 		assessment.put("assessment_asid",Long.valueOf(getTest_id()));
 
+//		JSONObject position = new JSONObject();
+//		position.put("position_id",Long.valueOf(getJob_shortcode()));
+
+		JSONObject delivery = new JSONObject();
+		delivery.put("email_applicant",Boolean.TRUE);
+		delivery.put("scores_post_url",getCallback_url());
+		json.put("delivery",delivery);
+		
 		json.put("assessment", assessment);
+		json.put("position", assessment);
 		json.put("applicant", applicant);
-		// skip json put location, position
+		json.put("delivery",delivery);
+		// skip json put location - no location comes across
 		
 		return json;
 	}
