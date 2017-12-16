@@ -55,7 +55,7 @@ public class WorkablePartnerUtil extends BasePartnerUtil {
 		
 		try {
 			if (respondant.getRespondantStatus() >= Respondant.STATUS_PREDICTED) {
-				message.put("status","complete");
+				message.put("status","completed");
 				message.put("results_url", externalLinksService.getRenderLink(respondant));
 
 				assessment.put("score",respondant.getCompositeScore().toString());
