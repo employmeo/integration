@@ -1,23 +1,28 @@
 package com.talytica.integration.resources;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.service.AccountSurveyService;
 import com.employmeo.data.service.CorefactorService;
 import com.employmeo.data.service.QuestionService;
+import com.employmeo.data.service.RespondantService;
 import com.talytica.integration.triggers.RespondantPipelineTriggers;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
 @Component
@@ -25,7 +30,7 @@ import javax.ws.rs.core.SecurityContext;
 @Path("/1/admin")
 @Api(value="/1/admin")
 public class AdminResourceResource {
-	
+
 	@Autowired
 	QuestionService questionService;
 
@@ -38,12 +43,15 @@ public class AdminResourceResource {
 	@Autowired
 	RespondantPipelineTriggers respondantPipelineTriggers;
 	
+	@Autowired
+	RespondantService respondantService;
+	
 	@Context
 	SecurityContext sc;
 	
 	@POST
 	@Path("/clearcache")
-	@ApiOperation(value = "Clears System Caches", response = String.class)
+	@ApiOperation(value = "Clears System Caches")
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 200, message = "OK - Cache Cleared")
 	   })
@@ -89,7 +97,7 @@ public class AdminResourceResource {
 	
 	@POST
 	@Path("/trigger/predictions")
-	@ApiOperation(value = "Triggers", response = String.class)
+	@ApiOperation(value = "Triggers")
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
 	   })
@@ -100,7 +108,7 @@ public class AdminResourceResource {
 	
 	@POST
 	@Path("/trigger/all")
-	@ApiOperation(value = "Triggers all pipeline activities", response = String.class)
+	@ApiOperation(value = "Triggers all pipeline activities")
 	   @ApiResponses(value = {
 	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
 	   })
@@ -110,6 +118,31 @@ public class AdminResourceResource {
 		respondantPipelineTriggers.triggerRespondantAssessmentScoring();
 		respondantPipelineTriggers.triggerGraderCompute();;
 		respondantPipelineTriggers.triggerPredictions();
+	}
+	
+	@POST
+	@Path("/reset")
+	@Consumes(MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value = "Triggers all pipeline activities")
+	   @ApiResponses(value = {
+	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	   })
+	public void resetErrorStatus(@ApiParam("Respondant ID") Long respondantId) {
+		log.debug("Reset respondant {} Triggered by {}", respondantId, sc.getUserPrincipal().getName());
+		respondantService.clearError(respondantId);
+
+	}
+	
+	@POST
+	@Path("/resetgroup")
+	@ApiOperation(value = "Triggers all pipeline activities")
+	   @ApiResponses(value = {
+	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	   })
+	public void resetErrorStatus(@ApiParam("Respondant IDs") List<Long> respondantIds) {
+		log.debug("Reset respondant {} Triggered by {}", respondantIds, sc.getUserPrincipal().getName());
+		respondantService.clearErrors(respondantIds);
+
 	}
 
 }

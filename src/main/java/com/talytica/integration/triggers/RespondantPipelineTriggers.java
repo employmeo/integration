@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,7 @@ public class RespondantPipelineTriggers {
 	private Boolean predictionScoringJobEnabled;
 
 	@Scheduled(initialDelayString = "${jobs.prescreenprediction.trigger.init.seconds:60}000", fixedDelayString = "${jobs.prescreenprediction.trigger.delay.seconds:60}000")
+	@Async
 	public void triggerRespondantPreScreen() {
 		if (preScreenPredictionJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getAllRespondantsByStatus(Respondant.STATUS_PRESCREEN);
@@ -60,6 +62,7 @@ public class RespondantPipelineTriggers {
 	}
 		
 	@Scheduled(initialDelayString = "${jobs.submissionanalysis.trigger.init.seconds:60}000", fixedDelayString = "${jobs.submissionanalysis.trigger.delay.seconds:60}000")
+	@Async
 	public void triggerRespondantAssessmentScoring() {
 		if (respondantSubmissionAnalysisJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getAnalysisPendingRespondants();
@@ -84,6 +87,7 @@ public class RespondantPipelineTriggers {
 	}
 
 	@Scheduled(initialDelayString = "${jobs.graderscoring.trigger.init.seconds:90}000", fixedDelayString = "${jobs.graderscoring.trigger.delay.seconds:900}000")
+	@Async
 	public void triggerGraderCompute() {
 		if (graderFulfilledScoringJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getGraderBasedScoringPendingRespondants();
@@ -109,6 +113,7 @@ public class RespondantPipelineTriggers {
 	}
 	
 	@Scheduled(initialDelayString = "${jobs.predictions.trigger.init.seconds:90}000", fixedDelayString = "${jobs.predictions.trigger.delay.seconds:900}000")
+	@Async
 	public void triggerPredictions() {
 		if (predictionScoringJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getPredictionPendingRespondants();

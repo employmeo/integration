@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.RespondantScoreRepository;
 import com.employmeo.data.service.*;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
@@ -32,35 +31,9 @@ public class ScoringService {
 	@Autowired
 	private ScoringModelRegistry scoringModelRegistry;
 	@Autowired
-	private RespondantScoreRepository respondantScoreRepository;
-	@Autowired
 	private CorefactorService corefactorService;
 	@Autowired
 	private AccountSurveyService accountSurveyService;
-
-	@Deprecated
-	public Respondant scoreAssessment(@NonNull Respondant respondant) {
-		Boolean incomplete = scoreAssessmentResponses(respondant);
-		if (incomplete) {
-			respondant.setRespondantStatus(Respondant.STATUS_UNGRADED);
-		} else {
-			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-		}
-		if (respondant.getRespondantScores().size() > 0) {
-			respondantScoreRepository.save(respondant.getRespondantScores());
-			log.debug("Saved {} Scores for respondant {}", respondant.getRespondantScores().size(), respondant.getId());
-		}
-
-		return respondantService.save(respondant);
-	}
-	
-	@Deprecated
-	public Respondant scoreGraders(@NonNull Respondant respondant) {
-		Set<RespondantScore> gradedScores = computeGraders(respondant);
-		respondant.setRespondantStatus(Respondant.STATUS_SCORED);
-		if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
-		return respondantService.save(respondant);
-	}
 	
 	
 	public Boolean scoreAssessmentResponses(@NonNull Respondant respondant) {

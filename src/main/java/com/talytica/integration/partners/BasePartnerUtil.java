@@ -279,7 +279,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant) {
 
 		JSONObject delivery = json.optJSONObject("delivery");
-		if (delivery.has("email_applicant") && delivery.optBoolean("email_applicant")) {
+		if ((delivery != null) && delivery.has("email_applicant") && delivery.optBoolean("email_applicant")) {
 			emailService.sendEmailInvitation(respondant);
 		}
 		JSONObject output = new JSONObject();

@@ -41,6 +41,11 @@ public class PartnerUtilityRegistry {
 			srUtil.setPartner(lookupPartner);
 			util = srUtil;
 			break;
+		case "WORKABLE":
+			WorkablePartnerUtil wkUtil = applicationContext.getBean(WorkablePartnerUtil.class);
+			wkUtil.setPartner(lookupPartner);
+			util = wkUtil;
+			break;
 		default:
 			DefaultPartnerUtil defaultUtil = applicationContext.getBean(DefaultPartnerUtil.class);
 			defaultUtil.setPartner(lookupPartner);
