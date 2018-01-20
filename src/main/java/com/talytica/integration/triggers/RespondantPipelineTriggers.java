@@ -37,7 +37,7 @@ public class RespondantPipelineTriggers {
 
 	@Scheduled(initialDelayString = "${jobs.prescreenprediction.trigger.init.seconds:60}000", fixedDelayString = "${jobs.prescreenprediction.trigger.delay.seconds:60}000")
 	@Async
-	public void triggerRespondantPreScreen() {
+	public synchronized void triggerRespondantPreScreen() {
 		if (preScreenPredictionJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getAllRespondantsByStatus(Respondant.STATUS_PRESCREEN);
 			
@@ -63,7 +63,7 @@ public class RespondantPipelineTriggers {
 		
 	@Scheduled(initialDelayString = "${jobs.submissionanalysis.trigger.init.seconds:60}000", fixedDelayString = "${jobs.submissionanalysis.trigger.delay.seconds:60}000")
 	@Async
-	public void triggerRespondantAssessmentScoring() {
+	public synchronized void triggerRespondantAssessmentScoring() {
 		if (respondantSubmissionAnalysisJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getAnalysisPendingRespondants();
 			if (eligibleRespondants.isEmpty()) {
@@ -88,7 +88,7 @@ public class RespondantPipelineTriggers {
 
 	@Scheduled(initialDelayString = "${jobs.graderscoring.trigger.init.seconds:90}000", fixedDelayString = "${jobs.graderscoring.trigger.delay.seconds:900}000")
 	@Async
-	public void triggerGraderCompute() {
+	public synchronized void triggerGraderCompute() {
 		if (graderFulfilledScoringJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getGraderBasedScoringPendingRespondants();
 			if (eligibleRespondants.isEmpty()) {
@@ -114,7 +114,7 @@ public class RespondantPipelineTriggers {
 	
 	@Scheduled(initialDelayString = "${jobs.predictions.trigger.init.seconds:90}000", fixedDelayString = "${jobs.predictions.trigger.delay.seconds:900}000")
 	@Async
-	public void triggerPredictions() {
+	public synchronized void triggerPredictions() {
 		if (predictionScoringJobEnabled) {
 			List<Respondant> eligibleRespondants = respondantService.getPredictionPendingRespondants();
 			if (eligibleRespondants.isEmpty()) {
