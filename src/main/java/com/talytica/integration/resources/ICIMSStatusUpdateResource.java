@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.service.PartnerService;
+import com.employmeo.data.service.RespondantService;
 import com.talytica.common.service.EmailService;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.partners.PartnerUtil;
@@ -34,6 +35,8 @@ public class ICIMSStatusUpdateResource {
 	PartnerService partnerService;
 	@Autowired
 	EmailService emailService;
+	@Autowired
+	RespondantService respondantService;
 	@Autowired
 	ExternalLinksService externalLinksService;
 	@Autowired
@@ -57,30 +60,32 @@ public class ICIMSStatusUpdateResource {
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 
 		Account account = pu.getAccountFrom(json);
-
-		// TODO - Build out Hire Notification Logic (what are the status types, etc...)
-		// String newStatus = json.getString("newStatus");//	New status	(ID)
-		// String oldStatus = json.getString("oldStatus");//	Old status	(ID)
-		// String eventType = json.getString("eventType");
-		//
-		// if status change is from assessed to offered, not offered, hired, etc - then
-		// lookup the respondant in employmeo and update accordingly. otherwise, create
-		// a new respondant as below...
-
 		Respondant applicant = pu.createRespondantFrom(json, account);
 
+		Boolean statusChange = false;
+		String newStatus = json.getString("newStatus");
+
+		for (CustomWorkflow flow : applicant.getPosition().getCustomWorkflows()) {
+			if ((CustomWorkflow.TYPE_STATUSUPDATE.equalsIgnoreCase(flow.getType())) && (flow.getAtsId().equalsIgnoreCase(newStatus))) {
+				switch (flow.getText()) {
+				case "hired":
+					statusChange = true;
+					applicant.setRespondantStatus(Respondant.STATUS_HIRED);
+					break;
+				case "rejected":
+					statusChange = true;
+					applicant.setRespondantStatus(Respondant.STATUS_REJECTED);
+					break;
+				default:
+				}
+			}
+		}
+		if (statusChange) respondantService.save(applicant);
 		if (applicant.getRespondantStatus() < Respondant.STATUS_COMPLETED) {
 			pu.inviteCandidate(applicant);
 			workflowService.executeInvitedWorkflows(applicant);
 		}
 		
-		//URI link = null;
-		//
-		//try {
-		//	link = new URI(externalLinksService.getAssessmentLink(applicant));
-		//} catch (Exception e) {
-		//	log.warn("Failed to URI-ify link: " + externalLinksService.getAssessmentLink(applicant));
-		//}
 
 		return Response.ok().build();
 	}
