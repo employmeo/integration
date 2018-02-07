@@ -8,7 +8,8 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
 import org.json.JSONException;
 import org.springframework.stereotype.Component;
-import com.talytica.integration.objects.SendGridEmailEvent;
+
+import com.employmeo.data.model.SendGridEmailEvent;
 
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
