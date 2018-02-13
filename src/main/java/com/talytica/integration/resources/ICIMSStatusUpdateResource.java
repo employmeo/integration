@@ -76,6 +76,10 @@ public class ICIMSStatusUpdateResource {
 					statusChange = true;
 					applicant.setRespondantStatus(Respondant.STATUS_REJECTED);
 					break;
+				case "reinvite":
+					statusChange = true;
+					applicant.setRespondantStatus(Respondant.STATUS_REMINDED);
+					break;
 				default:
 				}
 			}
