@@ -44,10 +44,14 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 	public JSONArray formatSurveyList(Set<AccountSurvey> surveys) {
 		JSONArray response = new JSONArray();
 		for (AccountSurvey as : surveys) {
-			JSONObject survey = new JSONObject();
-			survey.put("partner_test_name", as.getDisplayName());
-			survey.put("partner_test_id", as.getId());
-			response.put(survey);
+			JSONObject survey = new JSONObject();	
+			try {
+				survey.put("partner_test_name", as.getDisplayName());
+				survey.put("partner_test_id", as.getId());
+				response.put(survey);
+			} catch (JSONException e) {
+				log.error("Unexpected JSON exception {}", e);
+			}
 		}
 
 		return response;
@@ -78,10 +82,15 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 				.request().header("On-Behalf-Of:", partner.getApiLogin())
 				.post(Entity.entity(move.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
 		} else {
-			move.put("from_stage", Integer.valueOf(status));
-			response = getPartnerClient().target(HARVEST_API+"applications/"+appId+"/move")
-				.request().header("On-Behalf-Of:", partner.getApiLogin())
-				.post(Entity.entity(move.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
+			try {
+				move.put("from_stage", Integer.valueOf(status));
+				response = getPartnerClient().target(HARVEST_API+"applications/"+appId+"/move")
+					.request().header("On-Behalf-Of:", partner.getApiLogin())
+					.post(Entity.entity(move.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
+			} catch (JSONException e) {
+				log.error("Unexpected JSON error {}",e);
+				response = null;
+			}
 		}
 		log.debug("Respondant {} Change resulted in: {}",respondant.getId(),response);
 	}
@@ -99,10 +108,14 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject message = new JSONObject();
 		JSONObject customFields = new JSONObject();
+		try {
+			customFields.put("Talytica_Scores", getScoreNotesFormat(respondant));
+			customFields.put("Talytica_Link", externalLinksService.getPortalLink(respondant));
+			message.put("custom_fields", customFields);
+		} catch (JSONException e) {
+			log.error("Unexpected JSON error {}",e);
+		}
 		
-		customFields.put("Talytica_Scores", getScoreNotesFormat(respondant));
-		customFields.put("Talytica_Link", externalLinksService.getPortalLink(respondant));
-		message.put("custom_fields", customFields);
 		return message;		
 	}
 	

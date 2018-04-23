@@ -19,7 +19,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import jersey.repackaged.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -87,7 +87,7 @@ public class TestResource {
 	     @ApiResponse(code = 201, message = "File Analyzed"),
 	   })
 	public String videoToText(@ApiParam(name="responseId",value="Response Id") @FormParam("responseId") Long responseId) {
-		Response response = responseRepository.findOne(responseId);
+		Response response = responseRepository.findById(responseId).get();
 		String text = speechToTextService.translateMedia(response.getResponseMedia(),SpeechToTextService.VIDEO_WEBM);
 		if ((null != text) && (!text.isEmpty())) {
 			Respondant respondant = respondantService.getRespondantById(response.getRespondantId());

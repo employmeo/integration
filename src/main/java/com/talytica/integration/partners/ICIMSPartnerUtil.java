@@ -142,7 +142,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
 		if (jobPosition == null) {
 			log.debug("Using Account default position instead of {}", job);
-			jobPosition = positionRepository.findOne(account.getDefaultPositionId());
+			jobPosition = positionRepository.findById(account.getDefaultPositionId()).get();
 		}
 
 		return jobPosition;

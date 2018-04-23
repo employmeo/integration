@@ -33,7 +33,7 @@ public class SendgridEmailEventResource {
 	public Response doPost(List<SendGridEmailEvent> events) throws JSONException {
 		log.debug("processing with {} " + events);
 
-		sendGridEventRepository.save(events);
+		sendGridEventRepository.saveAll(events);
 		return Response.status(Response.Status.ACCEPTED).entity("{ message: 'Status Change Accepted' }").build();
 	}
 }
