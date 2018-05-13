@@ -7,7 +7,6 @@ import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.Response;
-import com.employmeo.data.repository.ResponseRepository;
 import com.employmeo.data.service.RespondantService;
 import com.talytica.common.service.SpeechToTextService;
 import com.talytica.common.service.TextAnalyticsService;
@@ -46,9 +45,6 @@ public class TestResource {
 
 	@Autowired
 	private RespondantService respondantService;
-	
-	@Autowired
-	private ResponseRepository responseRepository;
 
 	@Autowired
 	private ScoringModelRegistry scoringModelRegistry;
@@ -87,7 +83,7 @@ public class TestResource {
 	     @ApiResponse(code = 201, message = "File Analyzed"),
 	   })
 	public String videoToText(@ApiParam(name="responseId",value="Response Id") @FormParam("responseId") Long responseId) {
-		Response response = responseRepository.findById(responseId).get();
+		Response response = respondantService.getResponseById(responseId);
 		String text = speechToTextService.translateMedia(response.getResponseMedia(),SpeechToTextService.VIDEO_WEBM);
 		if ((null != text) && (!text.isEmpty())) {
 			Respondant respondant = respondantService.getRespondantById(response.getRespondantId());

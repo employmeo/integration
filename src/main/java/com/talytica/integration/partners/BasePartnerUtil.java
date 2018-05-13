@@ -69,9 +69,6 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	PredictionModelService predictionModelService;
 	
 	@Autowired
-	CorefactorRepository corefactorRepository;
-	
-	@Autowired
 	GraderService graderService;
 
 	@Autowired
@@ -385,8 +382,8 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		List<RespondantScore> scores = new ArrayList<RespondantScore>( respondant.getRespondantScores());		
 		scores.sort(new Comparator<RespondantScore>() {
 			public int compare (RespondantScore a, RespondantScore b) {
-				Corefactor corefactorA = corefactorRepository.findById(a.getId().getCorefactorId()).get();
-				Corefactor corefactorB = corefactorRepository.findById(a.getId().getCorefactorId()).get();
+				Corefactor corefactorA = corefactorService.findCorefactorById(a.getId().getCorefactorId());
+				Corefactor corefactorB = corefactorService.findCorefactorById(b.getId().getCorefactorId());
 				double aCoeff = 1d;
 				double bCoeff = 1d;
 				if (corefactorA.getDefaultCoefficient() != null) aCoeff = Math.abs(corefactorA.getDefaultCoefficient());
@@ -399,7 +396,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		});
 		notes.append("Summary Scores:\n");		
 		for (RespondantScore score : scores) {
-			Corefactor cf = corefactorRepository.findById(score.getId().getCorefactorId()).get();
+			Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
 			notes.append(cf.getName());
 			notes.append(" : ");
 			
