@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.client.ClientProperties;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
@@ -109,8 +110,12 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 				String appjobservice = "applicants2jobs/applicant_id/" +
 						applicant.optString("applicant_id")
 						+ "/job_id/" + applicant.optString("job_id");
-				JSONObject application = new JSONObject(jazzGet(appjobservice, account));
-				respondant = respondantService.getRespondantByAtsId(addPrefix(application.optString("id")));
+				try {
+					JSONObject application = new JSONObject(jazzGet(appjobservice, account));
+					respondant = respondantService.getRespondantByAtsId(addPrefix(application.optString("id")));
+				} catch (JSONException e) {
+					log.error("Unexpected JSON error {}",e);
+				}
 			}
 		}
 

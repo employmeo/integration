@@ -5,7 +5,7 @@ import java.util.List;
 import com.employmeo.data.model.Prediction;
 import com.employmeo.data.model.Respondant;
 
-import jersey.repackaged.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;

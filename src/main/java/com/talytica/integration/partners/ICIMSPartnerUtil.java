@@ -21,7 +21,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.*;
-import com.employmeo.data.repository.*;
 import com.employmeo.data.service.*;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.common.service.AddressService;
@@ -65,18 +64,6 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 	PersonService personService;
 
 	@Autowired
-	LocationRepository locationRepository;
-
-	@Autowired
-	PositionRepository positionRepository;
-
-	@Autowired
-	CorefactorRepository corefactorRepository;
-	
-	@Autowired
-	GraderService graderService;
-
-	@Autowired
 	ExternalLinksService externalLinksService;
 	
 
@@ -105,7 +92,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 		String locationLink = jlocation.optString("address");
 		String locationName = jlocation.optString("value");
 
-		Location location = locationRepository.findByAccountIdAndAtsId(account.getId(), locationLink);
+		Location location = accountService.getLocationByAtsId(account.getId(), locationLink);
 
 		if (location != null) {
 			return location;
@@ -125,7 +112,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 		location.setAtsId(locationLink);
 		location.setLocationName(locationName);
 
-		return locationRepository.save(location);
+		return accountService.save(location);
 	}
 
 	@Override
@@ -142,7 +129,7 @@ public class ICIMSPartnerUtil extends BasePartnerUtil implements PartnerUtil {
 
 		if (jobPosition == null) {
 			log.debug("Using Account default position instead of {}", job);
-			jobPosition = positionRepository.findOne(account.getDefaultPositionId());
+			jobPosition = accountService.getPositionById(account.getDefaultPositionId());
 		}
 
 		return jobPosition;

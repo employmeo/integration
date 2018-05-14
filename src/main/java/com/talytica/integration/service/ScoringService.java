@@ -12,8 +12,8 @@ import com.employmeo.data.service.*;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
 
-import jersey.repackaged.com.google.common.collect.Lists;
-import jersey.repackaged.com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 

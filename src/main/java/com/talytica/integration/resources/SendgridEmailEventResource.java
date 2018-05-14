@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.employmeo.data.model.SendGridEmailEvent;
-import com.employmeo.data.repository.SendGridEventRepository;
+import com.talytica.common.service.EmailService;
 
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +26,14 @@ import lombok.extern.slf4j.Slf4j;
 public class SendgridEmailEventResource {
 
 	@Autowired
-	SendGridEventRepository sendGridEventRepository;
+	EmailService emailService;
 	
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response doPost(List<SendGridEmailEvent> events) throws JSONException {
 		log.debug("processing with {} " + events);
 
-		sendGridEventRepository.save(events);
+		emailService.saveAll(events);
 		return Response.status(Response.Status.ACCEPTED).entity("{ message: 'Status Change Accepted' }").build();
 	}
 }

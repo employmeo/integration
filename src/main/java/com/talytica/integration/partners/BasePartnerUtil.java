@@ -69,9 +69,6 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	PredictionModelService predictionModelService;
 	
 	@Autowired
-	CorefactorRepository corefactorRepository;
-	
-	@Autowired
 	GraderService graderService;
 
 	@Autowired
@@ -385,8 +382,8 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		List<RespondantScore> scores = new ArrayList<RespondantScore>( respondant.getRespondantScores());		
 		scores.sort(new Comparator<RespondantScore>() {
 			public int compare (RespondantScore a, RespondantScore b) {
-				Corefactor corefactorA = corefactorRepository.findOne(a.getId().getCorefactorId());
-				Corefactor corefactorB = corefactorRepository.findOne(a.getId().getCorefactorId());
+				Corefactor corefactorA = corefactorService.findCorefactorById(a.getId().getCorefactorId());
+				Corefactor corefactorB = corefactorService.findCorefactorById(b.getId().getCorefactorId());
 				double aCoeff = 1d;
 				double bCoeff = 1d;
 				if (corefactorA.getDefaultCoefficient() != null) aCoeff = Math.abs(corefactorA.getDefaultCoefficient());
@@ -399,7 +396,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		});
 		notes.append("Summary Scores:\n");		
 		for (RespondantScore score : scores) {
-			Corefactor cf = corefactorRepository.findOne(score.getId().getCorefactorId());
+			Corefactor cf = corefactorService.findCorefactorById(score.getId().getCorefactorId());
 			notes.append(cf.getName());
 			notes.append(" : ");
 			
@@ -565,9 +562,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		for (AccountSurvey as : surveys) {
 			if (as.getType() != AccountSurvey.TYPE_APPLICANT) continue;
 			JSONObject survey = new JSONObject();
-			survey.put("assessment_name", as.getDisplayName());
-			survey.put("assessment_asid", as.getId());
-			response.put(survey);
+			try {
+				survey.put("assessment_name", as.getDisplayName());
+				survey.put("assessment_asid", as.getId());
+				response.put(survey);
+			} catch (JSONException e) {
+				log.error("Unexpected JSON exception {}", e);
+			}
 		}
 
 		return response;

@@ -7,6 +7,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
@@ -46,8 +47,13 @@ public class SmartRecruitersPartnerUtil extends BasePartnerUtil {
 
 	@Override
 	public AccountSurvey getSurveyFrom(JSONObject assessment, Account account) {
-		String offerCatalogId = assessment.getString("offer_catalog_id");
-		AccountSurvey aSurvey = accountSurveyService.getAccountSurveyBySurveyIdForAccount(Long.valueOf(offerCatalogId),account.getId());
+		AccountSurvey aSurvey = null;
+		try {
+			String offerCatalogId = assessment.getString("offer_catalog_id");
+			aSurvey = accountSurveyService.getAccountSurveyBySurveyIdForAccount(Long.valueOf(offerCatalogId),account.getId());
+		} catch (JSONException e) {
+			log.error("Unexpected JSON error {}",e);
+		}
 		if (aSurvey == null) aSurvey = accountSurveyService.getAccountSurveyById(account.getDefaultAsId());
 		return aSurvey;
 	}

@@ -83,7 +83,7 @@ public class PipelineService {
 				if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);
 			}
 			if (respondant.getRespondantScores().size() > 0) {
-				respondantScoreRepository.save(respondant.getRespondantScores());
+				respondantService.saveAll(respondant.getRespondantScores());
 				log.debug("Saved {} Scores for respondant {}", respondant.getRespondantScores().size(), respondant.getId());
 			}
 			respondantService.save(respondant);
@@ -99,7 +99,7 @@ public class PipelineService {
 		if (respondantService.isGraderMinMet(respondant)) {			
 			log.debug("Respondant {} has status = {} - ready to grade.", respondant.getId(), respondant.getRespondantStatus());
 			Set<RespondantScore> gradedScores = scoringService.computeGraders(respondant);
-			if (gradedScores.size() > 0) respondantScoreRepository.save(gradedScores);
+			if (gradedScores.size() > 0) respondantService.saveAll(gradedScores);
 			respondant.getRespondantScores().addAll(gradedScores);
 			respondant.setRespondantStatus(Respondant.STATUS_SCORED);
 			if (stageTwo) respondant.setRespondantStatus(Respondant.STATUS_ADVSCORESADDED);

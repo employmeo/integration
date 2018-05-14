@@ -22,7 +22,7 @@ import com.employmeo.data.model.Prediction;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantScore;
 
-import jersey.repackaged.com.google.common.collect.Maps;
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -39,9 +39,13 @@ public class WorkablePartnerUtil extends BasePartnerUtil {
 		JSONArray response = new JSONArray();
 		for (AccountSurvey as : surveys) {
 			JSONObject survey = new JSONObject();
-			survey.put("name", as.getDisplayName());
-			survey.put("id", as.getId());
-			response.put(survey);
+			try {
+				survey.put("name", as.getDisplayName());
+				survey.put("id", as.getId());
+				response.put(survey);
+			} catch (JSONException e) {
+				log.error("Unexpected JSON exception {}", e);
+			}
 		}
 		return response;
 	}
