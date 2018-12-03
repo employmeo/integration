@@ -51,7 +51,7 @@ public class WorkflowService {
 						respondant.setRespondantStatus(Respondant.STATUS_INVITED);
 						break;
 					default:
-						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						log.warn("WORKFLOW: No action at pre-screen trigger point for: {}", workflow);
 						break;
 				}
 			} else {
@@ -77,7 +77,7 @@ public class WorkflowService {
 						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
 						break;
 					default:
-						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						log.warn("WORKFLOW: No action at invited trigger point for: {}", workflow);
 						break;
 				}
 			} else {
@@ -102,7 +102,7 @@ public class WorkflowService {
 						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
 						break;
 					default:
-						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						log.warn("WORKFLOW: No action at submitted trigger point for: {}", workflow);
 						break;
 				}
 			} else {
@@ -124,8 +124,9 @@ public class WorkflowService {
 						respondant.setEmailRecipient(workflow.getText());
 						emailService.sendResults(respondant);												
 						log.debug("WORKFLOW: Sent notification email to {}", respondant.getEmailRecipient());
+						break;
 					default:
-						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						log.warn("WORKFLOW: No action at prediction trigger point for: {}", workflow);
 						break;
 				}
 			} else {
@@ -155,7 +156,7 @@ public class WorkflowService {
 						respondant.setRespondantStatus(Respondant.STATUS_ADVINITIATED);
 						break;
 					default:
-						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						log.warn("WORKFLOW: No action at advance trigger point for: {}", workflow);
 						break;
 				}
 			} else {
@@ -179,7 +180,7 @@ public class WorkflowService {
 						log.debug("WORKFLOW: Sent notification email to {}", respondant.getEmailRecipient());
 						break;
 					default:
-						log.warn("WORKFLOW: No action at creation trigger point for: {}", workflow);
+						log.warn("WORKFLOW: No action at adv-prediction trigger point for: {}", workflow);
 						break;
 				}
 			} else {
