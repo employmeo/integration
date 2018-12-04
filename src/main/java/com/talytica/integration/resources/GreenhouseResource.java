@@ -3,6 +3,7 @@ package com.talytica.integration.resources;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -18,8 +19,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.employmeo.data.model.*;
 import com.employmeo.data.service.AccountService;
+import com.employmeo.data.service.CorefactorService;
+import com.employmeo.data.service.GraderService;
 import com.employmeo.data.service.PartnerService;
 import com.employmeo.data.service.RespondantService;
+import com.google.common.collect.Lists;
 import com.talytica.common.service.ExternalLinksService;
 import com.talytica.integration.objects.*;
 import com.talytica.integration.partners.GreenhousePartnerUtil;
@@ -57,6 +61,10 @@ public class GreenhouseResource {
 	private AccountService accountService;
 	@Autowired
 	private RespondantService respondantService;
+	@Autowired
+	private GraderService graderService;
+	@Autowired
+	private CorefactorService corefactorService;
 	@Autowired
 	private ExternalLinksService externalLinksService;
 	@Autowired
@@ -108,6 +116,20 @@ public class GreenhouseResource {
 		
 		GreenhouseStatusResponse response = new GreenhouseStatusResponse(respondant);
 		response.setPartner_profile_url(externalLinksService.getPortalLink(respondant));
+		
+		List<Grader> graders = graderService.getGradersByRespondantId(respondant.getId())
+				.stream()
+				.filter(g -> g.getStatus() == Grader.STATUS_COMPLETED)
+				.collect(Collectors.toList());	
+		if (!graders.isEmpty()) response.setMetaReferences(graders);
+		
+		List<String> scores = Lists.newArrayList();
+		for (RespondantScore rs : respondant.getRespondantScores()) {
+			Corefactor cf = corefactorService.findCorefactorById(rs.getId().getCorefactorId());
+			scores.add(cf.getName() + ": " + rs.getValue() + " of " + cf.getHighValue());
+		}
+		if (!graders.isEmpty()) response.setMetaScores(scores);
+		
 		return response;
 	}
 
