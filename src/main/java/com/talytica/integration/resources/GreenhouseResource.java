@@ -1,5 +1,7 @@
 package com.talytica.integration.resources;
 
+import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -8,11 +10,15 @@ import java.util.stream.Collectors;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Range;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,11 +53,13 @@ import lombok.extern.slf4j.Slf4j;
 @Api( value="/1/greenhouse", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON)
 
 public class GreenhouseResource {
-
 	
-	private static final Response ACCOUNT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Account Not Found").build();
-	private static final Response RESPONDANT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Candidate Not Found").build();
-	private static final Response ACCOUNT_MATCH = Response.status(Response.Status.CONFLICT).entity("{ message: 'Applicant ID not found for Account ID' }").build();
+	@Value("https://harvest.greenhouse.io/v1/")
+	private String HARVEST_API;
+	
+	private static final ResponseBuilder ACCOUNT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Account Not Found");
+	private static final ResponseBuilder RESPONDANT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Candidate Not Found");
+	private static final ResponseBuilder ACCOUNT_MATCH = Response.status(Response.Status.CONFLICT).entity("{ message: 'Applicant ID not found for Account ID' }");
 	
 	@Context
 	private SecurityContext sc;
@@ -86,7 +94,7 @@ public class GreenhouseResource {
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
 		Account account = accountService.getByPartnerId(partner.getId());
 		if (account == null) {
-			return ACCOUNT_NOT_FOUND;
+			return ACCOUNT_NOT_FOUND.build();
 		}
 
 		JSONArray response = pu.formatSurveyList(account.getAccountSurveys());	
@@ -104,14 +112,14 @@ public class GreenhouseResource {
 	public GreenhouseStatusResponse getStatus(@ApiParam (value = "Candiate ID")  @QueryParam("partner_interview_id") UUID respondantUuid) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
-		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
+		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND.build());
 
 		Respondant respondant = respondantService.getRespondant(respondantUuid);
-		if (respondant == null)throw new WebApplicationException(RESPONDANT_NOT_FOUND);
+		if (respondant == null)throw new WebApplicationException(RESPONDANT_NOT_FOUND.build());
 
 		if (account.getId() != respondant.getAccountId()) {
 			log.warn("Account does not match Applicant");
-			throw new WebApplicationException(ACCOUNT_MATCH);
+			throw new WebApplicationException(ACCOUNT_MATCH.build());
 		}
 		
 		GreenhouseStatusResponse response = new GreenhouseStatusResponse(respondant);
@@ -128,7 +136,7 @@ public class GreenhouseResource {
 			Corefactor cf = corefactorService.findCorefactorById(rs.getId().getCorefactorId());
 			scores.add(cf.getName() + ": " + rs.getValue() + " of " + cf.getHighValue());
 		}
-		if (!graders.isEmpty()) response.setMetaScores(scores);
+		if (!scores.isEmpty()) response.setMetaScores(scores);
 		
 		return response;
 	}
@@ -147,9 +155,22 @@ public class GreenhouseResource {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
 		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
-		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
+		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND.build());
+		
+		JSONObject jOrder = order.toJson();
+		if (null != partner.getApiKey()) {
+			log.debug("Setting up for postback");
+			// If GH client provided API key, assume score post back is requested.
+			JSONObject delivery = new JSONObject();
 
-		Respondant respondant = pu.createRespondantFrom(order.toJson(), account);		
+			String appId = order.getAppId();
+			if (null != appId) {
+				String scorePostMethod = HARVEST_API + "applications/" + appId;
+				delivery.put("scores_post_url", scorePostMethod);
+				jOrder.put("delivery", delivery);
+			}
+		}
+		Respondant respondant = pu.createRespondantFrom(jOrder, account);		
 		JSONObject output = pu.prepOrderResponse(order.toJson(), respondant);
 		
 		return Response.status(Response.Status.OK).entity(output.toString()).build();
@@ -168,7 +189,7 @@ public class GreenhouseResource {
 	public Response postError(@ApiParam (value = "Error Object")  @RequestBody GreenhouseErrorNotice notice) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
-		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND);
+		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND.build());
 		log.error("Greenhouse reported error: {}",notice);
 		return Response.status(Response.Status.OK).build();
 	}

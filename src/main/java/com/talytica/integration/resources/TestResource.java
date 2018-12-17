@@ -3,13 +3,25 @@ package com.talytica.integration.resources;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.employmeo.data.model.Account;
+import com.employmeo.data.model.Partner;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.RespondantScore;
 import com.employmeo.data.model.Response;
+import com.employmeo.data.service.AccountService;
+import com.employmeo.data.service.CorefactorService;
+import com.employmeo.data.service.GraderService;
+import com.employmeo.data.service.PartnerService;
 import com.employmeo.data.service.RespondantService;
+import com.talytica.common.service.ExternalLinksService;
 import com.talytica.common.service.SpeechToTextService;
 import com.talytica.common.service.TextAnalyticsService;
+import com.talytica.integration.partners.GreenhousePartnerUtil;
+import com.talytica.integration.partners.PartnerUtil;
+import com.talytica.integration.partners.PartnerUtilityRegistry;
+import com.talytica.integration.partners.greenhouse.GreenhouseApplication;
+import com.talytica.integration.partners.greenhouse.GreenhousePolling;
 import com.talytica.integration.scoring.ScoringModelEngine;
 import com.talytica.integration.scoring.ScoringModelRegistry;
 
@@ -24,17 +36,17 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
+import javax.ws.rs.core.SecurityContext;
 
 import org.json.JSONObject;
 
 @Slf4j
 @Component
-@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/1/test")
-@Api( value="/1/test", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_FORM_URLENCODED)
+@Api( value="/1/test", produces=MediaType.APPLICATION_JSON)
 public class TestResource {
 	
 	@Autowired
@@ -45,10 +57,17 @@ public class TestResource {
 
 	@Autowired
 	private RespondantService respondantService;
-
 	@Autowired
 	private ScoringModelRegistry scoringModelRegistry;
-	
+	@Autowired
+	private PartnerService partnerService;
+
+
+	@Autowired
+	private PartnerUtilityRegistry partnerUtilityRegistry;
+
+	@Context
+	private SecurityContext sc;
 	
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -111,6 +130,24 @@ public class TestResource {
 		JSONObject json = textAnalyticsService.analyzeSentimentForTarget(text, target);
 		
 		return json.toString();
+	}	
+	
+	@GET
+	@Path("/getGH/{id}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "get GH App", response=GreenhouseApplication.class)
+	public GreenhouseApplication get(@ApiParam(name="id") @PathParam("id") Long id) {
+
+		log.debug("using target: {}", "https://harvest.greenhouse.io/v1/applications/"+id);
+		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
+		GreenhousePartnerUtil gpu = (GreenhousePartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
+		Respondant respondant = respondantService.getRespondantById(id);
+		log.debug("trying to post scores {}", gpu.getScoreNotesFormat(respondant));
+		JSONObject message = gpu.getScoresMessage(respondant);
+		log.debug("message looks like {}", message);
+		gpu.postScoresToPartner(respondant, message);
+
+		return null;
 	}	
 	
 }
