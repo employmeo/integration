@@ -154,24 +154,23 @@ public class GreenhouseResource {
 	public Response postOrder(@ApiParam (value = "Order Object", type="GreenhouseAssessmentOrder")  @RequestBody GreenhouseAssessmentOrder order) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
-		PartnerUtil pu = partnerUtilityRegistry.getUtilFor(partner);
+		GreenhousePartnerUtil gpu = (GreenhousePartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
 		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND.build());
 		
 		JSONObject jOrder = order.toJson();
 		if (null != partner.getApiKey()) {
 			log.debug("Setting up for postback");
-			// If GH client provided API key, assume score post back is requested.
 			JSONObject delivery = new JSONObject();
 
 			String appId = order.getAppId();
 			if (null != appId) {
-				String scorePostMethod = HARVEST_API + "applications/" + appId;
+				String scorePostMethod = gpu.getCandidateUpdateMethod(appId);
 				delivery.put("scores_post_url", scorePostMethod);
 				jOrder.put("delivery", delivery);
 			}
 		}
-		Respondant respondant = pu.createRespondantFrom(jOrder, account);		
-		JSONObject output = pu.prepOrderResponse(order.toJson(), respondant);
+		Respondant respondant = gpu.createRespondantFrom(jOrder, account);		
+		JSONObject output = gpu.prepOrderResponse(order.toJson(), respondant);
 		
 		return Response.status(Response.Status.OK).entity(output.toString()).build();
 	}

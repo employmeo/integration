@@ -50,6 +50,12 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 	@Value("https://harvest.greenhouse.io/v1/")
 	private String HARVEST_API;
 	
+	@Value("applications/")
+	private String APPLICATION_ENDPOINT;
+	
+	@Value("candidates/")
+	private String CANDIDATE_ENDPOINT;
+	
 	private final String REJECT_STATUS = "reject";
 		
 	public GreenhousePartnerUtil() {
@@ -121,12 +127,19 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 			client.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 		}
 		Response response = client.target(method).request()
-				.header("On-Behalf-Of:", partner.getApiLogin())
+				.header("On-Behalf-Of", partner.getApiLogin())
 				.method("PATCH", Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
 		
 		if (response.getStatus() <= 300) {
-			GreenhouseApplication app = response.readEntity(GreenhouseApplication.class);
-			log.debug("Success posting as: {}", app);	
+			if (method.contains(CANDIDATE_ENDPOINT)) {
+				GreenhouseCandidate candidate = response.readEntity(GreenhouseCandidate.class);
+				log.debug("Success posting to {}: {}", CANDIDATE_ENDPOINT, candidate);	
+			} else if (method.contains(APPLICATION_ENDPOINT)) {
+				GreenhouseApplication app = response.readEntity(GreenhouseApplication.class);
+				log.debug("Success posting to {}: {}", APPLICATION_ENDPOINT, app);	
+			} else {
+				log.debug("Result was {}", response.readEntity(String.class));
+			}
 		} else {
 			log.error("Error from posting {}\n to {}\n with response of: {}", message, method, response.readEntity(String.class));				
 		}
@@ -135,10 +148,16 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject message = new JSONObject();
-		JSONObject customFields = new JSONObject();
+		JSONArray customFields = new JSONArray();
+		JSONObject link = new JSONObject();
+		JSONObject scores = new JSONObject();
 		try {
-			customFields.put("Talytica_Scores", getScoreNotesFormat(respondant));
-			customFields.put("Talytica_Link", externalLinksService.getPortalLink(respondant));
+			link.put("name_key", "talytica_scores");
+			link.put("value", getScoreNotesFormat(respondant));
+			scores.put("name_key", "talytica_link");
+			scores.put("value", externalLinksService.getPortalLink(respondant));
+			customFields.put(link);
+			customFields.put(scores);
 			message.put("custom_fields", customFields);
 		} catch (JSONException e) {
 			log.error("Unexpected JSON error {}",e);
@@ -382,6 +401,18 @@ public class GreenhousePartnerUtil extends BasePartnerUtil {
 		
 		return savedRespondant;
 	}
+
+	public String getCandidateUpdateMethod(String appId) {
+		
+		GreenhouseApplication app = this.getApplicationDetail(Long.valueOf(appId));
+		String scorePostMethod = HARVEST_API + CANDIDATE_ENDPOINT + app.getCandidate_id();
+		
+		return scorePostMethod;
+	}
 	
-	
+	public String getApplicationUpdateMethod(String appId) {
+		String scorePostMethod = HARVEST_API + APPLICATION_ENDPOINT + appId;
+		
+		return scorePostMethod;
+	}
 }
