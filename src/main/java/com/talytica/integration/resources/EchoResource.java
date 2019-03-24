@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.security.PermitAll;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -43,8 +44,21 @@ public class EchoResource {
 	   })	
 	public String doPost(@ApiParam(value="body") @RequestBody String body) throws JSONException {
 		JSONObject json = new JSONObject(body);
-		log.debug("Echo Called with: {}" , json.toString());
+		log.debug("Echo(Post) Called with: {}" , json.toString());
 		return json.toString();
 	}
 
+	@PUT
+	@PermitAll
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Echos your JSON Post", response = String.class)
+	   @ApiResponses(value = {
+	     @ApiResponse(code = 201, message = "Echo Processed"),
+	   })	
+	public String doPut(@ApiParam(value="body") @RequestBody String body) throws JSONException {
+		JSONObject json = new JSONObject(body);
+		log.debug("Echo(Put) Called with: {}" , json.toString());
+		return json.toString();
+	}
 }

@@ -21,6 +21,16 @@ public class PartnerUtilityRegistry {
 		PartnerUtil util = null;
 
 		switch (lookupPartner.getPartnerName().toUpperCase()) {
+		case "FOUNTAIN":
+			FountainPartnerUtil fnUtil = applicationContext.getBean(FountainPartnerUtil.class);
+			fnUtil.setPartner(lookupPartner);
+			util = fnUtil;
+			break;
+		case "GREENHOUSE":
+			GreenhousePartnerUtil ghUtil = applicationContext.getBean(GreenhousePartnerUtil.class);
+			ghUtil.setPartner(lookupPartner);
+			util = ghUtil;
+			break;
 		case "ICIMS":
 			ICIMSPartnerUtil icimsUtil = applicationContext.getBean(ICIMSPartnerUtil.class);
 			icimsUtil.setPartner(lookupPartner);
@@ -30,11 +40,6 @@ public class PartnerUtilityRegistry {
 			JazzPartnerUtil jazzUtil = applicationContext.getBean(JazzPartnerUtil.class);
 			jazzUtil.setPartner(lookupPartner);
 			util = jazzUtil;
-			break;
-		case "GREENHOUSE":
-			GreenhousePartnerUtil ghUtil = applicationContext.getBean(GreenhousePartnerUtil.class);
-			ghUtil.setPartner(lookupPartner);
-			util = ghUtil;
 			break;
 		case "SMARTRECRUITERS":
 			SmartRecruitersPartnerUtil srUtil = applicationContext.getBean(SmartRecruitersPartnerUtil.class);
