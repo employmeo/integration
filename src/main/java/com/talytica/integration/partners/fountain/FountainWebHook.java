@@ -23,10 +23,10 @@ public class FountainWebHook {
 			applicant.put("lname",getApplicant().getLast_name());
 			// skip applicant.put address
 	
-			JSONObject assessment = new JSONObject();
 			// need to figure out how to get the assessment from applicant - funnel?
-	
-			json.put("assessment", assessment);
+			//JSONObject assessment = new JSONObject();	
+			//json.put("assessment", assessment);
+			
 			json.put("applicant", applicant);
 			// skip json put location, position
 		} catch (JSONException e) {

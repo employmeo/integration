@@ -43,6 +43,7 @@ import com.talytica.integration.partners.greenhouse.GreenhouseErrorNotice;
 import com.talytica.integration.partners.greenhouse.GreenhousePolling;
 import com.talytica.integration.partners.greenhouse.GreenhouseStatusResponse;
 import com.talytica.integration.partners.greenhouse.GreenhouseWebHook;
+import com.talytica.integration.service.WorkflowService;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
@@ -69,13 +70,7 @@ public class FountainResource {
 	@Autowired
 	private AccountService accountService;
 	@Autowired
-	private RespondantService respondantService;
-	@Autowired
-	private GraderService graderService;
-	@Autowired
-	private CorefactorService corefactorService;
-	@Autowired
-	private ExternalLinksService externalLinksService;
+	WorkflowService workflowService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
@@ -89,7 +84,7 @@ public class FountainResource {
 		  @ApiResponse(code = 401, message = "API key not accepted"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
-	@Path("/webhook")
+	@Path("/webhookold")
 	public Response postOrder(@ApiParam (value = "WebHook", type="FountainWebHook")  @RequestBody String webhook) throws JSONException {
 		log.info(webhook);
 		
@@ -105,7 +100,7 @@ public class FountainResource {
 		  @ApiResponse(code = 401, message = "API key not accepted"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
-	@Path("/webhooknew")
+	@Path("/webhook")
 	public Response postOrder(@ApiParam (value = "WebHook", type="FountainWebHook")  @RequestBody FountainWebHook webhook) throws JSONException {
 		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
 		Account account = accountService.getByPartnerId(partner.getId());
@@ -124,8 +119,10 @@ public class FountainResource {
 				jOrder.put("delivery", delivery);
 			}
 		}
-		fpu.createRespondantFrom(jOrder, account);		
-		
+		Respondant candidate = fpu.createRespondantFrom(jOrder, account);		
+		if (candidate.getRespondantStatus() == Respondant.STATUS_CREATED) {
+			workflowService.executeCreatedWorkflows(candidate);
+		}
 		return Response.status(Response.Status.OK).build();
 	}
 }

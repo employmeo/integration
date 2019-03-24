@@ -1,6 +1,5 @@
 package com.talytica.integration.partners;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -12,33 +11,25 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.employmeo.data.model.Account;
-import com.employmeo.data.model.AccountSurvey;
 import com.employmeo.data.model.Corefactor;
 import com.employmeo.data.model.CustomProfile;
 import com.employmeo.data.model.Grade;
 import com.employmeo.data.model.Grader;
-import com.employmeo.data.model.Person;
-import com.employmeo.data.model.Position;
 import com.employmeo.data.model.Prediction;
 import com.employmeo.data.model.PredictionTarget;
 import com.employmeo.data.model.Respondant;
 import com.employmeo.data.model.RespondantNVP;
 import com.employmeo.data.model.RespondantScore;
-import com.talytica.integration.partners.greenhouse.GreenhouseApplication;
-import com.talytica.integration.partners.greenhouse.GreenhouseCandidate;
+import com.google.common.collect.Lists;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,24 +44,35 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	@Value("applicants/")
 	private String APPLICANT_ENDPOINT;
 		
+	@Value("/advance")
+	private String STAGE_ADVANCE;
+	
 	public FountainPartnerUtil() {
 	}
 	
 	@Override
 	public void changeCandidateStatus(Respondant respondant, String status) {
-		String appId = trimPrefix(respondant.getAtsId());
-		GreenhouseApplication response;
-		JSONObject move = new JSONObject();
+		String method = respondant.getScorePostMethod()+STAGE_ADVANCE;
+		Client client = null;
+		if (interceptOutbound) {
+			log.info("Intercepting Post to {}", method);
+			method = externalLinksService.getIntegrationEcho();
+			client = integrationClientFactory.newInstance();
+		} else {
+			client = getPartnerClient();
+		}
 		try {
-			move.put("from_stage", Integer.valueOf(status));
-			response = getPartnerClient().target(FOUNTAIN_API+APPLICANT_ENDPOINT+appId+"/move")
-				.request().header("On-Behalf-Of:", partner.getApiLogin())
-				.post(Entity.entity(move.toString(), MediaType.APPLICATION_JSON),GreenhouseApplication.class);
+			JSONObject advance = new JSONObject();
+			advance.put("stage_id", status);
+			advance.put("skip_automated_action", false);
+			client.target(method)
+				.request().header("X-ACCESS-TOKEN:", partner.getApiLogin())
+				.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
 		} catch (JSONException e) {
 			log.error("Unexpected JSON error {}",e);
-			response = null;
+		} finally {
+			client.close();
 		}
-		log.debug("Respondant {} Change resulted in: {}",respondant.getId(),response);
 	}
 	
 	@Override
@@ -81,18 +83,13 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			log.info("Intercepting Post to {}", method);
 			method = externalLinksService.getIntegrationEcho();
 			client = integrationClientFactory.newInstance();
-			client.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 		}
 		Response response = client.target(method).request()
-				.header("On-Behalf-Of", partner.getApiLogin())
-				.method("PATCH", Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
+				.header("X-ACCESS-TOKEN:", partner.getApiLogin())
+				.put(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
 		
 		if (response.getStatus() <= 300) {
-			if (method.contains(APPLICANT_ENDPOINT)) {
-				log.debug("Success posting to {}: {}", APPLICANT_ENDPOINT, message);	
-			} else {
-				log.debug("Result was {}", response.readEntity(String.class));
-			}
+			log.debug("Success posting to {}: {}", method, message);
 		} else {
 			log.error("Error from posting {}\n to {}\n with response of: {}", message, method, response.readEntity(String.class));				
 		}
@@ -101,22 +98,35 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	@Override
 	public JSONObject getScoresMessage(Respondant respondant) {
 		JSONObject message = new JSONObject();
-		JSONArray customFields = new JSONArray();
-		JSONObject link = new JSONObject();
-		JSONObject scores = new JSONObject();
+		JSONObject data = new JSONObject();
 		try {
-			link.put("name_key", "talytica_scores");
-			link.put("value", getScoreNotesFormat(respondant));
-			scores.put("name_key", "talytica_link");
-			scores.put("value", externalLinksService.getPortalLink(respondant));
-			customFields.put(link);
-			customFields.put(scores);
-			message.put("custom_fields", customFields);
+
+			data.put("talytica_link", externalLinksService.getPortalLink(respondant));
+			int status = respondant.getRespondantStatus();
+			String talyticastatus = "created";
+			if (status >= Respondant.STATUS_STARTED) talyticastatus = "incomplete";
+			if (status >= Respondant.STATUS_COMPLETED) {
+				talyticastatus = "completed";
+				addResponseFields(data, respondant);
+			}
+			if (status >= Respondant.STATUS_SCORED) {
+				if(respondant.getCompositeScore() > 0) data.put("talytica_scores", getScoreNotesFormat(respondant));
+				talyticastatus = "scored";
+			}
+			data.put("talytica_status", talyticastatus);
+			message.put("data", data);
 		} catch (JSONException e) {
 			log.error("Unexpected JSON error {}",e);
 		}
 		
 		return message;		
+	}
+	
+	public void addResponseFields(JSONObject data, Respondant respondant) throws JSONException {
+		Set<com.employmeo.data.model.Response> audioResponses = respondantService.getAudioResponses(respondant.getId());
+		List<String> responseUrls = Lists.newArrayList();
+		for (com.employmeo.data.model.Response resp : audioResponses) responseUrls.add(resp.getResponseMedia());
+		if (!responseUrls.isEmpty()) data.put("talytica_recordings", responseUrls);
 	}
 	
 	@Override
@@ -146,7 +156,6 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			notes.append(String.format("%.2f", prediction.getPredictionScore()));
 			notes.append("\n");
 		}
-		
 		
 		List<RespondantScore> scores = new ArrayList<RespondantScore>( respondant.getRespondantScores());		
 		scores.sort(new Comparator<RespondantScore>() {
@@ -246,12 +255,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	@Override
 	public Client getPartnerClient() {
 		ClientConfig cc = new ClientConfig();
-		cc.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 		Client client = ClientBuilder.newClient(cc);
-		String user = this.partner.getApiKey();	
-		HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(user,"");
-		client.register(feature);
-
 		return client;
 	}
 

@@ -184,13 +184,11 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	@Override
 	public AccountSurvey getSurveyFrom(JSONObject assessment, Account account) {
 
-		AccountSurvey aSurvey = null;
-		Long asId = assessment.optLong("assessment_asid");
-		if (asId != null) {
-			aSurvey = accountSurveyService.getAccountSurveyById(asId);
-		}
+		Long asId = null;
+		if (null != assessment)	asId = assessment.optLong("assessment_asid");
+		if (null == asId) asId = account.getDefaultAsId();
 
-		return aSurvey;
+		return accountSurveyService.getAccountSurveyById(asId);
 	}
 
 	@Override
@@ -215,7 +213,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 		
 		respondant = new Respondant();
 		respondant.setAccountId(account.getId());
-
+		respondant.setRespondantStatus(Respondant.STATUS_CREATED);
 		String appAtsId = applicant.optString("applicant_ats_id");
 		if (appAtsId != null) respondant.setAtsId(this.addPrefix(appAtsId));		
 		if (applicant.has("person_ats_id")) person = personService.getPersonByAtsId(applicant.optString("person_ats_id"));
