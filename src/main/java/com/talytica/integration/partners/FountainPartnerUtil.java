@@ -66,7 +66,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			advance.put("stage_id", status);
 			advance.put("skip_automated_action", false);
 			client.target(method)
-				.request().header("X-ACCESS-TOKEN:", partner.getApiLogin())
+				.request().header("X-ACCESS-TOKEN", partner.getApiKey())
 				.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
 		} catch (JSONException e) {
 			log.error("Unexpected JSON error {}",e);
@@ -85,7 +85,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			client = integrationClientFactory.newInstance();
 		}
 		Response response = client.target(method).request()
-				.header("X-ACCESS-TOKEN:", partner.getApiLogin())
+				.header("X-ACCESS-TOKEN", partner.getApiKey())
 				.put(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
 		
 		if (response.getStatus() <= 300) {
