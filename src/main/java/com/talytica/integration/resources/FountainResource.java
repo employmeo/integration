@@ -32,8 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FountainResource {
 	
 	private static final ResponseBuilder ACCOUNT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Account Not Found");
-	private static final ResponseBuilder RESPONDANT_NOT_FOUND = Response.status(Response.Status.NOT_FOUND).entity("Candidate Not Found");
-	private static final ResponseBuilder ACCOUNT_MATCH = Response.status(Response.Status.CONFLICT).entity("{ message: 'Applicant ID not found for Account ID' }");
+	private static final ResponseBuilder APIKEY_NOT_ACCEPTED = Response.status(Response.Status.UNAUTHORIZED).entity("API key not accepted");
 	
 	@Context
 	private SecurityContext sc;
@@ -56,14 +55,39 @@ public class FountainResource {
 		  @ApiResponse(code = 401, message = "API key not accepted"),
 		  @ApiResponse(code = 404, message = "Account Not Found")
 	   })
-	@Path("/webhookold")
-	public Response postOrder(@ApiParam (value = "WebHook", type="FountainWebHook")  @RequestBody String webhook) throws JSONException {
-		log.info(webhook);
+	@Path("/stagechange/{apiKey}")
+	public Response webhook(
+			@PathParam("apiKey") String apiKey,
+			@ApiParam (value = "WebHook", type="FountainWebHook")  @RequestBody FountainWebHook webhook
+			) throws JSONException {
+		Partner partner = partnerService.getPartnerByLogin(apiKey);
+		if (partner == null) return APIKEY_NOT_ACCEPTED.build();
+		FountainPartnerUtil fpu = (FountainPartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
+
+		Account account = accountService.getByPartnerId(partner.getId());
+		if (account == null) return ACCOUNT_NOT_FOUND.build();
 		
+		JSONObject jOrder = webhook.toJson();
+		if (null != partner.getApiKey()) {
+			log.debug("Setting up for postback");
+			JSONObject delivery = new JSONObject();
+
+			String appId = webhook.getApplicant().getId();
+			if (null != appId) {
+				String scorePostMethod = fpu.getApplicantUpdateMethod(appId);
+				delivery.put("scores_post_url", scorePostMethod);
+				jOrder.put("delivery", delivery);
+			}
+		}
+		Respondant candidate = fpu.createRespondantFrom(jOrder, account);		
+		if (candidate.getRespondantStatus() == Respondant.STATUS_CREATED) {
+			workflowService.executeCreatedWorkflows(candidate);
+		}
 		return Response.status(Response.Status.OK).build();
 	}
 	
 	@POST
+	@Deprecated
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "Order new assessment and create candidate")
