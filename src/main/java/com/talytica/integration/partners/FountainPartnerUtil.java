@@ -101,7 +101,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 		JSONObject data = new JSONObject();
 		try {
 
-			data.put("talytica_link", externalLinksService.getPortalLink(respondant));
+			data.put("talytica_link", externalLinksService.getAssessmentLink(respondant));
 			int status = respondant.getRespondantStatus();
 			String talyticastatus = "created";
 			if (status >= Respondant.STATUS_STARTED) talyticastatus = "incomplete";
