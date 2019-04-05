@@ -68,6 +68,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			client.target(method)
 				.request().header("X-ACCESS-TOKEN", partner.getApiKey())
 				.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
+			log.debug("Success PUT-ing to {}: {}", method, advance);
 		} catch (JSONException e) {
 			log.error("Unexpected JSON error {}",e);
 		} finally {
@@ -89,9 +90,9 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 				.put(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
 		
 		if (response.getStatus() <= 300) {
-			log.debug("Success posting to {}: {}", method, message);
+			log.debug("Success PUT-ing to {}: {}", method, message);
 		} else {
-			log.error("Error from posting {}\n to {}\n with response of: {}", message, method, response.readEntity(String.class));				
+			log.error("Error from PUT-ing {}\n to {}\n with response of: {}", message, method, response.readEntity(String.class));				
 		}
 	}
 	
