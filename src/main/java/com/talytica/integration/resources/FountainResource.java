@@ -80,45 +80,9 @@ public class FountainResource {
 			}
 		}
 		Respondant candidate = fpu.createRespondantFrom(jOrder, account);		
-		if (candidate.getRespondantStatus() == Respondant.STATUS_CREATED) {
-			workflowService.executeCreatedWorkflows(candidate);
-		}
-		return Response.status(Response.Status.OK).build();
-	}
-	
-	@POST
-	@Deprecated
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Order new assessment and create candidate")
-	   @ApiResponses(value = {
-		  @ApiResponse(code = 200, message = "Request Processed"),
-		  @ApiResponse(code = 401, message = "API key not accepted"),
-		  @ApiResponse(code = 404, message = "Account Not Found")
-	   })
-	@Path("/webhook")
-	public Response postOrder(@ApiParam (value = "WebHook", type="FountainWebHook")  @RequestBody FountainWebHook webhook) throws JSONException {
-		Partner partner = partnerService.getPartnerByLogin(sc.getUserPrincipal().getName());
-		Account account = accountService.getByPartnerId(partner.getId());
-		FountainPartnerUtil fpu = (FountainPartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
-		if (account == null)throw new WebApplicationException(ACCOUNT_NOT_FOUND.build());
-		
-		JSONObject jOrder = webhook.toJson();
-		if (null != partner.getApiKey()) {
-			log.debug("Setting up for postback");
-			JSONObject delivery = new JSONObject();
+		workflowService.executePreScreenWorkflows(candidate);
 
-			String appId = webhook.getApplicant().getId();
-			if (null != appId) {
-				String scorePostMethod = fpu.getApplicantUpdateMethod(appId);
-				delivery.put("scores_post_url", scorePostMethod);
-				jOrder.put("delivery", delivery);
-			}
-		}
-		Respondant candidate = fpu.createRespondantFrom(jOrder, account);		
-		if (candidate.getRespondantStatus() == Respondant.STATUS_CREATED) {
-			workflowService.executeCreatedWorkflows(candidate);
-		}
 		return Response.status(Response.Status.OK).build();
-	}
+	}	
+
 }

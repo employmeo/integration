@@ -52,27 +52,30 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	
 	@Override
 	public void changeCandidateStatus(Respondant respondant, String status) {
-		String method = respondant.getScorePostMethod()+STAGE_ADVANCE;
-		Client client = null;
-		if (interceptOutbound) {
-			log.info("Intercepting Post to {}", method);
-			method = externalLinksService.getIntegrationEcho();
-			client = integrationClientFactory.newInstance();
-		} else {
-			client = getPartnerClient();
-		}
-		try {
-			JSONObject advance = new JSONObject();
-			advance.put("stage_id", status);
-			advance.put("skip_automated_action", false);
-			client.target(method)
-				.request().header("X-ACCESS-TOKEN", partner.getApiKey())
-				.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
-			log.debug("Success PUT-ing to {}: {}", method, advance);
-		} catch (JSONException e) {
-			log.error("Unexpected JSON error {}",e);
-		} finally {
-			client.close();
+		postScoresToPartner(respondant, getScoresMessage(respondant));
+		if ((null != status) && (!status.isEmpty())) {
+			String method = respondant.getScorePostMethod()+STAGE_ADVANCE;
+			Client client = null;
+			if (interceptOutbound) {
+				log.info("Intercepting Post to {}", method);
+				method = externalLinksService.getIntegrationEcho();
+				client = integrationClientFactory.newInstance();
+			} else {
+				client = getPartnerClient();
+			}
+			try {
+				JSONObject advance = new JSONObject();
+				advance.put("stage_id", status);
+				advance.put("skip_automated_action", false);
+				client.target(method)
+					.request().header("X-ACCESS-TOKEN", partner.getApiKey())
+					.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
+				log.debug("Success PUT-ing to {}: {}", method, advance);
+			} catch (JSONException e) {
+				log.error("Unexpected JSON error {}",e);
+			} finally {
+				client.close();
+			}
 		}
 	}
 	
@@ -101,7 +104,6 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 		JSONObject message = new JSONObject();
 		JSONObject data = new JSONObject();
 		try {
-
 			data.put("talytica_link", externalLinksService.getAssessmentLink(respondant));
 			int status = respondant.getRespondantStatus();
 			String talyticastatus = "created";

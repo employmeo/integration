@@ -60,30 +60,6 @@ public class WorkflowService {
 		}	
 	}
 
-	public void executeCreatedWorkflows(Respondant respondant) {
-		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
-		log.debug("WORKFLOW: {} workflows found", workflows.size());
-		Collections.sort(workflows);
-		for (CustomWorkflow workflow : workflows) {
-			if ((null != workflow.getProfile()) && (!workflow.getProfile().equalsIgnoreCase(respondant.getProfileRecommendation()))) continue;
-			if (!workflow.getActive()) continue;
-			if ((null != workflow.getTriggerPoint()) &&( CustomWorkflow.TRIGGER_POINT_CREATION == workflow.getTriggerPoint())) {
-				switch (workflow.getType()) {
-				case CustomWorkflow.TYPE_ATSUPDATE:
-					if (respondant.getPartner() == null) break;
-					PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
-					pu.postScoresToPartner(respondant, pu.getScoresMessage(respondant));
-					pu.changeCandidateStatus(respondant, workflow.getAtsId());
-					log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
-					break;
-				default:
-					log.warn("WORKFLOW: No action at invited trigger point for: {}", workflow);
-					break;
-				}
-			}
-		}
-		
-	}
 	public void executeInvitedWorkflows(Respondant respondant) {
 		List<CustomWorkflow> workflows = respondant.getPosition().getCustomWorkflows();
 		log.debug("WORKFLOW: {} workflows found", workflows.size());
