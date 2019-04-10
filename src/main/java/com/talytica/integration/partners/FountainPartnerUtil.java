@@ -47,12 +47,19 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	@Value("/advance")
 	private String STAGE_ADVANCE;
 	
+	@Value("advance")
+	private String STATUS_ADVANCE;
+	
 	public FountainPartnerUtil() {
 	}
 	
 	@Override
 	public void changeCandidateStatus(Respondant respondant, String status) {
-		postScoresToPartner(respondant, getScoresMessage(respondant));
+		// fountain will be set up to post back when scored, so don't 
+		// post back again if candidate status change is needed too
+		if (respondant.getRespondantStatus() != Respondant.STATUS_SCORED) postScoresToPartner(respondant, getScoresMessage(respondant));
+		
+		// only change status if there is something in the status field
 		if ((null != status) && (!status.isEmpty())) {
 			String method = respondant.getScorePostMethod()+STAGE_ADVANCE;
 			Client client = null;
@@ -65,7 +72,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			}
 			try {
 				JSONObject advance = new JSONObject();
-				advance.put("stage_id", status);
+				if(!status.equalsIgnoreCase(STATUS_ADVANCE)) advance.put("stage_id", status);
 				advance.put("skip_automated_action", false);
 				client.target(method)
 					.request().header("X-ACCESS-TOKEN", partner.getApiKey())
@@ -108,13 +115,9 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			int status = respondant.getRespondantStatus();
 			String talyticastatus = "created";
 			if (status >= Respondant.STATUS_STARTED) talyticastatus = "incomplete";
-			if (status >= Respondant.STATUS_COMPLETED) {
-				talyticastatus = "completed";
-				addResponseFields(data, respondant);
-			}
 			if (status >= Respondant.STATUS_SCORED) {
 				if(respondant.getCompositeScore() > 0) data.put("talytica_scores", getScoreNotesFormat(respondant));
-				talyticastatus = "scored";
+				talyticastatus = "completed";
 			}
 			data.put("talytica_status", talyticastatus);
 			message.put("data", data);
