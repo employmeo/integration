@@ -53,7 +53,7 @@ public class RespondantPipelineTriggers {
 					try {
 						pipelineService.preScreen(respondant);
 					} catch (Exception e) {
-						log.error("Failed to process prescreening for respondant {}", respondant.getId(), e);
+						log.error("Failed to process prescreening for respondant {}\n {}", respondant.getId(), e);
 						respondantService.markError(respondant);
 					}											
 				});
