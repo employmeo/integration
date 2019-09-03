@@ -115,6 +115,7 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			int status = respondant.getRespondantStatus();
 			String talyticastatus = "created";
 			if (status >= Respondant.STATUS_STARTED) talyticastatus = "incomplete";
+			if (status >= Respondant.STATUS_COMPLETED) addResponseFields(data, respondant);
 			if (status >= Respondant.STATUS_SCORED) {
 				if(respondant.getCompositeScore() > 0) data.put("talytica_scores", getScoreNotesFormat(respondant));
 				talyticastatus = "completed";

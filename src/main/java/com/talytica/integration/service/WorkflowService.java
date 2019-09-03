@@ -124,6 +124,12 @@ public class WorkflowService {
 						emailService.sendResults(respondant);												
 						log.debug("WORKFLOW: Sent notification email to {}", respondant.getEmailRecipient());
 						break;
+					case CustomWorkflow.TYPE_ATSUPDATE:
+						if (respondant.getPartner() == null) break;
+						PartnerUtil pu = partnerUtilityRegistry.getUtilFor(respondant.getPartner());
+						pu.changeCandidateStatus(respondant, workflow.getAtsId());
+						log.debug("WORKFLOW: Changed respondant {} status to {}", respondant.getId(), workflow.getText());
+						break;
 					default:
 						log.warn("WORKFLOW: No action at prediction trigger point for: {}", workflow);
 						break;
