@@ -47,31 +47,42 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	@Value("/advance")
 	private String STAGE_ADVANCE;
 	
+	@Value("advance")
+	private String STATUS_ADVANCE;
+	
 	public FountainPartnerUtil() {
 	}
 	
 	@Override
 	public void changeCandidateStatus(Respondant respondant, String status) {
-		String method = respondant.getScorePostMethod()+STAGE_ADVANCE;
-		Client client = null;
-		if (interceptOutbound) {
-			log.info("Intercepting Post to {}", method);
-			method = externalLinksService.getIntegrationEcho();
-			client = integrationClientFactory.newInstance();
-		} else {
-			client = getPartnerClient();
-		}
-		try {
-			JSONObject advance = new JSONObject();
-			advance.put("stage_id", status);
-			advance.put("skip_automated_action", false);
-			client.target(method)
-				.request().header("X-ACCESS-TOKEN:", partner.getApiLogin())
-				.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
-		} catch (JSONException e) {
-			log.error("Unexpected JSON error {}",e);
-		} finally {
-			client.close();
+		// fountain will be set up to post back when scored, so don't 
+		// post back again if candidate status change is needed too
+		if (respondant.getRespondantStatus() != Respondant.STATUS_SCORED) postScoresToPartner(respondant, getScoresMessage(respondant));
+		
+		// only change status if there is something in the status field
+		if ((null != status) && (!status.isEmpty())) {
+			String method = respondant.getScorePostMethod()+STAGE_ADVANCE;
+			Client client = null;
+			if (interceptOutbound) {
+				log.info("Intercepting Post to {}", method);
+				method = externalLinksService.getIntegrationEcho();
+				client = integrationClientFactory.newInstance();
+			} else {
+				client = getPartnerClient();
+			}
+			try {
+				JSONObject advance = new JSONObject();
+				if(!status.equalsIgnoreCase(STATUS_ADVANCE)) advance.put("stage_id", status);
+				advance.put("skip_automated_action", false);
+				client.target(method)
+					.request().header("X-ACCESS-TOKEN", partner.getApiKey())
+					.put(Entity.entity(advance.toString(), MediaType.APPLICATION_JSON));
+				log.debug("Success PUT-ing to {}: {}", method, advance);
+			} catch (JSONException e) {
+				log.error("Unexpected JSON error {}",e);
+			} finally {
+				client.close();
+			}
 		}
 	}
 	
@@ -85,13 +96,13 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 			client = integrationClientFactory.newInstance();
 		}
 		Response response = client.target(method).request()
-				.header("X-ACCESS-TOKEN:", partner.getApiLogin())
+				.header("X-ACCESS-TOKEN", partner.getApiKey())
 				.put(Entity.entity(message.toString(), MediaType.APPLICATION_JSON));
 		
 		if (response.getStatus() <= 300) {
-			log.debug("Success posting to {}: {}", method, message);
+			log.debug("Success PUT-ing to {}: {}", method, message);
 		} else {
-			log.error("Error from posting {}\n to {}\n with response of: {}", message, method, response.readEntity(String.class));				
+			log.error("Error from PUT-ing {}\n to {}\n with response of: {}", message, method, response.readEntity(String.class));				
 		}
 	}
 	
@@ -100,18 +111,14 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 		JSONObject message = new JSONObject();
 		JSONObject data = new JSONObject();
 		try {
-
-			data.put("talytica_link", externalLinksService.getPortalLink(respondant));
+			data.put("talytica_link", externalLinksService.getAssessmentLink(respondant));
 			int status = respondant.getRespondantStatus();
 			String talyticastatus = "created";
 			if (status >= Respondant.STATUS_STARTED) talyticastatus = "incomplete";
-			if (status >= Respondant.STATUS_COMPLETED) {
-				talyticastatus = "completed";
-				addResponseFields(data, respondant);
-			}
+			if (status >= Respondant.STATUS_COMPLETED) addResponseFields(data, respondant);
 			if (status >= Respondant.STATUS_SCORED) {
 				if(respondant.getCompositeScore() > 0) data.put("talytica_scores", getScoreNotesFormat(respondant));
-				talyticastatus = "scored";
+				talyticastatus = "completed";
 			}
 			data.put("talytica_status", talyticastatus);
 			message.put("data", data);
