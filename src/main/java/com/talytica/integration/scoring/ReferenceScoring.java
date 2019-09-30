@@ -42,10 +42,11 @@ public class ReferenceScoring implements ScoringModelEngine {
 		ReferenceCheckConfig rcConfig = respondant.getAccountSurvey().getRcConfig();
 
 		for (Response response : responses) {
-			String email = response.getResponseText();
+			String address = response.getResponseText();
 			Person person = new Person();
-			if (email.contains("<")) {
-				String[] strings = email.split("<");
+			String toAddr;
+			if (address.contains("<")) {
+				String[] strings = address.split("<");
 				String fullname = strings[0].trim();
 				if (fullname.contains(" ")) {
 					String [] names = fullname.split(" ");
@@ -54,9 +55,14 @@ public class ReferenceScoring implements ScoringModelEngine {
 				} else {
 					person.setFirstName(fullname);
 				}
-				person.setEmail(strings[1].substring(0, strings[1].length()-1));
+				toAddr = strings[1].substring(0, strings[1].length()-1);
 			} else {
-				person.setEmail(email);				
+				toAddr = address;				
+			}
+			if (response.getQuestion().getQuestionType() == 29) {
+				person.setPhone(toAddr);
+			} else {
+				person.setEmail(toAddr);
 			}
 			Person reference = personService.save(person);
 
