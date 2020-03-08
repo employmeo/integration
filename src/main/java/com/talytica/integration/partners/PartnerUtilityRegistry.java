@@ -51,6 +51,11 @@ public class PartnerUtilityRegistry {
 			wkUtil.setPartner(lookupPartner);
 			util = wkUtil;
 			break;
+		case "USACS-SFDC":
+			SalesforcePartnerUtil sfUtil = applicationContext.getBean(SalesforcePartnerUtil.class);
+			sfUtil.setPartner(lookupPartner);
+			util = sfUtil;
+			break;
 		default:
 			DefaultPartnerUtil defaultUtil = applicationContext.getBean(DefaultPartnerUtil.class);
 			defaultUtil.setPartner(lookupPartner);
