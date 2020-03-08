@@ -111,7 +111,7 @@ public class SalesforcePartnerUtil extends BasePartnerUtil {
 				}
 				
 			} catch (Exception e){
-				log.error("Unable to patch object. Error {} occurred: {}", e.getMessage(), e);
+				log.error("Unable to patch object. Error occurred: {}", e.getMessage());
 			} finally {
 				client.close();
 			}
@@ -123,6 +123,7 @@ public class SalesforcePartnerUtil extends BasePartnerUtil {
 
 				Client client = ClientBuilder.newClient();
 				JSONObject response = new JSONObject();
+				String responseString = null;
 				WebTarget target = client.target(SFDC_OATH);
 				Form form = new Form();
 				form.param("grant_type", "password");
@@ -131,14 +132,21 @@ public class SalesforcePartnerUtil extends BasePartnerUtil {
 				form.param("username", getPartner().getApiLogin());
 				form.param("password", getPartner().getApiPass());
 				log.debug("Auth Request is: {}, {}, {}",CLIENT_ID,CLIENT_SECRET,getPartner());
-				Response resp = target.request(MediaType.APPLICATION_JSON)
-										.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
-				String responseString =  resp.readEntity(String.class);
-				log.debug("Auth Request Response was: {}", responseString);
-				response = new JSONObject(responseString);
-				authToken = response.getString("access_token");
-				//sfdcAPI = response.getString("instance_url");
-				tokenExpiration = new Date(new Date().getTime() + TOKEN_MILLIS);
+				try {
+					Response resp = target.request(MediaType.APPLICATION_JSON)
+											.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+					responseString =  resp.readEntity(String.class);
+					log.debug("Auth Request Response was: {}", responseString);
+					response = new JSONObject(responseString);
+					authToken = response.getString("access_token");
+					//sfdcAPI = response.getString("instance_url");
+					tokenExpiration = new Date(new Date().getTime() + TOKEN_MILLIS);
+				} catch (Exception e) {
+					log.error("SFDC Authentication Error: {}", responseString);
+					throw new Exception(e);
+				} finally {
+					client.close();
+				}
 			}
 			return authToken;
 		}
