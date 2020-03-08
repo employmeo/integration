@@ -249,6 +249,9 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			if (delivery.has("scores_post_url")) {
 				respondant.setScorePostMethod(delivery.optString("scores_post_url"));
 			}
+			if (delivery.has("email_applicant") && delivery.optBoolean("email_applicant")) {
+				respondant.setRespondantStatus(Respondant.STATUS_INVITED);	
+			}
 		}
 		
 		respondant.setAccountId(account.getId());
