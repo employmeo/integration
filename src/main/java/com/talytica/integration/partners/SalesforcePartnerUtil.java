@@ -55,6 +55,18 @@ public class SalesforcePartnerUtil extends BasePartnerUtil {
 		public void postScoresToPartner(Respondant resp, JSONObject patch) {
 			patchSFObject(resp.getScorePostMethod(), patch);
 		}
+		
+		@Override
+		public void changeCandidateStatus(Respondant resp, String status) {
+			JSONObject patch = new JSONObject();
+			try {
+				patch.put(ASSESSMENT_DATE_FIELD, SDF.format(new Date()));
+				patch.put(ASSESSMENT_STATUS_FIELD, status);
+			} catch (JSONException je){
+				log.error("Failed due to json exception: {}",je.getMessage());
+			}
+			patchSFObject(resp.getScorePostMethod(), patch);
+		}
 
 		@Override
 		public JSONObject getScoresMessage(Respondant resp){
