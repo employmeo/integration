@@ -15,7 +15,6 @@ import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Value;
 import com.employmeo.data.model.CustomProfile;
 import com.employmeo.data.model.Respondant;
 
@@ -30,14 +29,14 @@ public class SalesforcePartnerUtil extends BasePartnerUtil {
 
 	private static final long TOKEN_MILLIS = 7200*1000;
 
-	@Value("${partners.salesforce.oauth}")
-	String SFDC_OATH;
+//	@Value("${partners.salesforce.oauth}")
+//	String SFDC_OATH;
 		
-	@Value("${partners.salesforce.clientid}")
-	String CLIENT_ID;
+//	@Value("${partners.salesforce.clientid}")
+//	String CLIENT_ID;
 
-	@Value("${partners.salesforce.clientsecret}")
-	String CLIENT_SECRET;
+//	@Value("${partners.salesforce.clientsecret}")
+//	String CLIENT_SECRET;
 
 		private static String authToken = null;
 		private static Date tokenExpiration = new Date();
@@ -136,14 +135,14 @@ public class SalesforcePartnerUtil extends BasePartnerUtil {
 				Client client = ClientBuilder.newClient();
 				JSONObject response = new JSONObject();
 				String responseString = null;
-				WebTarget target = client.target(SFDC_OATH);
+				WebTarget target = client.target(partner.getOauth());
 				Form form = new Form();
 				form.param("grant_type", "password");
-				form.param("client_id", CLIENT_ID);
-				form.param("client_secret", CLIENT_SECRET);
+				form.param("client_id", partner.getClientId());
+				form.param("client_secret", partner.getClientSecret());
 				form.param("username", getPartner().getApiLogin());
 				form.param("password", getPartner().getApiPass());
-				log.debug("Auth Request is: {}, {}, {}",CLIENT_ID,CLIENT_SECRET,getPartner());
+				log.debug("Making oAuth Request for {}",getPartner());
 				try {
 					Response resp = target.request(MediaType.APPLICATION_JSON)
 											.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
