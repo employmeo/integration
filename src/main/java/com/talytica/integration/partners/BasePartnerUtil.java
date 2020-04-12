@@ -249,9 +249,6 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			if (delivery.has("scores_post_url")) {
 				respondant.setScorePostMethod(delivery.optString("scores_post_url"));
 			}
-			if (delivery.has("email_applicant") && delivery.optBoolean("email_applicant")) {
-				respondant.setRespondantStatus(Respondant.STATUS_INVITED);	
-			}
 		}
 		
 		respondant.setAccountId(account.getId());
@@ -277,8 +274,13 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	public JSONObject prepOrderResponse(JSONObject json, Respondant respondant) {
 
 		JSONObject delivery = json.optJSONObject("delivery");
-		if ((delivery != null) && delivery.has("email_applicant") && delivery.optBoolean("email_applicant")) {
+		if ((delivery != null) && 
+				delivery.has("email_applicant") && 
+				delivery.optBoolean("email_applicant") &&
+				respondant.getRespondantStatus()<Respondant.STATUS_INVITED) {
 			emailService.sendEmailInvitation(respondant);
+			respondant.setRespondantStatus(Respondant.STATUS_INVITED);
+			respondantService.save(respondant);
 		}
 		JSONObject output = new JSONObject();
 

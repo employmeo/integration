@@ -47,7 +47,7 @@ public class RespondantPipelineTriggers {
 				log.info("Pipeline: Analyzing {} prescreen candidates", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {	
 					if (respondant.getErrorStatus()) {
-						log.warn("Skipping prescreening for problem respondant: {}", respondant.getId());
+						log.debug("Skipping prescreening for problem respondant: {}", respondant.getId());
 						return;
 					}
 					try {
@@ -72,7 +72,7 @@ public class RespondantPipelineTriggers {
 				log.info("Pipeline: Analyzing {} survey submissions", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					if (respondant.getErrorStatus()) {
-						log.warn("Skipping scoring for problem respondant: {}", respondant.getId());
+						log.debug("Skipping scoring for problem respondant: {}", respondant.getId());
 						return;
 					}
 					try {
@@ -97,7 +97,7 @@ public class RespondantPipelineTriggers {
 				log.info("Pipeline: Grading {} eligible respondants", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					if (respondant.getErrorStatus()) {
-						log.warn("Skipping grades for problem respondant: {}", respondant.getId());
+						log.debug("Skipping grades for problem respondant: {}", respondant.getId());
 						return;
 					}
 					try {
@@ -123,7 +123,7 @@ public class RespondantPipelineTriggers {
 				log.info("Pipeline Predicting {} eligible respondants", eligibleRespondants.size());
 				eligibleRespondants.forEach(respondant -> {
 					if (respondant.getErrorStatus()) {
-						log.warn("Skipping prediction for problem respondant: {}", respondant.getId());
+						log.debug("Skipping prediction for problem respondant: {}", respondant.getId());
 						return;
 					}
 					try {

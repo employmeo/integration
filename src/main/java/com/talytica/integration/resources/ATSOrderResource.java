@@ -13,6 +13,7 @@ import com.employmeo.data.model.*;
 import com.employmeo.data.service.PartnerService;
 import com.talytica.integration.partners.PartnerUtil;
 import com.talytica.integration.partners.PartnerUtilityRegistry;
+import com.talytica.integration.service.WorkflowService;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,9 @@ public class ATSOrderResource {
 	@Context
 	private SecurityContext sc;
 	@Autowired
-	PartnerService partnerService;
+	private PartnerService partnerService;
+	@Autowired
+	private WorkflowService workflowService;
 	@Autowired
 	private PartnerUtilityRegistry partnerUtilityRegistry;
 
@@ -55,8 +58,9 @@ public class ATSOrderResource {
 		}
 				
 		JSONObject output = pu.prepOrderResponse(json, respondant);
-
-		log.debug("ATS Request for Assessment Complete: " + respondant.getAtsId());
+		
+		workflowService.executeInvitedWorkflows(respondant);
+		log.info("{} request for assessment complete: {}",partner.getPartnerName(), respondant.getAtsId());
 		return Response.status(Response.Status.ACCEPTED).entity(output.toString()).build();
 	}
 
