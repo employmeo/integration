@@ -12,11 +12,11 @@
 	<artifactId>integration</artifactId>
 	<name>Integration</name>
 	<description>Talytica Integration Application</description>
-	<version>0.0.50-SNAPSHOT</version>
+	<version>0.0.50</version>
 	<packaging>jar</packaging>
 
 	<properties>
-		<persistence-unit.version>0.2.8-SNAPSHOT</persistence-unit.version>
+		<persistence-unit.version>0.2.8</persistence-unit.version>
 		<start-class>com.talytica.integration.IntegrationApplication</start-class>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
