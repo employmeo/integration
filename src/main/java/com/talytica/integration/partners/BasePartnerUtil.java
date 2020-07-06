@@ -225,6 +225,7 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 			person.setEmail(applicant.optString("email"));
 			person.setFirstName(applicant.optString("fname"));
 			person.setLastName(applicant.optString("lname"));
+			person.setPhone(applicant.optString("phone"));
 			JSONObject personAddress = applicant.optJSONObject("address");
 			if (personAddress != null) {
 			addressService.validate(personAddress);

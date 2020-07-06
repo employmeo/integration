@@ -21,6 +21,7 @@ public class FountainWebHook {
 			applicant.put("email",getApplicant().getEmail());
 			applicant.put("fname",getApplicant().getFirst_name());
 			applicant.put("lname",getApplicant().getLast_name());
+			applicant.put("phone",getApplicant().getPhone_number());
 			// skip applicant.put address
 	
 			// need to figure out how to get the assessment from applicant - funnel?
