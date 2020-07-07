@@ -83,8 +83,9 @@ public class FountainResource {
 				jOrder.put("delivery", delivery);
 			}
 		}
-		Respondant candidate = fpu.createRespondantFrom(jOrder, account);		
-		workflowService.executePreScreenWorkflows(candidate);
+		Respondant candidate = fpu.createRespondantFrom(jOrder, account);
+		// If we haven't already executed respondant.setRespondantStatus(Respondant.STATUS_INVITED);
+		if (candidate.getRespondantStatus() == Respondant.STATUS_CREATED) workflowService.executePreScreenWorkflows(candidate);
 
 		return Response.status(Response.Status.OK).build();
 	}	

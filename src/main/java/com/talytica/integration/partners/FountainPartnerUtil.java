@@ -88,6 +88,13 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 				client.close();
 			}
 		}
+
+		// change the status to "invited" after this, so that we don't execute the pre-screen workflows again.
+		if (respondant.getRespondantStatus() == Respondant.STATUS_CREATED) {
+			respondant.setRespondantStatus(Respondant.STATUS_INVITED);
+			respondantService.save(respondant);
+		}
+	
 	}
 	
 	@Override

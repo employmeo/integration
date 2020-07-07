@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -31,6 +32,7 @@ import com.employmeo.data.model.CustomProfile;
 import com.employmeo.data.model.Location;
 import com.employmeo.data.model.Person;
 import com.employmeo.data.model.Position;
+import com.employmeo.data.model.PositionPredictionConfiguration;
 import com.employmeo.data.model.Prediction;
 import com.employmeo.data.model.PredictionTarget;
 import com.employmeo.data.model.Respondant;
@@ -79,6 +81,25 @@ public class JazzPartnerUtil extends BasePartnerUtil {
 			}
 
 			savedPosition = accountService.save(pos);
+			
+			// Get the prediction config and set up position for predictions too.
+			// copy the position prediction configs from the default position. but only the pre-screen ones (trigger point)
+			Position defaultPosition = accountService.getPositionById(account.getDefaultPositionId());
+			for (PositionPredictionConfiguration ppc : defaultPosition.getPositionPredictionConfigurations()) {
+				if (ppc.getTriggerPoint() != PositionPredictionConfiguration.TRIGGER_POINT_CREATION) continue;
+				PositionPredictionConfiguration newPPC = new PositionPredictionConfiguration();
+				newPPC.setActive(true);
+				newPPC.setDisplayPriority(ppc.getDisplayPriority());
+				newPPC.setMean(ppc.getMean());
+				newPPC.setPopSize(ppc.getPopSize());
+				newPPC.setPositionId(savedPosition.getId());
+				newPPC.setPredictionModelId(ppc.getPredictionModelId());
+				newPPC.setPredictionTargetId(ppc.getPredictionTargetId());
+				newPPC.setStDev(ppc.getStDev());
+				newPPC.setTargetThreshold(ppc.getTargetThreshold());
+				newPPC.setTriggerPoint(ppc.getTriggerPoint());
+			}
+			
 		}
 		return savedPosition;
 	}
