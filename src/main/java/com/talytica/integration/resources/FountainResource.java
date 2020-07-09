@@ -64,8 +64,10 @@ public class FountainResource {
 		if (partner == null) return APIKEY_NOT_ACCEPTED.build();
 		FountainPartnerUtil fpu = (FountainPartnerUtil) partnerUtilityRegistry.getUtilFor(partner);
 
-		Account account = accountService.getByPartnerId(partner.getId());
+		Account account = accountService.getByPartnerId(partner.getId());		
 		if (account == null) return ACCOUNT_NOT_FOUND.build();
+
+		log.debug("Webhook received from fountain from {}: {}",account.getAccountName(), webhook);
 		
 		JSONObject jOrder = webhook.toJson();
 		if (null != partner.getApiKey()) {
@@ -75,12 +77,15 @@ public class FountainResource {
 			String appId = webhook.getApplicant().getId();
 			if (null != appId) {
 				String scorePostMethod = fpu.getApplicantUpdateMethod(appId);
+				String redirectUrl = fpu.getRedirectLink(appId);
 				delivery.put("scores_post_url", scorePostMethod);
+				delivery.put("scores_redirect_url", redirectUrl);
 				jOrder.put("delivery", delivery);
 			}
 		}
-		Respondant candidate = fpu.createRespondantFrom(jOrder, account);		
-		workflowService.executePreScreenWorkflows(candidate);
+		Respondant candidate = fpu.createRespondantFrom(jOrder, account);
+		// If we haven't already executed respondant.setRespondantStatus(Respondant.STATUS_INVITED);
+		if (candidate.getRespondantStatus() == Respondant.STATUS_CREATED) workflowService.executePreScreenWorkflows(candidate);
 
 		return Response.status(Response.Status.OK).build();
 	}	

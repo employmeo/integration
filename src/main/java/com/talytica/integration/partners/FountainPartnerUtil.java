@@ -12,8 +12,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.HttpUrlConnectorProvider;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +38,12 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 
 	@Value("https://api.fountain.com/v2/")
 	private String FOUNTAIN_API;
+	
+	@Value("https://www.fountain.com/portal/")
+	private String FOUNTAIN_PORTAL;
+	
+	@Value("/applicant_result/")
+	private String REDIRECT_TO;
 	
 	@Value("applicants/")
 	private String APPLICANT_ENDPOINT;
@@ -84,6 +88,13 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 				client.close();
 			}
 		}
+
+		// change the status to "invited" after this, so that we don't execute the pre-screen workflows again.
+		if (respondant.getRespondantStatus() == Respondant.STATUS_CREATED) {
+			respondant.setRespondantStatus(Respondant.STATUS_INVITED);
+			respondantService.save(respondant);
+		}
+	
 	}
 	
 	@Override
@@ -132,7 +143,12 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	public void addResponseFields(JSONObject data, Respondant respondant) throws JSONException {
 		Set<com.employmeo.data.model.Response> audioResponses = respondantService.getAudioResponses(respondant.getId());
 		List<String> responseUrls = Lists.newArrayList();
-		for (com.employmeo.data.model.Response resp : audioResponses) responseUrls.add(resp.getResponseMedia());
+		int count = 1;
+		for (com.employmeo.data.model.Response resp : audioResponses) {
+			responseUrls.add(resp.getResponseMedia());
+			data.put("talytica_response_" + count, resp.getResponseMedia());
+			count++;
+		}
 		if (!responseUrls.isEmpty()) data.put("talytica_recordings", responseUrls);
 	}
 	
@@ -270,6 +286,27 @@ public class FountainPartnerUtil extends BasePartnerUtil {
 	public String getApplicantUpdateMethod(String appId) {
 		String scorePostMethod = FOUNTAIN_API + APPLICANT_ENDPOINT + appId;
 		return scorePostMethod;
+	}
+		
+	public JSONObject getCandidateDetails(String appId) throws Exception {
+
+		JSONObject candidate = null;
+		Client client =  getPartnerClient();
+		
+		Response response = client.target(FOUNTAIN_API + APPLICANT_ENDPOINT + appId).request()
+				.header("X-ACCESS-TOKEN", partner.getApiKey()).get();
+		
+		if (response.getStatus() <= 300) {
+			candidate = new JSONObject(response.readEntity(String.class));
+			log.debug("Success getting candidate {}: {}", appId, candidate);
+		} else {
+			log.error("Error getting candidate {}: {}", appId, response.readEntity(String.class));				
+		}
+		return candidate;
+	}
+	
+	public String getRedirectLink(String appId) {
+		return FOUNTAIN_PORTAL + getPartner().getClientId() + REDIRECT_TO + appId;
 	}
 	
 }
