@@ -10,7 +10,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.talytica</groupId>
 	<artifactId>integration</artifactId>
-	<name>Integration</name>
+	<name>integration</name>
 	<description>Talytica Integration Application</description>
 	<version>0.0.51</version>
 	<packaging>jar</packaging>
