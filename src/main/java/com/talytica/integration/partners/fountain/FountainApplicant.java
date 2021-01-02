@@ -20,7 +20,7 @@ public class FountainApplicant {
     private String phone_number;
     private Date created_at;
 	private Boolean receive_automated_emails;
-	private List<String> labels;
+	//private List<String> labels;
 	private String id;
 
 }
