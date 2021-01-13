@@ -194,10 +194,11 @@ public abstract class BasePartnerUtil implements PartnerUtil {
 	@Override
 	public Respondant getRespondantFrom(JSONObject applicant, Account account) {
 		Respondant respondant = null;
-		String applicantAtsId = applicant.optString("applicant_ats_id");
-		if (applicantAtsId != null) {
-			respondant = respondantService.getRespondantByAtsId(addPrefix(applicantAtsId));
-		} else {
+		String appAtsId = applicant.optString("applicant_ats_id");
+		if (appAtsId != null) {
+			respondant = respondantService.getRespondantByAtsId(this.addPrefix(appAtsId));
+			log.debug("Match = {} for ats id: {}", (null == respondant), this.addPrefix(appAtsId));
+		} else if (applicant.optLong("applicant_id") != 0) {
 			// Try to grab account by employmeo respondant_id
 			respondant = respondantService.getRespondantById(applicant.optLong("applicant_id"));
 		}
