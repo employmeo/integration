@@ -60,7 +60,7 @@ public class ATSOrderResource {
 		JSONObject output = pu.prepOrderResponse(json, respondant);
 		
 		workflowService.executeInvitedWorkflows(respondant);
-		log.info("{} request for assessment complete: {}",partner.getPartnerName(), respondant.getAtsId());
+		log.debug("{} request for assessment complete: {}",partner.getPartnerName(), respondant.getAtsId());
 		return Response.status(Response.Status.ACCEPTED).entity(output.toString()).build();
 	}
 
