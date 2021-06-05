@@ -35,7 +35,6 @@ public class RespondantPipelineTriggers {
 	@Value(value = "${jobs.predictions.enabled:false}")
 	private Boolean predictionScoringJobEnabled;
 
-	@Scheduled(initialDelayString = "${jobs.prescreenprediction.trigger.init.seconds:60}000", fixedDelayString = "${jobs.prescreenprediction.trigger.delay.seconds:60}000")
 	@Async
 	public synchronized void triggerRespondantPreScreen() {
 		if (preScreenPredictionJobEnabled) {
@@ -61,7 +60,6 @@ public class RespondantPipelineTriggers {
 		}
 	}
 		
-	@Scheduled(initialDelayString = "${jobs.submissionanalysis.trigger.init.seconds:60}000", fixedDelayString = "${jobs.submissionanalysis.trigger.delay.seconds:60}000")
 	@Async
 	public synchronized void triggerRespondantAssessmentScoring() {
 		if (respondantSubmissionAnalysisJobEnabled) {
@@ -86,7 +84,6 @@ public class RespondantPipelineTriggers {
 		}
 	}
 
-	@Scheduled(initialDelayString = "${jobs.graderscoring.trigger.init.seconds:90}000", fixedDelayString = "${jobs.graderscoring.trigger.delay.seconds:900}000")
 	@Async
 	public synchronized void triggerGraderCompute() {
 		if (graderFulfilledScoringJobEnabled) {
@@ -112,7 +109,6 @@ public class RespondantPipelineTriggers {
 		}
 	}
 	
-	@Scheduled(initialDelayString = "${jobs.predictions.trigger.init.seconds:90}000", fixedDelayString = "${jobs.predictions.trigger.delay.seconds:900}000")
 	@Async
 	public synchronized void triggerPredictions() {
 		if (predictionScoringJobEnabled) {
