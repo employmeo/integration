@@ -69,7 +69,7 @@ public class AdminResourceResource {
 	     @ApiResponse(code = 200, message = "OK - PreSreen Predictions Triggered")
 	   })
 	public void triggerPreScreen() {
-		log.debug("Pre-Screen Predictions Triggered by {}", sc.getUserPrincipal().getName());
+		log.debug("Pipeline: Pre-Screen Triggered by {}", sc.getUserPrincipal().getName());
 		respondantPipelineTriggers.triggerRespondantPreScreen();
 	}
 	
@@ -77,10 +77,10 @@ public class AdminResourceResource {
 	@Path("/trigger/scoring")
 	@ApiOperation(value = "Triggers Scoring")
 	   @ApiResponses(value = {
-	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	     @ApiResponse(code = 200, message = "OK - Scoring Triggered")
 	   })
 	public void triggerScoring() {
-		log.debug("Pipeline Scoring Triggered by {}", sc.getUserPrincipal().getName());
+		log.debug("Pipeline: Scoring Triggered by {}", sc.getUserPrincipal().getName());
 		respondantPipelineTriggers.triggerRespondantAssessmentScoring();
 	}
 	
@@ -88,10 +88,10 @@ public class AdminResourceResource {
 	@Path("/trigger/grading")
 	@ApiOperation(value = "Triggers Pipeline Grading")
 	   @ApiResponses(value = {
-	     @ApiResponse(code = 200, message = "OK - Grading Pipeline Triggered")
+	     @ApiResponse(code = 200, message = "OK - Grading Triggered")
 	   })
 	public void triggerGrading() {
-		log.debug("Pipeline Grading Triggered by {}", sc.getUserPrincipal().getName());
+		log.debug("Pipeline: Grading Triggered by {}", sc.getUserPrincipal().getName());
 		respondantPipelineTriggers.triggerGraderCompute();
 	}
 	
@@ -99,10 +99,10 @@ public class AdminResourceResource {
 	@Path("/trigger/predictions")
 	@ApiOperation(value = "Triggers")
 	   @ApiResponses(value = {
-	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	     @ApiResponse(code = 200, message = "OK - Predictions Triggered")
 	   })
 	public void triggerPredictions() {
-		log.debug("Pipeline Predictions Triggered by {}", sc.getUserPrincipal().getName());
+		log.debug("Pipeline: Predictions Triggered by {}", sc.getUserPrincipal().getName());
 		respondantPipelineTriggers.triggerPredictions();
 	}
 	
@@ -110,10 +110,10 @@ public class AdminResourceResource {
 	@Path("/trigger/all")
 	@ApiOperation(value = "Triggers all pipeline activities")
 	   @ApiResponses(value = {
-	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	     @ApiResponse(code = 200, message = "OK - All Actions Triggered")
 	   })
 	public void triggerAll() {
-		log.debug("All Pipeline Actions Triggered by {}", sc.getUserPrincipal().getName());
+		log.debug("Pipeline: All Actions Triggered by {}", sc.getUserPrincipal().getName());
 		respondantPipelineTriggers.triggerRespondantPreScreen();
 		respondantPipelineTriggers.triggerRespondantAssessmentScoring();
 		respondantPipelineTriggers.triggerGraderCompute();;
@@ -125,7 +125,7 @@ public class AdminResourceResource {
 	@Consumes(MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Triggers all pipeline activities")
 	   @ApiResponses(value = {
-	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	     @ApiResponse(code = 200, message = "OK - Respondant Error Reset")
 	   })
 	public void resetErrorStatus(@ApiParam("Respondant ID") Long respondantId) {
 		log.debug("Reset respondant {} Triggered by {}", respondantId, sc.getUserPrincipal().getName());
@@ -137,10 +137,10 @@ public class AdminResourceResource {
 	@Path("/resetgroup")
 	@ApiOperation(value = "Triggers all pipeline activities")
 	   @ApiResponses(value = {
-	     @ApiResponse(code = 200, message = "OK - Prediction Pipeline Triggered")
+	     @ApiResponse(code = 200, message = "OK - Respondant Errors Reset")
 	   })
 	public void resetErrorStatus(@ApiParam("Respondant IDs") List<Long> respondantIds) {
-		log.debug("Reset respondant {} Triggered by {}", respondantIds, sc.getUserPrincipal().getName());
+		log.debug("Reset respondant list {} Triggered by {}", respondantIds, sc.getUserPrincipal().getName());
 		respondantService.clearErrors(respondantIds);
 
 	}
