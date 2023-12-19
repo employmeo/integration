@@ -46,6 +46,7 @@ public class BlendedTypeScoring implements ScoringModelEngine {
 				responseSet = new ArrayList<Double>();
 				responseTable.put(corefactor, responseSet);
 			}
+			if (response.getResponseValue() == null) return;
 			Double value = (double)response.getResponseValue();
 			Double translatedValue = null;
 			
