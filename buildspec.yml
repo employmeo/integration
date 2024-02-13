@@ -4,9 +4,9 @@ phases:
     runtime-versions:
       java: corretto8
     commands:
+      - wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
       - apt-get update -y
       - apt-get install -y maven
-      - wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
       - apt-get install -y awscli
   build:
     commands:
