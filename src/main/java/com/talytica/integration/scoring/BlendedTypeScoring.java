@@ -71,6 +71,7 @@ public class BlendedTypeScoring implements ScoringModelEngine {
 		for (Map.Entry<Corefactor, List<Double>> pair : responseTable.entrySet()) {
 			Corefactor corefactor = pair.getKey();
 			List<Double> responseSet = pair.getValue();
+			if (responseSet.isEmpty()) continue;
 			double total = 0;
 			for (Double response : responseSet) {
 				total += response;
